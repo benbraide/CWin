@@ -1,22 +1,13 @@
 #pragma once
 
-#include <any>
-
 #include "../thread/thread_exception.h"
 
 #include "../utility/options.h"
 #include "../utility/windows.h"
 
-#include "event_exception.h"
 #include "event_target.h"
 
-namespace cwin::thread{
-	class object;
-}
-
 namespace cwin::events{
-	class manager;
-
 	class object{
 	public:
 		enum class option_type{
@@ -29,9 +20,9 @@ namespace cwin::events{
 			unbound_on_exit,
 		};
 
-		object(thread::object &thread, events::target &target);
+		explicit object(events::target &target);
 
-		object(thread::object &thread, events::target &target, events::target &context);
+		object(events::target &target, events::target &context);
 
 		virtual ~object();
 

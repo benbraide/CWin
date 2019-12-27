@@ -1,12 +1,27 @@
 #include "thread_object.h"
 
 cwin::thread::object::object()
-	: queue_(*this), id_(GetCurrentThreadId()){
+	: cross_object(*this), queue_(*this), id_(GetCurrentThreadId()){
 
 }
 
-cwin::thread::object::~object(){
-	queue_.black_list_[reinterpret_cast<unsigned __int64>(this)] = '\0';
+cwin::thread::object::~object() = default;
+
+cwin::thread::queue &cwin::thread::object::get_queue(){
+	return queue_;
+}
+
+const cwin::thread::queue &cwin::thread::object::get_queue() const{
+	return queue_;
+
+}
+
+DWORD cwin::thread::object::get_id() const{
+	return id_;
+}
+
+bool cwin::thread::object::is_context() const{
+	return (GetCurrentThreadId() == id_);
 }
 
 int cwin::thread::object::run(){
@@ -48,6 +63,8 @@ int cwin::thread::object::run(){
 	}
 
 	running_animation_loop_ = false;
+	queue_.run_next_(queue::lowest_task_priority, false);//Run remaining tasks
+
 	return 0;
 }
 
@@ -58,50 +75,45 @@ void cwin::thread::object::stop(int exit_code){
 		post_message(WM_QUIT, exit_code, 0);
 }
 
-cwin::thread::queue &cwin::thread::object::get_queue(){
-	return queue_;
-}
-
-const cwin::thread::queue &cwin::thread::object::get_queue() const{
-	return queue_;
-
-}
-
-DWORD cwin::thread::object::get_id() const{
-	return id_;
-}
-
-bool cwin::thread::object::is_context() const{
-	return (GetCurrentThreadId() == id_);
-}
-
 unsigned __int64 cwin::thread::object::request_animation_frame(const std::function<void(const time_point_type &)> &callback, unsigned __int64 cancel_frame){
 	return queue_.execute_task([&]{
 		cancel_animation_frame_(cancel_frame);
 		return request_animation_frame_(callback);
-	}, this, queue::highest_task_priority);
+	}, get_talk_id(), queue::highest_task_priority);
 }
 
 void cwin::thread::object::cancel_animation_frame(unsigned __int64 id){
 	queue_.post_task([=]{
 		cancel_animation_frame_(id);
-	}, this, queue::highest_task_priority);
+	}, get_talk_id(), queue::highest_task_priority);
 }
 
 bool cwin::thread::object::post_message(UINT message, WPARAM wparam, LPARAM lparam) const{
 	return (PostThreadMessageW(id_, message, wparam, lparam) != FALSE);
 }
 
-float cwin::thread::object::convert_pixel_to_dip_x(int x) const{
-	if (dpi_scale_.x == 0.0f)
-		initialize_dpi_scale_();
-	return ((dpi_scale_.x == 0.0f) ? static_cast<float>(x) : (x / dpi_scale_.x));
+float cwin::thread::object::convert_pixel_to_dip_x(int value) const{
+	return queue_.execute_task([&]{
+		return convert_pixel_to_dip_x_(value);
+	}, get_talk_id(), queue::highest_task_priority);
 }
 
-float cwin::thread::object::convert_pixel_to_dip_y(int y) const{
-	if (dpi_scale_.y == 0.0f)
-		initialize_dpi_scale_();
-	return ((dpi_scale_.y == 0.0f) ? static_cast<float>(y) : (y / dpi_scale_.y));
+void cwin::thread::object::convert_pixel_to_dip_x(int value, const std::function<void(float)> &callback) const{
+	queue_.post_task([=]{
+		callback(convert_pixel_to_dip_x_(value));
+	}, get_talk_id(), queue::highest_task_priority);
+}
+
+float cwin::thread::object::convert_pixel_to_dip_y(int value) const{
+	return queue_.execute_task([&]{
+		return convert_pixel_to_dip_y_(value);
+	}, get_talk_id(), queue::highest_task_priority);
+}
+
+void cwin::thread::object::convert_pixel_to_dip_y(int value, const std::function<void(float)> &callback) const{
+	queue_.post_task([=]{
+		callback(convert_pixel_to_dip_y_(value));
+	}, get_talk_id(), queue::highest_task_priority);
 }
 
 void cwin::thread::object::init_control(const std::wstring &class_name, DWORD control_id){
@@ -121,13 +133,13 @@ void cwin::thread::object::init_control(const std::wstring &class_name, DWORD co
 			if (InitCommonControlsEx(&info) != FALSE)
 				control_ids_ |= control_id;
 		}
-	}, this, queue::highest_task_priority);
+	}, get_talk_id(), queue::highest_task_priority);
 }
 
 WNDPROC cwin::thread::object::get_class_entry(const std::wstring &class_name) const{
 	return queue_.execute_task([&]() -> WNDPROC{
 		return get_class_entry_(class_name);
-	}, this, queue::highest_task_priority);
+	}, get_talk_id(), queue::highest_task_priority);
 }
 
 void cwin::thread::object::get_class_entry(const std::wstring &class_name, const std::function<void(WNDPROC)> &callback) const{
@@ -136,6 +148,47 @@ void cwin::thread::object::get_class_entry(const std::wstring &class_name, const
 
 WNDPROC cwin::thread::object::get_message_entry(){
 	return nullptr;
+}
+
+void cwin::thread::object::add_item_(item &item){
+	if (&item.get_thread() != this)
+		throw exception::context_mismatch();
+	items_.push_back(item_info{ &item });
+}
+
+void cwin::thread::object::remove_item_(item &item){
+	if (&item.get_thread() != this)
+		throw exception::context_mismatch();
+
+	if (items_.empty())
+		return;
+
+	auto it = std::find_if(items_.begin(), items_.end(), [&](const item_info &info){
+		return (info.value == &item);
+	});
+
+	if (it == items_.end())//Item not found
+		return;
+
+	auto outbound_events = std::move(it->outbound_events);
+	for (auto &info : outbound_events)//Unbind all outbound events
+		info.target->get_manager().unbind_(info.key, info.id);
+
+	items_.erase(it);//Remove entry
+	auto &events_manager = item.get_manager();
+	if (events_manager.handlers_.empty())
+		return;
+
+	for (auto &info : events_manager.handlers_){//Erase all inbound events references
+		for (auto &item_info : items_){
+			auto out_it = std::find_if(item_info.outbound_events.begin(), item_info.outbound_events.end(), [&](const outbound_event_info &info){
+				return (info.target == &item);
+			});
+
+			if (out_it != item_info.outbound_events.end())
+				item_info.outbound_events.erase(out_it);
+		}
+	}
 }
 
 void cwin::thread::object::add_timer_(const std::chrono::milliseconds &duration, const std::function<void()> &callback, unsigned __int64 id){
@@ -191,7 +244,7 @@ void cwin::thread::object::run_animation_loop_(){
 			for (auto &entry : animation_callbacks)
 				entry.callback(std::chrono::high_resolution_clock::now());
 
-		}, this, queue::highest_task_priority);
+		}, get_talk_id(), queue::highest_task_priority);
 	}
 }
 
@@ -250,6 +303,18 @@ void cwin::thread::object::begin_draw_(){
 
 void cwin::thread::object::end_draw_(){
 
+}
+
+float cwin::thread::object::convert_pixel_to_dip_x_(int value) const{
+	if (dpi_scale_.x == 0.0f)
+		initialize_dpi_scale_();
+	return ((dpi_scale_.x == 0.0f) ? static_cast<float>(value) : (value / dpi_scale_.x));
+}
+
+float cwin::thread::object::convert_pixel_to_dip_y_(int value) const{
+	if (dpi_scale_.y == 0.0f)
+		initialize_dpi_scale_();
+	return ((dpi_scale_.y == 0.0f) ? static_cast<float>(value) : (value / dpi_scale_.y));
 }
 
 void cwin::thread::object::initialize_dpi_scale_() const{

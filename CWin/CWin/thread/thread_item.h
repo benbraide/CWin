@@ -1,15 +1,18 @@
 #pragma once
 
 #include "../events/event_message_object.h"
+#include "../events/event_manager.h"
 
 namespace cwin::thread{
 	class object;
 
-	class item{
+	class item : public events::target{
 	public:
-		virtual thread::object &get_thread();
+		//item();
+
+		virtual ~item();
 
 	protected:
-		thread::object &thread_;
+		friend class object;
 	};
 }

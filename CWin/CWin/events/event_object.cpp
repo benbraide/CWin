@@ -1,10 +1,13 @@
 #include "../thread/thread_object.h"
 
-cwin::events::object::object(thread::object &thread, events::target &target)
-	: object(thread, target, target){}
+cwin::events::object::object(events::target &target)
+	: object(target, target){}
 
-cwin::events::object::object(thread::object &thread, events::target &target, events::target &context)
-	: thread_(thread), target_(target), context_(context){}
+cwin::events::object::object(events::target &target, events::target &context)
+	: thread_(context.get_thread()), target_(target), context_(context){
+	if (&target_ != &context_ && &target_.get_thread() != &context_.get_thread())
+		throw thread::exception::context_mismatch();
+}
 
 cwin::events::object::~object() = default;
 
@@ -17,18 +20,26 @@ const cwin::thread::object &cwin::events::object::get_thread() const{
 }
 
 cwin::events::target &cwin::events::object::get_target(){
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
 	return target_;
 }
 
 const cwin::events::target &cwin::events::object::get_target() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
 	return target_;
 }
 
 cwin::events::target &cwin::events::object::get_context(){
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
 	return context_;
 }
 
 const cwin::events::target &cwin::events::object::get_context() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
 	return context_;
 }
 
@@ -135,7 +146,7 @@ bool cwin::events::object::handle_set_result_(const void *value, const std::type
 void cwin::events::object::prevent_default_(){}
 
 void cwin::events::object::do_default_(){
-	//context_.trigger_event_handler_(*this);
+	context_.get_manager().trigger_default_(*this, 0u);
 }
 
 void cwin::events::object::call_handler_(){}

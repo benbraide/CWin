@@ -6,6 +6,8 @@ namespace cwin::events::exception{
 	enum class code{
 		nil,
 		bad_value,
+		missing_arg,
+		incompatible_arg,
 	};
 
 	class base : public exception_base{
@@ -22,6 +24,24 @@ namespace cwin::events::exception{
 		bad_value();
 
 		virtual ~bad_value();
+
+		virtual code get_code() const override;
+	};
+
+	class missing_arg : public base{
+	public:
+		missing_arg();
+
+		virtual ~missing_arg();
+
+		virtual code get_code() const override;
+	};
+
+	class incompatible_arg : public base{
+	public:
+		incompatible_arg();
+
+		virtual ~incompatible_arg();
 
 		virtual code get_code() const override;
 	};

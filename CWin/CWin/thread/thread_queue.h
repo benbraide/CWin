@@ -64,39 +64,33 @@ namespace cwin::thread{
 			static void get(){}
 		};
 
+		void add_to_blacklist(unsigned __int64 id);
+
 		void post_task(const std::function<void()> &task) const;
 
 		void post_task(const std::function<void()> &task, unsigned __int64 id) const;
 
 		void post_task(const std::function<void()> &task, unsigned __int64 id, int priority) const;
 
-		void post_task(const std::function<void()> &task, const void *owner) const;
+		void post_or_execute_task(const std::function<void()> &task) const;
 
-		void post_task(const std::function<void()> &task, const void *owner, int priority) const;
+		void post_or_execute_task(const std::function<void()> &task, unsigned __int64 id) const;
+
+		void post_or_execute_task(const std::function<void()> &task, unsigned __int64 id, int priority) const;
 
 		template <typename function_type>
-		auto execute_task(const function_type &task, bool always_queue = false) const{
-			return execute_task(task, static_cast<unsigned __int64>(0), default_task_priority, always_queue);
+		auto execute_task(const function_type &task) const{
+			return execute_task(task, static_cast<unsigned __int64>(0), default_task_priority);
 		}
 
 		template <typename function_type>
-		auto execute_task(const function_type &task, unsigned __int64 id, bool always_queue = false) const{
-			return execute_task(task, id, default_task_priority, always_queue);
+		auto execute_task(const function_type &task, unsigned __int64 id) const{
+			return execute_task(task, id, default_task_priority);
 		}
 
 		template <typename function_type>
-		auto execute_task(const function_type &task, unsigned __int64 id, int priority, bool always_queue = false) const{
-			return execute_task_(utility::object_to_function_traits::get(task), id, priority, always_queue);
-		}
-
-		template <typename function_type>
-		auto execute_task(const function_type &task, const void *owner, bool always_queue = false) const{
-			return execute_task(task, reinterpret_cast<unsigned __int64>(owner), default_task_priority, always_queue);
-		}
-
-		template <typename function_type>
-		auto execute_task(const function_type &task, const void *owner, int priority, bool always_queue = false) const{
-			return execute_task(task, reinterpret_cast<unsigned __int64>(owner), priority, always_queue);
+		auto execute_task(const function_type &task, unsigned __int64 id, int priority) const{
+			return execute_task_(utility::object_to_function_traits::get(task), id, priority);
 		}
 
 		bool is_thread_context() const;
@@ -117,8 +111,8 @@ namespace cwin::thread{
 		explicit queue(object &thread);
 
 		template <typename return_type>
-		return_type execute_task_(const std::function<return_type()> &task, unsigned __int64 id, int priority, bool always_queue) const{
-			if (!always_queue && is_thread_context()){//Same context
+		return_type execute_task_(const std::function<return_type()> &task, unsigned __int64 id, int priority) const{
+			if (is_thread_context()){//Same context
 				if (black_list_.find(id) != black_list_.end())//Blacklisted
 					return default_value<return_type>::get();
 				return task();

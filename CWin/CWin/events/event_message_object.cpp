@@ -1,18 +1,22 @@
 #include "../thread/thread_object.h"
 
-cwin::events::message_object::message_object(thread::object &thread, events::target &target, MSG &message_info, WNDPROC default_callback)
-	: message_object(thread, target, target, message_info, default_callback){}
+cwin::events::message_object::message_object(events::target &target, MSG &message_info, WNDPROC default_callback)
+	: message_object(target, target, message_info, default_callback){}
 
-cwin::events::message_object::message_object(thread::object &thread, events::target &target, events::target &context, MSG &message_info, WNDPROC default_callback)
-	: object(thread, target, context), message_info_(message_info), default_callback_(default_callback){}
+cwin::events::message_object::message_object(events::target &target, events::target &context, MSG &message_info, WNDPROC default_callback)
+	: object(target, context), message_info_(message_info), default_callback_(default_callback){}
 
 cwin::events::message_object::~message_object() = default;
 
 const MSG &cwin::events::message_object::get_message() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
 	return message_info_;
 }
 
 MSG &cwin::events::message_object::get_message(){
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
 	return message_info_;
 }
 
