@@ -150,7 +150,7 @@ namespace cwin::events{
 
 		template <typename object_type>
 		bool exists(unsigned __int64 id) const{
-			return exists_(get_key<object_type>(), id);
+			return exists(get_key<object_type>(), id);
 		}
 
 		virtual bool exists(key_type key, unsigned __int64 id) const;
@@ -311,5 +311,32 @@ namespace cwin::events{
 		events::target &target_;
 		std::size_t count_ = 0u;
 		mutable map_type handlers_;
+	};
+
+	template <class owner_type>
+	class owned_manager : public manager{
+	public:
+		virtual ~owned_manager() = default;
+
+	protected:
+		friend owner_type;
+
+		explicit owned_manager(owner_type &owner)
+			: manager(owner){}
+
+		using manager::get_queue_;
+		using manager::get_options_;
+
+		using manager::bind_;
+		using manager::bind_default_;
+
+		using manager::unbind_;
+		using manager::unbind_default_;
+
+		using manager::exists_;
+		using manager::default_exists_;
+
+		using manager::trigger_;
+		using manager::trigger_default_;
 	};
 }

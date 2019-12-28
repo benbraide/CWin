@@ -210,10 +210,12 @@ namespace cwin::utility{
 		}
 
 		virtual void set_manager_(const typename base_type::alt_manager_type &value){
-			set_manager_([value](managed_options &, typename base_type::action_type action, typename base_type::base_type::bits_type &bits, index_type index){
-				value(action, bits, index);
+			set_manager_([value](base_type &, typename base_type::action_type action, typename base_type::base_type::bits_type &bits, index_type index){
+				return value(action, bits, index);
 			});
 		}
+
+		using base_type::bits_;
 	};
 
 	template <class owner_type, class index_type>

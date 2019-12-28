@@ -4,19 +4,18 @@
 
 #include "../utility/windows.h"
 #include "../utility/random_number_generator.h"
-#include "../hook/hook_target.h"
 
 #include "thread_item.h"
+
+namespace cwin::app{
+	class object;
+}
 
 namespace cwin::thread{
 	class object : public cross_object, public hook::target{
 	public:
 		using time_point_type = std::chrono::time_point<std::chrono::steady_clock>;
-
-		struct animation_request_info{
-			unsigned __int64 id;
-			std::function<void(const time_point_type &)> callback;
-		};
+		using animation_request_callback_type = std::function<void(const time_point_type &)>;
 
 		struct outbound_event_info{
 			events::target *target;
@@ -27,6 +26,7 @@ namespace cwin::thread{
 		struct item_info{
 			item *value;
 			std::list<outbound_event_info> outbound_events;
+			std::list<unsigned __int64> owned_timers;
 		};
 
 		virtual ~object();
@@ -43,15 +43,13 @@ namespace cwin::thread{
 
 		virtual void stop(int exit_code);
 
-		virtual unsigned __int64 request_animation_frame(const std::function<void(const time_point_type &)> &callback, unsigned __int64 cancel_frame = 0u);
-
-		virtual void cancel_animation_frame(unsigned __int64 id);
+		virtual void request_animation_frame(const animation_request_callback_type &callback);
 
 		template <typename callback_type>
-		void animate(const std::function<float(float)> &timing, const callback_type &callback, const std::chrono::microseconds &duration){
+		void animate(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const callback_type &callback){
 			queue_.execute_task([&]{
 				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
-				call_animate<return_type>::call(*this, timing, utility::object_to_function_traits::get(callback), duration);
+				call_animate<return_type>::call(*this, timing, duration, utility::object_to_function_traits::get(callback));
 			}, this, queue::highest_task_priority);
 		}
 
@@ -76,30 +74,36 @@ namespace cwin::thread{
 	protected:
 		friend class item;
 		friend class events::target;
+		friend class app::object;
 
 		template <class return_type>
-		struct call_animate{
-			static void call(object &target, const std::function<float(float)> &timing, const std::function<return_type(float)> &callback, const std::chrono::nanoseconds &duration){
-				target.animate_(timing, callback, duration);
+		struct call_animate;
+
+		template <>
+		struct call_animate<bool>{
+			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback){
+				target.animate_(timing, duration, callback);
 			}
 
-			static void call(object &target, const std::function<float(float)> &timing, const std::function<return_type(float, bool)> &callback, const std::chrono::nanoseconds &duration){
-				target.animate_(timing, callback, duration);
+			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback){
+				target.animate_(timing, duration, callback);
 			}
 		};
 
 		template <>
 		struct call_animate<void>{
-			static void call(object &target, const std::function<float(float)> &timing, const std::function<void(float)> &callback, const std::chrono::nanoseconds &duration){
-				call(target, timing, [&](float progress, bool){
+			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<void(float)> &callback){
+				call_animate<bool>::call(target, timing, duration, [&](float progress, bool){
 					callback(progress);
-				}, duration);
+					return true;
+				});
 			}
 
-			static void call(object &target, const std::function<float(float)> &timing, const std::function<void(float, bool)> &callback, const std::chrono::nanoseconds &duration){
-				call(target, timing, [&](float progress, bool has_more){
+			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<void(float, bool)> &callback){
+				call_animate<bool>::call(target, timing, duration, [&](float progress, bool has_more){
 					callback(progress, has_more);
-				}, duration);
+					return true;
+				});
 			}
 		};
 
@@ -109,23 +113,21 @@ namespace cwin::thread{
 
 		void remove_item_(item &item);
 
-		virtual void add_timer_(const std::chrono::milliseconds &duration, const std::function<void()> &callback, unsigned __int64 id);
+		virtual void add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner);
 
-		virtual void remove_timer_(unsigned __int64 id);
+		virtual void remove_timer_(unsigned __int64 id, const item *owner);
 
 		virtual WNDPROC get_class_entry_(const std::wstring &class_name) const;
 
 		virtual void run_animation_loop_();
 
-		virtual unsigned __int64 request_animation_frame_(const std::function<void(const time_point_type &)> &callback);
+		virtual void request_animation_frame_(const animation_request_callback_type &callback);
 
-		virtual void cancel_animation_frame_(unsigned __int64 id);
+		virtual void animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback);
 
-		virtual void animate_(const std::function<float(float)> &timing, const std::function<bool(float)> &callback, const std::chrono::nanoseconds &duration);
+		virtual void animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback);
 
-		virtual void animate_(const std::function<float(float)> &timing, const std::function<bool(float, bool)> &callback, const std::chrono::nanoseconds &duration);
-
-		virtual void animate_(const time_point_type &start, const std::function<float(float)> &timing, const std::function<bool(float, bool)> &callback, const std::chrono::nanoseconds &duration);
+		virtual void animate_(const time_point_type &start, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback);
 
 		virtual void begin_draw_();
 
@@ -136,6 +138,8 @@ namespace cwin::thread{
 		virtual float convert_pixel_to_dip_y_(int value) const;
 
 		virtual void initialize_dpi_scale_() const;
+
+		static void CALLBACK timer_entry_(HWND handle, UINT message, UINT_PTR id, DWORD time);
 
 		queue queue_;
 
@@ -150,8 +154,9 @@ namespace cwin::thread{
 
 		std::atomic_bool running_animation_loop_ = false;
 		unsigned __int64 animation_loop_id_ = 0;
-		std::unordered_map<unsigned __int64, std::list<animation_request_info>> animation_callbacks_;
+		std::unordered_map<unsigned __int64, std::list<animation_request_callback_type>> animation_callbacks_;
 
+		std::unordered_map<unsigned __int64, std::function<void(unsigned __int64)>> timers_;
 		utility::random_integral_number_generator random_generator_;
 	};
 }

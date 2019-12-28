@@ -87,9 +87,9 @@ void cwin::events::target::added_timer_event_handler_(unsigned __int64 id, const
 	else
 		throw exception::incompatible_arg();
 
-	thread_.add_timer_(std::chrono::milliseconds(duration), [=]{
+	thread_.add_timer_(std::chrono::milliseconds(duration), [=](unsigned __int64 timer_id){
 		auto is_active = false;
-		auto &manager = get_manager();
+		auto &manager = get_events();
 
 		if (is_interval){
 			events::interval e(*this);
@@ -113,6 +113,6 @@ void cwin::events::target::added_timer_event_handler_(unsigned __int64 id, const
 		}
 
 		if (!is_active)//Handler removed
-			thread_.remove_timer_(id);
-	}, id);
+			thread_.remove_timer_(timer_id, dynamic_cast<thread::item *>(this));
+	}, dynamic_cast<thread::item *>(this));
 }

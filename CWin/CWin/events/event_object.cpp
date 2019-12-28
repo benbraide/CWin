@@ -146,7 +146,7 @@ bool cwin::events::object::handle_set_result_(const void *value, const std::type
 void cwin::events::object::prevent_default_(){}
 
 void cwin::events::object::do_default_(){
-	context_.get_manager().trigger_default_(*this, 0u);
+	context_.get_events().trigger_default_(*this, 0u);
 }
 
 void cwin::events::object::call_handler_(){}

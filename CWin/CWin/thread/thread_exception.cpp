@@ -26,3 +26,21 @@ cwin::thread::exception::get_message_failure::~get_message_failure() = default;
 cwin::thread::exception::code cwin::thread::exception::get_message_failure::get_code() const{
 	return code::get_message_failure;
 }
+
+cwin::thread::exception::failed_to_add_timer::failed_to_add_timer()
+	: base("Failed to create a timer"){}
+
+cwin::thread::exception::failed_to_add_timer::~failed_to_add_timer() = default;
+
+cwin::thread::exception::code cwin::thread::exception::failed_to_add_timer::get_code() const{
+	return code::failed_to_add_timer;
+}
+
+cwin::thread::exception::failed_to_remove_timer::failed_to_remove_timer()
+	: base("Failed to kill a timer"){}
+
+cwin::thread::exception::failed_to_remove_timer::~failed_to_remove_timer() = default;
+
+cwin::thread::exception::code cwin::thread::exception::failed_to_remove_timer::get_code() const{
+	return code::failed_to_remove_timer;
+}

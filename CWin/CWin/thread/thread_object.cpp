@@ -1,11 +1,15 @@
-#include "thread_object.h"
+#include "../app/app_object.h"
 
 cwin::thread::object::object()
 	: cross_object(*this), queue_(*this), id_(GetCurrentThreadId()){
-
+	std::lock_guard<std::mutex> guard(app::object::lock_);
+	app::object::threads_[GetCurrentThreadId()] = this;
 }
 
-cwin::thread::object::~object() = default;
+cwin::thread::object::~object(){
+	std::lock_guard<std::mutex> guard(app::object::lock_);
+	app::object::threads_.erase(GetCurrentThreadId());
+}
 
 cwin::thread::queue &cwin::thread::object::get_queue(){
 	return queue_;
@@ -75,16 +79,9 @@ void cwin::thread::object::stop(int exit_code){
 		post_message(WM_QUIT, exit_code, 0);
 }
 
-unsigned __int64 cwin::thread::object::request_animation_frame(const std::function<void(const time_point_type &)> &callback, unsigned __int64 cancel_frame){
-	return queue_.execute_task([&]{
-		cancel_animation_frame_(cancel_frame);
-		return request_animation_frame_(callback);
-	}, get_talk_id(), queue::highest_task_priority);
-}
-
-void cwin::thread::object::cancel_animation_frame(unsigned __int64 id){
-	queue_.post_task([=]{
-		cancel_animation_frame_(id);
+void cwin::thread::object::request_animation_frame(const animation_request_callback_type &callback){
+	queue_.post_or_execute_task([&]{
+		request_animation_frame_(callback);
 	}, get_talk_id(), queue::highest_task_priority);
 }
 
@@ -172,10 +169,14 @@ void cwin::thread::object::remove_item_(item &item){
 
 	auto outbound_events = std::move(it->outbound_events);
 	for (auto &info : outbound_events)//Unbind all outbound events
-		info.target->get_manager().unbind_(info.key, info.id);
+		info.target->get_events().unbind_(info.key, info.id);
+
+	auto owned_timers = std::move(it->owned_timers);
+	for (auto timer_id : owned_timers)//Remove all timers
+		remove_timer_(timer_id, nullptr);
 
 	items_.erase(it);//Remove entry
-	auto &events_manager = item.get_manager();
+	auto &events_manager = item.get_events();
 	if (events_manager.handlers_.empty())
 		return;
 
@@ -191,12 +192,46 @@ void cwin::thread::object::remove_item_(item &item){
 	}
 }
 
-void cwin::thread::object::add_timer_(const std::chrono::milliseconds &duration, const std::function<void()> &callback, unsigned __int64 id){
+void cwin::thread::object::add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner){
+	if (auto id = SetTimer(nullptr, 0, static_cast<UINT>(duration.count()), timer_entry_); id != static_cast<UINT_PTR>(0)){
+		timers_[id] = callback;
+		if (owner != nullptr){
+			auto it = std::find_if(items_.begin(), items_.end(), [&](const item_info &info){
+				return (info.value == owner);
+			});
 
+			if (it != items_.end())
+				it->owned_timers.push_back(id);
+		}
+	}
+	else//Error
+		throw exception::failed_to_add_timer();
 }
 
-void cwin::thread::object::remove_timer_(unsigned __int64 id){
+void cwin::thread::object::remove_timer_(unsigned __int64 id, const item *owner){
+	if (timers_.empty())
+		return;
 
+	auto timer_it = timers_.find(id);
+	if (timer_it == timers_.end())
+		return;
+
+	if (KillTimer(thread_.message_hwnd_, static_cast<UINT_PTR>(id)) == FALSE)
+		throw exception::failed_to_remove_timer();
+
+	timers_.erase(timer_it);
+	if (owner == nullptr)
+		return;
+
+	auto it = std::find_if(items_.begin(), items_.end(), [&](const item_info &info){
+		return (info.value == owner);
+	});
+
+	if (it == items_.end())
+		return;
+
+	if (auto id_it = std::find(it->owned_timers.begin(), it->owned_timers.end(), id); id_it != it->owned_timers.end())
+		it->owned_timers.erase(id_it);//Remove reference
 }
 
 WNDPROC cwin::thread::object::get_class_entry_(const std::wstring &class_name) const{
@@ -242,46 +277,30 @@ void cwin::thread::object::run_animation_loop_(){
 
 			auto animation_callbacks = std::move(it->second);
 			for (auto &entry : animation_callbacks)
-				entry.callback(std::chrono::high_resolution_clock::now());
+				entry(std::chrono::high_resolution_clock::now());
 
 		}, get_talk_id(), queue::highest_task_priority);
 	}
 }
 
-unsigned __int64 cwin::thread::object::request_animation_frame_(const std::function<void(const time_point_type &)> &callback){
-	auto id = random_generator_(static_cast<unsigned __int64>(1));
-	animation_callbacks_[animation_loop_id_].push_back(animation_request_info{ id, callback });
-	return id;
+void cwin::thread::object::request_animation_frame_(const animation_request_callback_type &callback){
+	animation_callbacks_[animation_loop_id_].push_back(callback);
 }
 
-void cwin::thread::object::cancel_animation_frame_(unsigned __int64 id){
-	if (animation_callbacks_.empty())
-		return;
-
-	if (auto entry = animation_callbacks_.find(animation_loop_id_); entry != animation_callbacks_.end()){
-		auto it = std::find_if(entry->second.begin(), entry->second.end(), [=](const animation_request_info &info){
-			return (info.id == id);
-		});
-
-		if (it != entry->second.end())
-			entry->second.erase(it);
-	}
-}
-
-void cwin::thread::object::animate_(const std::function<float(float)> &timing, const std::function<bool(float)> &callback, const std::chrono::nanoseconds &duration){
-	animate_(timing, [&](float progress, bool){
+void cwin::thread::object::animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback){
+	animate_(timing, duration, [&](float progress, bool){
 		return callback(progress);
-	}, duration);
+	});
 }
 
-void cwin::thread::object::animate_(const std::function<float(float)> &timing, const std::function<bool(float, bool)> &callback, const std::chrono::nanoseconds &duration){
+void cwin::thread::object::animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback){
 	if (duration.count() == 0)
 		callback(1.0f, false);
 	else if (callback(timing(0.0f), true))
-		animate_(std::chrono::high_resolution_clock::now(), timing, callback, duration);
+		animate_(std::chrono::high_resolution_clock::now(), timing, duration, callback);
 }
 
-void cwin::thread::object::animate_(const time_point_type &start, const std::function<float(float)> &timing, const std::function<bool(float, bool)> &callback, const std::chrono::nanoseconds &duration){
+void cwin::thread::object::animate_(const time_point_type &start, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback){
 	request_animation_frame_([=](const std::chrono::time_point<std::chrono::steady_clock> &time){
 		auto elapsed_time = (time - start);
 		if (duration.count() <= elapsed_time.count()){
@@ -293,7 +312,7 @@ void cwin::thread::object::animate_(const time_point_type &start, const std::fun
 		auto progress = timing(time_fraction);
 
 		if (callback(progress, true))
-			animate_(start, timing, callback, duration);
+			animate_(start, timing, duration, callback);
 	});
 }
 
@@ -319,4 +338,9 @@ float cwin::thread::object::convert_pixel_to_dip_y_(int value) const{
 
 void cwin::thread::object::initialize_dpi_scale_() const{
 
+}
+
+void CALLBACK cwin::thread::object::timer_entry_(HWND handle, UINT message, UINT_PTR id, DWORD time){
+	if (auto it = app::object::thread.timers_.find(static_cast<unsigned __int64>(id)); it != app::object::thread.timers_.end())
+		it->second(static_cast<unsigned __int64>(id));//Call handler
 }

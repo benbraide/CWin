@@ -21,9 +21,9 @@ namespace cwin::events{
 
 		virtual ~target();
 
-		virtual manager &get_manager() = 0;
+		virtual manager &get_events() = 0;
 
-		virtual const manager &get_manager() const = 0;
+		virtual const manager &get_events() const = 0;
 
 		virtual bool event_is_supported(const std::type_info &type) const;
 

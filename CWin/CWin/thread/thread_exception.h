@@ -8,6 +8,8 @@ namespace cwin::thread::exception{
 		outside_context,
 		context_mismatch,
 		get_message_failure,
+		failed_to_add_timer,
+		failed_to_remove_timer,
 	};
 
 	class base : public exception_base{
@@ -42,6 +44,24 @@ namespace cwin::thread::exception{
 		get_message_failure();
 
 		virtual ~get_message_failure();
+
+		virtual code get_code() const override;
+	};
+
+	class failed_to_add_timer : public base{
+	public:
+		failed_to_add_timer();
+
+		virtual ~failed_to_add_timer();
+
+		virtual code get_code() const override;
+	};
+
+	class failed_to_remove_timer : public base{
+	public:
+		failed_to_remove_timer();
+
+		virtual ~failed_to_remove_timer();
 
 		virtual code get_code() const override;
 	};
