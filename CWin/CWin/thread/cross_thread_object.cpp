@@ -11,10 +11,6 @@ unsigned __int64 cwin::thread::cross_object::get_talk_id() const{
 	return reinterpret_cast<unsigned __int64>(this);
 }
 
-cwin::thread::object &cwin::thread::cross_object::get_thread(){
-	return thread_;
-}
-
-const cwin::thread::object &cwin::thread::cross_object::get_thread() const{
+cwin::thread::object &cwin::thread::cross_object::get_thread() const{
 	return thread_;
 }

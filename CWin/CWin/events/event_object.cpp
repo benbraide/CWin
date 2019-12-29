@@ -11,33 +11,17 @@ cwin::events::object::object(events::target &target, events::target &context)
 
 cwin::events::object::~object() = default;
 
-cwin::thread::object &cwin::events::object::get_thread(){
+cwin::thread::object &cwin::events::object::get_thread() const{
 	return thread_;
 }
 
-const cwin::thread::object &cwin::events::object::get_thread() const{
-	return thread_;
-}
-
-cwin::events::target &cwin::events::object::get_target(){
+cwin::events::target &cwin::events::object::get_target() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
 	return target_;
 }
 
-const cwin::events::target &cwin::events::object::get_target() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return target_;
-}
-
-cwin::events::target &cwin::events::object::get_context(){
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return context_;
-}
-
-const cwin::events::target &cwin::events::object::get_context() const{
+cwin::events::target &cwin::events::object::get_context() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
 	return context_;

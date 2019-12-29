@@ -12,7 +12,7 @@ namespace cwin::app{
 }
 
 namespace cwin::thread{
-	class object : public cross_object, public hook::target{
+	class object : public cross_object{
 	public:
 		using time_point_type = std::chrono::time_point<std::chrono::steady_clock>;
 		using animation_request_callback_type = std::function<void(const time_point_type &)>;

@@ -11,9 +11,7 @@ namespace cwin::events{
 
 		virtual ~message_object();
 
-		virtual const MSG &get_message() const;
-
-		virtual MSG &get_message();
+		virtual MSG &get_message() const;
 
 	protected:
 		virtual void call_handler_() override;

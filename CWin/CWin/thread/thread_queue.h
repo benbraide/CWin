@@ -95,9 +95,7 @@ namespace cwin::thread{
 
 		bool is_thread_context() const;
 
-		object &get_thread();
-
-		const object &get_thread() const;
+		object &get_thread() const;
 
 		static const int default_task_priority = 0;
 		static const int highest_task_priority = std::numeric_limits<int>::max();

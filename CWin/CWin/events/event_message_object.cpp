@@ -8,13 +8,7 @@ cwin::events::message_object::message_object(events::target &target, events::tar
 
 cwin::events::message_object::~message_object() = default;
 
-const MSG &cwin::events::message_object::get_message() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return message_info_;
-}
-
-MSG &cwin::events::message_object::get_message(){
+MSG &cwin::events::message_object::get_message() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
 	return message_info_;

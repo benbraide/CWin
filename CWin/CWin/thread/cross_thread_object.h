@@ -11,9 +11,7 @@ namespace cwin::thread{
 
 		virtual unsigned __int64 get_talk_id() const;
 
-		virtual object &get_thread();
-
-		virtual const object &get_thread() const;
+		virtual object &get_thread() const;
 
 	protected:
 		object &thread_;

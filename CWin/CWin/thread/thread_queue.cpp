@@ -46,11 +46,7 @@ bool cwin::thread::queue::is_thread_context() const{
 	return thread_.is_context();
 }
 
-cwin::thread::object &cwin::thread::queue::get_thread(){
-	return thread_;
-}
-
-const cwin::thread::object &cwin::thread::queue::get_thread() const{
+cwin::thread::object &cwin::thread::queue::get_thread() const{
 	return thread_;
 }
 

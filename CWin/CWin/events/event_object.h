@@ -30,17 +30,11 @@ namespace cwin::events{
 
 		object &operator =(const object &) = delete;
 
-		virtual thread::object &get_thread();
+		virtual thread::object &get_thread() const;
 
-		virtual const thread::object &get_thread() const;
+		virtual events::target &get_target() const;
 
-		virtual events::target &get_target();
-
-		virtual const events::target &get_target() const;
-
-		virtual events::target &get_context();
-
-		virtual const events::target &get_context() const;
+		virtual events::target &get_context() const;
 
 		template <typename result_type>
 		void set_result(const result_type &result){

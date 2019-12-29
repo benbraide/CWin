@@ -75,9 +75,7 @@ namespace cwin::events{
 
 		manager &operator =(const manager &) = delete;
 
-		virtual events::target &get_target();
-
-		virtual const events::target &get_target() const;
+		virtual events::target &get_target() const;
 
 		virtual bool is_thread_context() const;
 

@@ -7,11 +7,7 @@ cwin::events::manager::~manager(){
 	count_ = 0u;
 }
 
-cwin::events::target &cwin::events::manager::get_target(){
-	return target_;
-}
-
-const cwin::events::target &cwin::events::manager::get_target() const{
+cwin::events::target &cwin::events::manager::get_target() const{
 	return target_;
 }
 
