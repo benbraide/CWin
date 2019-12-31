@@ -3,8 +3,8 @@
 cwin::events::object::object(events::target &target)
 	: object(target, target){}
 
-cwin::events::object::object(events::target &target, events::target &context)
-	: thread_(context.get_thread()), target_(target), context_(context){
+cwin::events::object::object(events::target &context, events::target &target)
+	: thread_(context.get_thread()), context_(context), target_(target){
 	if (&target_ != &context_ && &target_.get_thread() != &context_.get_thread())
 		throw thread::exception::context_mismatch();
 }
@@ -15,16 +15,16 @@ cwin::thread::object &cwin::events::object::get_thread() const{
 	return thread_;
 }
 
-cwin::events::target &cwin::events::object::get_target() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return target_;
-}
-
 cwin::events::target &cwin::events::object::get_context() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
 	return context_;
+}
+
+cwin::events::target &cwin::events::object::get_target() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return target_;
 }
 
 LRESULT cwin::events::object::get_result() const{

@@ -22,7 +22,7 @@ namespace cwin::events{
 
 		explicit object(events::target &target);
 
-		object(events::target &target, events::target &context);
+		object(events::target &context, events::target &target);
 
 		virtual ~object();
 
@@ -32,9 +32,9 @@ namespace cwin::events{
 
 		virtual thread::object &get_thread() const;
 
-		virtual events::target &get_target() const;
-
 		virtual events::target &get_context() const;
+
+		virtual events::target &get_target() const;
 
 		template <typename result_type>
 		void set_result(const result_type &result){
@@ -94,10 +94,23 @@ namespace cwin::events{
 		virtual void call_handler_();
 
 		thread::object &thread_;
-		events::target &target_;
 		events::target &context_;
+		events::target &target_;
 
 		LRESULT result_ = 0;
 		utility::small_options options_;
+	};
+
+	template <class object_type>
+	class disable_result : public object_type{
+	public:
+		using object_type::object_type;
+
+		virtual ~disable_result() = default;
+
+	protected:
+		virtual bool handle_set_result_(const void *value, const std::type_info &type) override{
+			return !object_type::options_.is_set(object::option_type::calling_handler);
+		}
 	};
 }

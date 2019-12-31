@@ -73,7 +73,7 @@ namespace cwin::hook{
 
 		template <typename hook_type, typename callback_type>
 		void find_all_hooks(const callback_type &callback) const{
-			post_or_execute_task([&]{
+			post_or_execute_task([=]{
 				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
 				call_find_all_hooks<return_type, hook_type>::call(*this, false, utility::object_to_function_traits::get(callback));
 			});
@@ -81,7 +81,7 @@ namespace cwin::hook{
 		
 		template <typename hook_type, typename callback_type>
 		void find_all_similar_hooks(const callback_type &callback) const{
-			post_or_execute_task([&]{
+			post_or_execute_task([=]{
 				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
 				call_find_all_hooks<return_type, hook_type>::call(*this, true, utility::object_to_function_traits::get(callback));
 			});
@@ -126,7 +126,6 @@ namespace cwin::hook{
 		}
 
 	protected:
-
 		template <class return_type, typename hook_type>
 		struct call_find_all_hooks;
 

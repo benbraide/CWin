@@ -7,7 +7,7 @@ namespace cwin::events{
 	public:
 		message_object(events::target &target, MSG &message_info, WNDPROC default_callback);
 
-		message_object(events::target &target, events::target &context, MSG &message_info, WNDPROC default_callback);
+		message_object(events::target &context, events::target &target, MSG &message_info, WNDPROC default_callback);
 
 		virtual ~message_object();
 
