@@ -3,7 +3,23 @@
 #include "ui_tree.h"
 
 cwin::ui::tree::~tree(){
+	auto objects = std::move(objects_);
+	for (auto object : objects){
+		try{
+			object.second = nullptr;//Delete
+		}
+		catch (const exception::not_supported &){}
+		catch (const exception::action_canceled &){}
+	}
 
+	auto children = std::move(children_);
+	for (auto child : children){
+		try{
+			remove_child_(*child);
+		}
+		catch (const exception::not_supported &){}
+		catch (const exception::action_canceled &){}
+	}
 }
 
 void cwin::ui::tree::insert_child(object &child){
@@ -46,6 +62,20 @@ void cwin::ui::tree::get_child_at(std::size_t index, const std::function<void(ob
 	post_or_execute_task([=]{
 		callback(get_child_at_(index));
 	});
+}
+
+bool cwin::ui::tree::before_destroy_(){
+	if (!object::before_destroy_())
+		return false;
+
+	for (auto child : children_){
+		try{
+			child->destroy();
+		}
+		catch (const exception::not_supported &){}
+	}
+
+	return true;
 }
 
 void cwin::ui::tree::insert_child_(object &child){

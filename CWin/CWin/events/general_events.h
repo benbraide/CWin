@@ -8,39 +8,33 @@ namespace cwin::ui{
 }
 
 namespace cwin::events{
-	class before_create : public disable_result<message_object>{
+	class before_create : public disable_result<object>{
 	public:
-		using base_type = disable_result<message_object>;
-
-		before_create(events::target &target, MSG &message_info, WNDPROC default_callback);
-
-		before_create(events::target &context, events::target &target, MSG &message_info, WNDPROC default_callback);
-
-		virtual ~before_create();
-
-	protected:
-		virtual void prevent_default_() override;
-	};
-
-	class after_create : public disable_result<message_object>{
-	public:
-		using base_type = disable_result<message_object>;
+		using base_type = disable_result<object>;
 		using base_type::base_type;
 
-		virtual ~after_create();
+		virtual ~before_create() = default;
 	};
 
-	class before_destroy : public disable_result<message_object>{
+	class after_create : public disable_result<object>{
 	public:
-		using base_type = disable_result<message_object>;
+		using base_type = disable_result<object>;
+		using base_type::base_type;
+
+		virtual ~after_create() = default;
+	};
+
+	class before_destroy : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
 		using base_type::base_type;
 
 		virtual ~before_destroy() = default;
 	};
 
-	class after_destroy : public disable_result<message_object>{
+	class after_destroy : public disable_result<object>{
 	public:
-		using base_type = disable_result<message_object>;
+		using base_type = disable_result<object>;
 		using base_type::base_type;
 
 		virtual ~after_destroy() = default;

@@ -1,20 +1,5 @@
 #include "general_events.h"
 
-cwin::events::before_create::before_create(events::target &target, MSG &message_info, WNDPROC default_callback)
-	: before_create(target, target, message_info, default_callback){}
-
-cwin::events::before_create::before_create(events::target &context, events::target &target, MSG &message_info, WNDPROC default_callback)
-	: base_type(context, target, message_info, default_callback){
-	result_ = TRUE;
-}
-
-cwin::events::before_create::~before_create() = default;
-
-void cwin::events::before_create::prevent_default_(){
-	message_object::prevent_default_();
-	result_ = FALSE;
-}
-
 cwin::events::before_index_change::before_index_change(events::target &target, std::size_t value)
 	: base_type(target, target), value_(value){}
 

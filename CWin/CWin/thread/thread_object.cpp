@@ -1,7 +1,7 @@
 #include "../app/app_object.h"
 
 cwin::thread::object::object()
-	: cross_object(*this), queue_(*this), id_(GetCurrentThreadId()){
+	: queue_(*this), id_(GetCurrentThreadId()){
 	std::lock_guard<std::mutex> guard(app::object::lock_);
 	app::object::threads_[GetCurrentThreadId()] = this;
 }
@@ -80,9 +80,10 @@ void cwin::thread::object::stop(int exit_code){
 }
 
 void cwin::thread::object::request_animation_frame(const animation_request_callback_type &callback){
-	queue_.post_or_execute_task([&]{
+	if (is_context())
 		request_animation_frame_(callback);
-	}, get_talk_id(), queue::highest_task_priority);
+	else
+		throw exception::outside_context();
 }
 
 bool cwin::thread::object::post_message(UINT message, WPARAM wparam, LPARAM lparam) const{
@@ -90,57 +91,42 @@ bool cwin::thread::object::post_message(UINT message, WPARAM wparam, LPARAM lpar
 }
 
 float cwin::thread::object::convert_pixel_to_dip_x(int value) const{
-	return queue_.execute_task([&]{
-		return convert_pixel_to_dip_x_(value);
-	}, get_talk_id(), queue::highest_task_priority);
-}
-
-void cwin::thread::object::convert_pixel_to_dip_x(int value, const std::function<void(float)> &callback) const{
-	queue_.post_task([=]{
-		callback(convert_pixel_to_dip_x_(value));
-	}, get_talk_id(), queue::highest_task_priority);
+	if (!is_context())
+		throw exception::outside_context();
+	return convert_pixel_to_dip_x_(value);
 }
 
 float cwin::thread::object::convert_pixel_to_dip_y(int value) const{
-	return queue_.execute_task([&]{
-		return convert_pixel_to_dip_y_(value);
-	}, get_talk_id(), queue::highest_task_priority);
-}
-
-void cwin::thread::object::convert_pixel_to_dip_y(int value, const std::function<void(float)> &callback) const{
-	queue_.post_task([=]{
-		callback(convert_pixel_to_dip_y_(value));
-	}, get_talk_id(), queue::highest_task_priority);
+	if (!is_context())
+		throw exception::outside_context();
+	return convert_pixel_to_dip_y_(value);
 }
 
 void cwin::thread::object::init_control(const std::wstring &class_name, DWORD control_id){
-	queue_.execute_task([&]{
-		if (class_info_map_.find(class_name) == class_info_map_.end()){
-			WNDCLASSEXW class_info{ sizeof(WNDCLASSEXW) };
-			if (GetClassInfoExW(nullptr, class_name.data(), &class_info) != FALSE)
-				class_info_map_[class_name] = class_info.lpfnWndProc;
-		}
+	if (!is_context())
+		throw exception::outside_context();
 
-		if ((control_ids_ & control_id) == 0u){
-			INITCOMMONCONTROLSEX info{
-				sizeof(INITCOMMONCONTROLSEX),
-				control_id
-			};
+	if (class_info_map_.find(class_name) == class_info_map_.end()){
+		WNDCLASSEXW class_info{ sizeof(WNDCLASSEXW) };
+		if (GetClassInfoExW(nullptr, class_name.data(), &class_info) != FALSE)
+			class_info_map_[class_name] = class_info.lpfnWndProc;
+	}
 
-			if (InitCommonControlsEx(&info) != FALSE)
-				control_ids_ |= control_id;
-		}
-	}, get_talk_id(), queue::highest_task_priority);
+	if ((control_ids_ & control_id) == 0u){
+		INITCOMMONCONTROLSEX info{
+			sizeof(INITCOMMONCONTROLSEX),
+			control_id
+		};
+
+		if (InitCommonControlsEx(&info) != FALSE)
+			control_ids_ |= control_id;
+	}
 }
 
 WNDPROC cwin::thread::object::get_class_entry(const std::wstring &class_name) const{
-	return queue_.execute_task([&]() -> WNDPROC{
-		return get_class_entry_(class_name);
-	}, get_talk_id(), queue::highest_task_priority);
-}
-
-void cwin::thread::object::get_class_entry(const std::wstring &class_name, const std::function<void(WNDPROC)> &callback) const{
-	callback(get_class_entry(class_name));
+	if (!is_context())
+		throw exception::outside_context();
+	return get_class_entry_(class_name);
 }
 
 WNDPROC cwin::thread::object::get_message_entry(){
@@ -216,7 +202,7 @@ void cwin::thread::object::remove_timer_(unsigned __int64 id, const item *owner)
 	if (timer_it == timers_.end())
 		return;
 
-	if (KillTimer(thread_.message_hwnd_, static_cast<UINT_PTR>(id)) == FALSE)
+	if (KillTimer(nullptr, static_cast<UINT_PTR>(id)) == FALSE)
 		throw exception::failed_to_remove_timer();
 
 	timers_.erase(timer_it);
@@ -279,7 +265,7 @@ void cwin::thread::object::run_animation_loop_(){
 			for (auto &entry : animation_callbacks)
 				entry(std::chrono::high_resolution_clock::now());
 
-		}, get_talk_id(), queue::highest_task_priority);
+		}, 0u, queue::highest_task_priority);
 	}
 }
 

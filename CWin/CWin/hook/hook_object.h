@@ -5,7 +5,7 @@
 namespace cwin::hook{
 	class target;
 
-	class object{
+	class object : public thread::cross_object{
 	public:
 		enum class relationship_type{
 			nil,
@@ -52,8 +52,7 @@ namespace cwin::hook{
 	template <class target_type>
 	class typed_object : public object{
 	public:
-		explicit typed_object(object &target)
-			: object(target){}
+		using object::object;
 
 		virtual ~typed_object() = default;
 

@@ -169,8 +169,11 @@ namespace cwin::hook{
 					return nullptr;
 			}
 
-			for (auto it : marked_its)
+			for (auto it : marked_its){
+				removed_hook_handler_(**it);
+				(*it)->removed_from_target_();
 				hooks_.erase(it);
+			}
 
 			hooks_.push_back(value);
 			value->added_to_target_();

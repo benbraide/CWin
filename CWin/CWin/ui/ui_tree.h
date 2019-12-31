@@ -115,6 +115,8 @@ namespace cwin::ui{
 			}
 		};
 
+		virtual bool before_destroy_() override;
+
 		virtual void insert_child_(object &child);
 
 		virtual bool inserting_child_(object &child);

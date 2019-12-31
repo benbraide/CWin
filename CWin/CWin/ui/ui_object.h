@@ -251,7 +251,15 @@ namespace cwin::ui{
 
 		virtual void create_();
 
+		virtual bool before_create_();
+
+		virtual void after_create_();
+
 		virtual void destroy_();
+
+		virtual bool before_destroy_();
+
+		virtual void after_destroy_();
 
 		virtual bool is_created_() const;
 

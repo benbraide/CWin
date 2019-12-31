@@ -12,7 +12,7 @@ namespace cwin::app{
 }
 
 namespace cwin::thread{
-	class object : public cross_object{
+	class object{
 	public:
 		using time_point_type = std::chrono::time_point<std::chrono::steady_clock>;
 		using animation_request_callback_type = std::function<void(const time_point_type &)>;
@@ -47,27 +47,22 @@ namespace cwin::thread{
 
 		template <typename callback_type>
 		void animate(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const callback_type &callback){
-			queue_.execute_task([&]{
-				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
-				call_animate<return_type>::call(*this, timing, duration, utility::object_to_function_traits::get(callback));
-			}, this, queue::highest_task_priority);
+			if (!is_context())
+				throw exception::outside_context();
+
+			using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
+			call_animate<return_type>::call(*this, timing, duration, utility::object_to_function_traits::get(callback));
 		}
 
 		virtual bool post_message(UINT message, WPARAM wparam, LPARAM lparam) const;
 
 		virtual float convert_pixel_to_dip_x(int value) const;
 
-		virtual void convert_pixel_to_dip_x(int value, const std::function<void(float)> &callback) const;
-
 		virtual float convert_pixel_to_dip_y(int value) const;
-
-		virtual void convert_pixel_to_dip_y(int value, const std::function<void(float)> &callback) const;
 
 		virtual void init_control(const std::wstring &class_name, DWORD control_id);
 
 		virtual WNDPROC get_class_entry(const std::wstring &class_name) const;
-
-		virtual void get_class_entry(const std::wstring &class_name, const std::function<void(WNDPROC)> &callback) const;
 
 		static WNDPROC get_message_entry();
 

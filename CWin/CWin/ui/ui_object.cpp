@@ -15,7 +15,13 @@ cwin::ui::object::object(tree &parent, std::size_t index)
 		throw thread::exception::context_mismatch();
 }
 
-cwin::ui::object::~object() = default;
+cwin::ui::object::~object(){
+	try{
+		remove_parent_();
+	}
+	catch (const exception::not_supported &){}
+	catch (const exception::action_canceled &){}
+}
 
 void cwin::ui::object::set_parent(tree &value){
 	post_or_execute_task([=, pvalue = &value]{
@@ -249,8 +255,24 @@ void cwin::ui::object::create_(){
 	throw exception::not_supported();
 }
 
+bool cwin::ui::object::before_create_(){
+	return !trigger_then_report_prevented_default_<events::before_create>(0u);
+}
+
+void cwin::ui::object::after_create_(){
+	trigger_<events::after_create>(nullptr, 0u);
+}
+
 void cwin::ui::object::destroy_(){
 	throw exception::not_supported();
+}
+
+bool cwin::ui::object::before_destroy_(){
+	return !trigger_then_report_prevented_default_<events::before_destroy>(0u);
+}
+
+void cwin::ui::object::after_destroy_(){
+	trigger_<events::after_destroy>(nullptr, 0u);
 }
 
 bool cwin::ui::object::is_created_() const{

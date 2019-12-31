@@ -1,7 +1,9 @@
-#include "hook_object.h"
+#include "../thread/thread_object.h"
+
+#include "hook_target.h"
 
 cwin::hook::object::object(hook::target &target)
-	: target_(target){}
+	: cross_object(target.get_thread()), target_(target){}
 
 cwin::hook::object::~object() = default;
 
