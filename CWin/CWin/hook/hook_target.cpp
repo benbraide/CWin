@@ -18,14 +18,14 @@ bool cwin::hook::target::hook_is_supported_(const object &value) const{
 	return true;
 }
 
-bool cwin::hook::target::adding_hook_handler_(object &value){
+bool cwin::hook::target::adding_hook_(object &value){
 	return hook_is_supported_(value);
 }
 
-void cwin::hook::target::added_hook_handler_(object &value){}
+void cwin::hook::target::added_hook_(object &value){}
 
-bool cwin::hook::target::removing_hook_handler_(object &value){
+bool cwin::hook::target::removing_hook_(object &value){
 	return true;
 }
 
-void cwin::hook::target::removed_hook_handler_(object &value){}
+void cwin::hook::target::removed_hook_(object &value){}

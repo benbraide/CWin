@@ -151,8 +151,8 @@ namespace cwin::hook{
 
 		template <typename hook_type, typename... args_types>
 		hook_type *insert_hook_(args_types &&... args){
-			auto value = std::make_shared<hook_type>(*this, std::forward<args_types>(args)...);
-			if (value == nullptr || adding_hook_handler_(*value) || !value->adding_to_target_())//Failed to create object
+			std::shared_ptr<object> value = std::make_shared<hook_type>(*this, std::forward<args_types>(args)...);
+			if (value == nullptr || adding_hook_(*value) || !value->adding_to_target_())//Failed to create object
 				return nullptr;
 
 			std::list<std::list<std::shared_ptr<object>>::iterator> marked_its;
@@ -170,14 +170,14 @@ namespace cwin::hook{
 			}
 
 			for (auto it : marked_its){
-				removed_hook_handler_(**it);
+				removed_hook_(**it);
 				(*it)->removed_from_target_();
 				hooks_.erase(it);
 			}
 
 			hooks_.push_back(value);
 			value->added_to_target_();
-			added_hook_handler_(*value);
+			added_hook_(*value);
 
 			return dynamic_cast<hook_type *>(value.get());
 		}
@@ -189,12 +189,12 @@ namespace cwin::hook{
 
 			std::list<std::list<std::shared_ptr<object>>::iterator> marked_its;
 			for (auto hk_it = hooks_.begin(); hk_it != hooks_.end(); ++hk_it){
-				if (&typeid(**hk_it) == &typeid(hook_type) && removing_hook_handler_(**hk_it))
+				if (&typeid(**hk_it) == &typeid(hook_type) && removing_hook_(**hk_it))
 					marked_its.push_back(hk_it);
 			}
 
 			for (auto it : marked_its){
-				removed_hook_handler_(**it);
+				removed_hook_(**it);
 				(*it)->removed_from_target_();
 				hooks_.erase(it);
 			}
@@ -207,12 +207,12 @@ namespace cwin::hook{
 
 			std::list<std::list<std::shared_ptr<object>>::iterator> marked_its;
 			for (auto hk_it = hooks_.begin(); hk_it != hooks_.end(); ++hk_it){
-				if (dynamic_cast<hook_type *>((*hk_it).get()) != nullptr && removing_hook_handler_(**hk_it))
+				if (dynamic_cast<hook_type *>((*hk_it).get()) != nullptr && removing_hook_(**hk_it))
 					marked_its.push_back(hk_it);
 			}
 
 			for (auto it : marked_its){
-				removed_hook_handler_(**it);
+				removed_hook_(**it);
 				(*it)->removed_from_target_();
 				hooks_.erase(it);
 			}
@@ -258,13 +258,13 @@ namespace cwin::hook{
 
 		virtual bool hook_is_supported_(const object &value) const;
 
-		virtual bool adding_hook_handler_(object &value);
+		virtual bool adding_hook_(object &value);
 
-		virtual void added_hook_handler_(object &value);
+		virtual void added_hook_(object &value);
 
-		virtual bool removing_hook_handler_(object &value);
+		virtual bool removing_hook_(object &value);
 
-		virtual void removed_hook_handler_(object &value);
+		virtual void removed_hook_(object &value);
 
 		std::list<std::shared_ptr<object>> hooks_;
 	};

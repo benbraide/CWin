@@ -8,54 +8,6 @@ namespace cwin::ui{
 }
 
 namespace cwin::events{
-	class before_create : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-		using base_type::base_type;
-
-		virtual ~before_create() = default;
-	};
-
-	class after_create : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-		using base_type::base_type;
-
-		virtual ~after_create() = default;
-	};
-
-	class before_destroy : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-		using base_type::base_type;
-
-		virtual ~before_destroy() = default;
-	};
-
-	class after_destroy : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-		using base_type::base_type;
-
-		virtual ~after_destroy() = default;
-	};
-
-	class timer : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-		using base_type::base_type;
-
-		virtual ~timer() = default;
-	};
-
-	class interval : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-		using base_type::base_type;
-
-		virtual ~interval() = default;
-	};
-
 	class before_index_change : public disable_result<object>{
 	public:
 		using base_type = disable_result<object>;
@@ -170,5 +122,137 @@ namespace cwin::events{
 		using base_type::base_type;
 
 		virtual ~after_child_remove() = default;
+	};
+
+	class before_create : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+		using base_type::base_type;
+
+		virtual ~before_create() = default;
+	};
+
+	class after_create : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+		using base_type::base_type;
+
+		virtual ~after_create() = default;
+	};
+
+	class before_destroy : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+		using base_type::base_type;
+
+		virtual ~before_destroy() = default;
+	};
+
+	class after_destroy : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+		using base_type::base_type;
+
+		virtual ~after_destroy() = default;
+	};
+
+	class before_size_change : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+
+		before_size_change(events::target &target, const SIZE &value);
+
+		virtual ~before_size_change();
+
+		virtual const SIZE &get_value() const;
+
+	protected:
+		SIZE value_;
+	};
+
+	class after_size_change : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+
+		after_size_change(events::target &target, const SIZE &value);
+
+		virtual ~after_size_change();
+
+		virtual const SIZE &get_value() const;
+
+	protected:
+		SIZE value_;
+	};
+
+	class after_size_update : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+
+		after_size_update(events::target &target, const SIZE &value);
+
+		virtual ~after_size_update();
+
+		virtual const SIZE &get_value() const;
+
+	protected:
+		SIZE value_;
+	};
+
+	class before_position_change : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+
+		before_position_change(events::target &target, const POINT &value);
+
+		virtual ~before_position_change();
+
+		virtual const POINT &get_value() const;
+
+	protected:
+		POINT value_;
+	};
+
+	class after_position_change : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+
+		after_position_change(events::target &target, const POINT &value);
+
+		virtual ~after_position_change();
+
+		virtual const POINT &get_value() const;
+
+	protected:
+		POINT value_;
+	};
+
+	class after_position_update : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+
+		after_position_update(events::target &target, const POINT &value);
+
+		virtual ~after_position_update();
+
+		virtual const POINT &get_value() const;
+
+	protected:
+		POINT value_;
+	};
+
+	class timer : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+		using base_type::base_type;
+
+		virtual ~timer() = default;
+	};
+
+	class interval : public disable_result<object>{
+	public:
+		using base_type = disable_result<object>;
+		using base_type::base_type;
+
+		virtual ~interval() = default;
 	};
 }

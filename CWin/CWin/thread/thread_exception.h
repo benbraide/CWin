@@ -5,6 +5,7 @@
 namespace cwin::thread::exception{
 	enum class code{
 		nil,
+		thread_exit,
 		outside_context,
 		context_mismatch,
 		get_message_failure,
@@ -19,6 +20,15 @@ namespace cwin::thread::exception{
 		virtual ~base() = default;
 
 		virtual code get_code() const = 0;
+	};
+
+	class thread_exit : public base{
+	public:
+		thread_exit();
+
+		virtual ~thread_exit();
+
+		virtual code get_code() const override;
 	};
 
 	class outside_context : public base{

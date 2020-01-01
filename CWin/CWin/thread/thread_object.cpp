@@ -9,6 +9,7 @@ cwin::thread::object::object()
 cwin::thread::object::~object(){
 	std::lock_guard<std::mutex> guard(app::object::lock_);
 	app::object::threads_.erase(GetCurrentThreadId());
+	stop(-1);
 }
 
 cwin::thread::queue &cwin::thread::object::get_queue(){
@@ -40,15 +41,43 @@ int cwin::thread::object::run(){
 
 	MSG msg{};
 	while (/*!item_manager_.top_level_windows_.empty()*/true){
-		if (queue_.run_next_(queue::highest_task_priority))
-			continue;//Task ran
+		try{
+			if (queue_.run_next_(queue::highest_task_priority))
+				continue;//Task ran
+		}
+		catch (const exception::thread_exit &){
+			throw;//Forward
+		}
+		catch (const cwin::exception_base &e){
+			// #TODO: Log exception
+		}
 
 		if (auto peek_status = PeekMessageW(&msg, nullptr, 0u, 0u, PM_NOREMOVE); peek_status != FALSE){//Message found in queue
-			if ((msg.message == WM_TIMER || msg.message == WM_PAINT || msg.message == WM_NCPAINT) && queue_.run_next_(queue::default_task_priority))
-				continue;
+			if ((msg.message == WM_TIMER || msg.message == WM_PAINT || msg.message == WM_NCPAINT)){
+				try{
+					if (queue_.run_next_(queue::default_task_priority))
+						continue;//Task ran
+				}
+				catch (const exception::thread_exit &){
+					throw;//Forward
+				}
+				catch (const cwin::exception_base &e){
+					// #TODO: Log exception
+				}
+			}
 		}
-		else if (queue_.run_next_())
-			continue;//Task ran
+		else{//No message in queue
+			try{
+				if (queue_.run_next_())
+					continue;//Task ran
+			}
+			catch (const exception::thread_exit &){
+				throw;//Forward
+			}
+			catch (const cwin::exception_base &e){
+				// #TODO: Log exception
+			}
+		}
 
 		if (GetMessageW(&msg, nullptr, 0u, 0u) == -1){
 			running_animation_loop_ = false;
@@ -60,14 +89,33 @@ int cwin::thread::object::run(){
 			return static_cast<int>(msg.wParam);
 		}
 
-		if (msg.hwnd == nullptr/* || !item_manager_.is_dialog_message_(msg)*/){
-			TranslateMessage(&msg);
-			DispatchMessageW(&msg);
+		try{
+			if (msg.hwnd == nullptr/* || !item_manager_.is_dialog_message_(msg)*/){
+				TranslateMessage(&msg);
+				DispatchMessageW(&msg);
+			}
+		}
+		catch (const exception::thread_exit &){
+			throw;//Forward
+		}
+		catch (const cwin::exception_base &e){
+			// #TODO: Log exception
 		}
 	}
 
 	running_animation_loop_ = false;
-	queue_.run_next_(queue::lowest_task_priority, false);//Run remaining tasks
+	try{
+		queue_.run_next_(queue::lowest_task_priority, false);//Run remaining tasks
+	}
+	catch (const exception::thread_exit &){
+		throw;//Forward
+	}
+	catch (const cwin::exception_base & e){
+		// #TODO: Log exception
+	}
+
+	for (auto count = 0; inside_animation_loop_ && count < 1008; ++count)//Wait for animation loop to exit
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
 	return 0;
 }
@@ -79,9 +127,9 @@ void cwin::thread::object::stop(int exit_code){
 		post_message(WM_QUIT, exit_code, 0);
 }
 
-void cwin::thread::object::request_animation_frame(const animation_request_callback_type &callback){
+void cwin::thread::object::request_animation_frame(const animation_request_callback_type &callback, unsigned __int64 talk_id){
 	if (is_context())
-		request_animation_frame_(callback);
+		request_animation_frame_(callback, talk_id);
 	else
 		throw exception::outside_context();
 }
@@ -237,6 +285,7 @@ WNDPROC cwin::thread::object::get_class_entry_(const std::wstring &class_name) c
 
 void cwin::thread::object::run_animation_loop_(){
 	running_animation_loop_ = true;
+	inside_animation_loop_ = true;
 
 	DEVMODEW info{};
 	info.dmSize = sizeof(DEVMODEW);
@@ -252,41 +301,41 @@ void cwin::thread::object::run_animation_loop_(){
 		if (!running_animation_loop_)
 			break;
 
-		auto id = animation_loop_id_++;
-		queue_.post_task([=]{
-			if (!running_animation_loop_ || animation_callbacks_.empty())
+		if (animation_callbacks_.empty())
+			continue;
+
+		queue_.post_task([=, animation_callbacks = std::move(animation_callbacks_)]{
+			if (!running_animation_loop_)
 				return;//Ignore
 
-			auto it = animation_callbacks_.find(id);
-			if (it == animation_callbacks_.end())
-				return;//Ignore
-
-			auto animation_callbacks = std::move(it->second);
-			for (auto &entry : animation_callbacks)
-				entry(std::chrono::high_resolution_clock::now());
-
+			for (auto &entry : animation_callbacks){
+				if (queue_.black_list_.find(entry.talk_id) == queue_.black_list_.end())
+					entry.callback(std::chrono::high_resolution_clock::now());
+			}
 		}, 0u, queue::highest_task_priority);
 	}
+
+	inside_animation_loop_ = false;
 }
 
-void cwin::thread::object::request_animation_frame_(const animation_request_callback_type &callback){
-	animation_callbacks_[animation_loop_id_].push_back(callback);
+void cwin::thread::object::request_animation_frame_(const animation_request_callback_type &callback, unsigned __int64 talk_id){
+	animation_callbacks_.push_back(animation_request_info{ callback, talk_id });
 }
 
-void cwin::thread::object::animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback){
+void cwin::thread::object::animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback, unsigned __int64 talk_id){
 	animate_(timing, duration, [&](float progress, bool){
 		return callback(progress);
-	});
+	}, talk_id);
 }
 
-void cwin::thread::object::animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback){
+void cwin::thread::object::animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback, unsigned __int64 talk_id){
 	if (duration.count() == 0)
 		callback(1.0f, false);
 	else if (callback(timing(0.0f), true))
-		animate_(std::chrono::high_resolution_clock::now(), timing, duration, callback);
+		animate_(std::chrono::high_resolution_clock::now(), timing, duration, callback, talk_id);
 }
 
-void cwin::thread::object::animate_(const time_point_type &start, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback){
+void cwin::thread::object::animate_(const time_point_type &start, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback, unsigned __int64 talk_id){
 	request_animation_frame_([=](const std::chrono::time_point<std::chrono::steady_clock> &time){
 		auto elapsed_time = (time - start);
 		if (duration.count() <= elapsed_time.count()){
@@ -298,8 +347,8 @@ void cwin::thread::object::animate_(const time_point_type &start, const std::fun
 		auto progress = timing(time_fraction);
 
 		if (callback(progress, true))
-			animate_(start, timing, duration, callback);
-	});
+			animate_(start, timing, duration, callback, talk_id);
+	}, talk_id);
 }
 
 void cwin::thread::object::begin_draw_(){

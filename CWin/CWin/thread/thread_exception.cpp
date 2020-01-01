@@ -1,5 +1,14 @@
 #include "thread_exception.h"
 
+cwin::thread::exception::thread_exit::thread_exit()
+	: base("A fatal error occurred inside thread context"){}
+
+cwin::thread::exception::thread_exit::~thread_exit() = default;
+
+cwin::thread::exception::code cwin::thread::exception::thread_exit::get_code() const{
+	return code::thread_exit;
+}
+
 cwin::thread::exception::outside_context::outside_context()
 	: base("Cannot perform action outside thread context"){}
 

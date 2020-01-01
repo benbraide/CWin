@@ -17,6 +17,11 @@ namespace cwin::thread{
 		using time_point_type = std::chrono::time_point<std::chrono::steady_clock>;
 		using animation_request_callback_type = std::function<void(const time_point_type &)>;
 
+		struct animation_request_info{
+			animation_request_callback_type callback;
+			unsigned __int64 talk_id;
+		};
+
 		struct outbound_event_info{
 			events::target *target;
 			events::manager::key_type key;
@@ -43,15 +48,15 @@ namespace cwin::thread{
 
 		virtual void stop(int exit_code);
 
-		virtual void request_animation_frame(const animation_request_callback_type &callback);
+		virtual void request_animation_frame(const animation_request_callback_type &callback, unsigned __int64 talk_id = 0u);
 
 		template <typename callback_type>
-		void animate(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const callback_type &callback){
+		void animate(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const callback_type &callback, unsigned __int64 talk_id = 0u){
 			if (!is_context())
 				throw exception::outside_context();
 
 			using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
-			call_animate<return_type>::call(*this, timing, duration, utility::object_to_function_traits::get(callback));
+			call_animate<return_type>::call(*this, timing, duration, utility::object_to_function_traits::get(callback), talk_id);
 		}
 
 		virtual bool post_message(UINT message, WPARAM wparam, LPARAM lparam) const;
@@ -76,29 +81,29 @@ namespace cwin::thread{
 
 		template <>
 		struct call_animate<bool>{
-			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback){
-				target.animate_(timing, duration, callback);
+			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback, unsigned __int64 talk_id){
+				target.animate_(timing, duration, callback, talk_id);
 			}
 
-			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback){
-				target.animate_(timing, duration, callback);
+			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback, unsigned __int64 talk_id){
+				target.animate_(timing, duration, callback, talk_id);
 			}
 		};
 
 		template <>
 		struct call_animate<void>{
-			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<void(float)> &callback){
+			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<void(float)> &callback, unsigned __int64 talk_id){
 				call_animate<bool>::call(target, timing, duration, [&](float progress, bool){
 					callback(progress);
 					return true;
-				});
+				}, talk_id);
 			}
 
-			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<void(float, bool)> &callback){
+			static void call(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<void(float, bool)> &callback, unsigned __int64 talk_id){
 				call_animate<bool>::call(target, timing, duration, [&](float progress, bool has_more){
 					callback(progress, has_more);
 					return true;
-				});
+				}, talk_id);
 			}
 		};
 
@@ -116,13 +121,13 @@ namespace cwin::thread{
 
 		virtual void run_animation_loop_();
 
-		virtual void request_animation_frame_(const animation_request_callback_type &callback);
+		virtual void request_animation_frame_(const animation_request_callback_type &callback, unsigned __int64 talk_id);
 
-		virtual void animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback);
+		virtual void animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback, unsigned __int64 talk_id);
 
-		virtual void animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback);
+		virtual void animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback, unsigned __int64 talk_id);
 
-		virtual void animate_(const time_point_type &start, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback);
+		virtual void animate_(const time_point_type &start, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback, unsigned __int64 talk_id);
 
 		virtual void begin_draw_();
 
@@ -148,8 +153,8 @@ namespace cwin::thread{
 		mutable std::unordered_map<std::wstring, WNDPROC> class_info_map_;
 
 		std::atomic_bool running_animation_loop_ = false;
-		unsigned __int64 animation_loop_id_ = 0;
-		std::unordered_map<unsigned __int64, std::list<animation_request_callback_type>> animation_callbacks_;
+		std::atomic_bool inside_animation_loop_ = false;
+		std::list<animation_request_info> animation_callbacks_;
 
 		std::unordered_map<unsigned __int64, std::function<void(unsigned __int64)>> timers_;
 		utility::random_integral_number_generator random_generator_;
