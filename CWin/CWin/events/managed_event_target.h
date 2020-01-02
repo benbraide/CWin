@@ -16,14 +16,24 @@ namespace cwin::events{
 	protected:
 		friend class object;
 
-		template <typename object_type, typename return_type>
-		unsigned __int64 bind_default_(const std::function<return_type(object_type &)> &handler){
-			return events_.bind_default_(handler);
+		template <typename handler_type>
+		unsigned __int64 bind_(events::target &target, const handler_type &handler){
+			return target.get_events().bind_(utility::object_to_function_traits::get(handler), get_talk_id(), nullptr, typeid(nullptr));
 		}
 
-		template <typename object_type, typename return_type>
-		unsigned __int64 bind_default_(const std::function<return_type(object_type &)> &handler, const void *value, const std::type_info &value_type){
-			return events_.bind_default_(handler, value, value_type);
+		template <typename value_type, typename handler_type>
+		unsigned __int64 bind_(events::target &target, const handler_type &handler, const value_type &value){
+			return target.get_events().bind_(utility::object_to_function_traits::get(handler), get_talk_id(), &value, typeid(value));
+		}
+
+		template <typename handler_type>
+		unsigned __int64 bind_default_(const handler_type &handler){
+			events_.bind_default_(utility::object_to_function_traits::get(handler), nullptr, typeid(nullptr));
+		}
+
+		template <typename value_type, typename handler_type>
+		unsigned __int64 bind_default_(const handler_type &handler, const value_type &value){
+			events_.bind_default_(utility::object_to_function_traits::get(handler), &value, typeid(value));
 		}
 
 		virtual void unbind_default_(unsigned __int64 id);

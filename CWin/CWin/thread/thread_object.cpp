@@ -201,29 +201,44 @@ void cwin::thread::object::remove_item_(item &item){
 	if (it == items_.end())//Item not found
 		return;
 
-	auto outbound_events = std::move(it->outbound_events);
-	for (auto &info : outbound_events)//Unbind all outbound events
-		info.target->get_events().unbind_(info.key, info.id);
-
 	auto owned_timers = std::move(it->owned_timers);
 	for (auto timer_id : owned_timers)//Remove all timers
 		remove_timer_(timer_id, nullptr);
 
 	items_.erase(it);//Remove entry
-	auto &events_manager = item.get_events();
-	if (events_manager.handlers_.empty())
+}
+
+void cwin::thread::object::add_outbound_event_(unsigned __int64 talk_id, events::target &target, events::manager::key_type key, unsigned __int64 event_id){
+	bound_events_[talk_id].push_back(bound_event_info{ &target, key, event_id });
+}
+
+void cwin::thread::object::remove_inbound_event_references_(events::target &target){
+	if (bound_events_.empty())
 		return;
 
-	for (auto &info : events_manager.handlers_){//Erase all inbound events references
-		for (auto &item_info : items_){
-			auto out_it = std::find_if(item_info.outbound_events.begin(), item_info.outbound_events.end(), [&](const outbound_event_info &info){
-				return (info.target == &item);
-			});
-
-			if (out_it != item_info.outbound_events.end())
-				item_info.outbound_events.erase(out_it);
+	for (auto &bound : bound_events_){//Erase all inbound events references
+		std::list<std::list<bound_event_info>::iterator> marked_its;
+		for (auto it = bound.second.begin(); it != bound.second.end();){
+			if (it->target == &target)
+				bound.second.erase(it++);
+			else
+				++it;
 		}
 	}
+}
+
+void cwin::thread::object::unbound_events_(unsigned __int64 id){
+	if (bound_events_.empty())
+		return;
+
+	auto it = bound_events_.find(id);
+	if (it == bound_events_.end())
+		return;
+
+	for (auto &info : it->second)
+		info.target->get_events().unbind_(info.key, info.id);
+
+	bound_events_.erase(it);
 }
 
 void cwin::thread::object::add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner){

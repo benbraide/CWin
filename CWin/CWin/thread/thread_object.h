@@ -22,7 +22,7 @@ namespace cwin::thread{
 			unsigned __int64 talk_id;
 		};
 
-		struct outbound_event_info{
+		struct bound_event_info{
 			events::target *target;
 			events::manager::key_type key;
 			unsigned __int64 id;
@@ -30,7 +30,6 @@ namespace cwin::thread{
 
 		struct item_info{
 			item *value;
-			std::list<outbound_event_info> outbound_events;
 			std::list<unsigned __int64> owned_timers;
 		};
 
@@ -72,7 +71,9 @@ namespace cwin::thread{
 		static WNDPROC get_message_entry();
 
 	protected:
+		friend class cross_object;
 		friend class item;
+
 		friend class events::target;
 		friend class app::object;
 
@@ -113,6 +114,12 @@ namespace cwin::thread{
 
 		void remove_item_(item &item);
 
+		void add_outbound_event_(unsigned __int64 talk_id, events::target &target, events::manager::key_type key, unsigned __int64 event_id);
+
+		void remove_inbound_event_references_(events::target &target);
+
+		void unbound_events_(unsigned __int64 id);
+
 		virtual void add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner);
 
 		virtual void remove_timer_(unsigned __int64 id, const item *owner);
@@ -148,6 +155,7 @@ namespace cwin::thread{
 
 		HWND message_hwnd_ = nullptr;
 		std::list<item_info> items_;
+		std::unordered_map<unsigned __int64, std::list<bound_event_info>> bound_events_;
 
 		DWORD control_ids_ = 0;
 		mutable std::unordered_map<std::wstring, WNDPROC> class_info_map_;

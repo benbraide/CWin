@@ -32,15 +32,15 @@ namespace cwin::events{
 
 		virtual bool event_is_supported_(const std::type_info &type) const;
 
-		virtual bool adding_event_handler_(const std::type_info &type, thread::item *owner, const void *value, const std::type_info &value_type, std::size_t count);
+		virtual bool adding_event_handler_(const std::type_info &type, unsigned __int64 owner_talk_id, const void *value, const std::type_info &value_type, std::size_t count);
 
-		virtual void added_event_handler_(const std::type_info &type, unsigned __int64 id, thread::item *owner, const void *value, const std::type_info &value_type, std::size_t count);
+		virtual void added_event_handler_(const std::type_info &type, unsigned __int64 id, unsigned __int64 owner_talk_id, const void *value, const std::type_info &value_type, std::size_t count);
 
 		virtual void removed_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count);
 
-		virtual bool adding_default_event_handler_(const std::type_info &type, thread::item *owner, const void *value, const std::type_info &value_type, std::size_t count);
+		virtual bool adding_default_event_handler_(const std::type_info &type, const void *value, const std::type_info &value_type, std::size_t count);
 
-		virtual void added_default_event_handler_(const std::type_info &type, unsigned __int64 id, thread::item *owner, const void *value, const std::type_info &value_type, std::size_t count);
+		virtual void added_default_event_handler_(const std::type_info &type, unsigned __int64 id, const void *value, const std::type_info &value_type, std::size_t count);
 
 		virtual void removed_default_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count);
 

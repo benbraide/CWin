@@ -127,13 +127,27 @@ void cwin::ui::object::get_next_sibling(const std::function<void(object *)> &cal
 
 void cwin::ui::object::create(){
 	post_or_execute_task([=]{
+		if (is_created_())
+			return;
+
+		if (!before_create_())
+			throw exception::action_canceled();
+
 		create_();
+		after_create_();
 	});
 }
 
 void cwin::ui::object::destroy(){
 	post_or_execute_task([=]{
+		if (!is_created_())
+			return;
+
+		if (!before_destroy_())
+			throw exception::action_canceled();
+
 		destroy_();
+		after_destroy_();
 	});
 }
 

@@ -2,7 +2,9 @@
 
 #include "general_events.h"
 
-cwin::events::target::~target() = default;
+cwin::events::target::~target(){
+	thread_.remove_inbound_event_references_(*this);
+}
 
 bool cwin::events::target::event_is_supported(const std::type_info &type) const{
 	return thread_.get_queue().execute_task([&]{
@@ -14,19 +16,13 @@ bool cwin::events::target::event_is_supported_(const std::type_info &type) const
 	return true;
 }
 
-bool cwin::events::target::adding_event_handler_(const std::type_info &type, thread::item *owner, const void *value, const std::type_info &value_type, std::size_t count){
+bool cwin::events::target::adding_event_handler_(const std::type_info &type, unsigned __int64 owner_talk_id, const void *value, const std::type_info &value_type, std::size_t count){
 	return event_is_supported_(type);
 }
 
-void cwin::events::target::added_event_handler_(const std::type_info &type, unsigned __int64 id, thread::item *owner, const void *value, const std::type_info &value_type, std::size_t count){
-	if (owner != nullptr){//Store outbound event
-		auto it = std::find_if(thread_.items_.begin(), thread_.items_.end(), [&](const thread::object::item_info &info){
-			return (info.value == owner);
-		});
-
-		if (it != thread_.items_.end())
-			it->outbound_events.push_back(thread::object::outbound_event_info{ this, &type, id });
-	}
+void cwin::events::target::added_event_handler_(const std::type_info &type, unsigned __int64 id, unsigned __int64 owner_talk_id, const void *value, const std::type_info &value_type, std::size_t count){
+	if (owner_talk_id != 0u)//Store outbound event
+		thread_.add_outbound_event_(owner_talk_id, *this, &type, id);
 
 	if (auto is_interval = (&type == &typeid(interval)); is_interval || &type == &typeid(timer))
 		added_timer_event_handler_(id, value, value_type, is_interval, false);
@@ -34,11 +30,11 @@ void cwin::events::target::added_event_handler_(const std::type_info &type, unsi
 
 void cwin::events::target::removed_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count){}
 
-bool cwin::events::target::adding_default_event_handler_(const std::type_info &type, thread::item *owner, const void *value, const std::type_info &value_type, std::size_t count){
+bool cwin::events::target::adding_default_event_handler_(const std::type_info &type, const void *value, const std::type_info &value_type, std::size_t count){
 	return event_is_supported_(type);
 }
 
-void cwin::events::target::added_default_event_handler_(const std::type_info &type, unsigned __int64 id, thread::item *owner, const void *value, const std::type_info &value_type, std::size_t count){
+void cwin::events::target::added_default_event_handler_(const std::type_info &type, unsigned __int64 id, const void *value, const std::type_info &value_type, std::size_t count){
 	if (auto is_interval = (&type == &typeid(interval)); is_interval || &type == &typeid(timer))
 		added_timer_event_handler_(id, value, value_type, is_interval, true);
 }
