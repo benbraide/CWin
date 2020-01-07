@@ -1,4 +1,5 @@
-#include "../hook/dimension_hook.h"
+#include "../hook/view_hook.h"
+#include "../hook/handle_hooks.h"
 #include "../events/general_events.h"
 
 #include "ui_surface.h"
@@ -132,7 +133,8 @@ void cwin::ui::surface::get_current_position(const std::function<void(const POIN
 POINT cwin::ui::surface::compute_absolute_position() const{
 	return execute_task([&]{
 		auto position = get_position_();
-		compute_relative_to_absolute_(position);
+		if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+			surface_ancestor->compute_relative_to_absolute_(position);
 		return position;
 	});
 }
@@ -277,28 +279,81 @@ void cwin::ui::surface::current_hit_test(const POINT &value, const std::function
 	});
 }
 
+cwin::hook::handle &cwin::ui::surface::get_handle() const{
+	auto value = execute_task([&]{
+		return handle_;
+	});
+
+	if (value == nullptr)
+		throw exception::not_supported();
+
+	return *value;
+}
+
+void cwin::ui::surface::get_handle(const std::function<void(hook::handle &)> &callback) const{
+	post_or_execute_task([=]{
+		if (handle_ != nullptr)
+			callback(*handle_);
+	});
+}
+
+cwin::hook::view &cwin::ui::surface::get_view() const{
+	auto value = execute_task([&]{
+		return view_;
+	});
+
+	if (value == nullptr)
+		throw exception::not_supported();
+
+	return *value;
+}
+
+void cwin::ui::surface::get_view(const std::function<void(hook::view &)> &callback) const{
+	post_or_execute_task([=]{
+		if (view_ != nullptr)
+			callback(*view_);
+	});
+}
+
 void cwin::ui::surface::added_hook_(hook::object &value){
 	tree::added_hook_(value);
 	if (auto size_value = dynamic_cast<hook::size *>(&value); size_value != nullptr)
 		size_ = size_value;
 	else if (auto position_value = dynamic_cast<hook::position *>(&value); position_value != nullptr)
 		position_ = position_value;
+	else if (auto handle_value = dynamic_cast<hook::handle *>(&value); handle_value != nullptr)
+		handle_ = handle_value;
+	else if (auto view_value = dynamic_cast<hook::view *>(&value); view_value != nullptr)
+		view_ = view_value;
 }
 
 bool cwin::ui::surface::removing_hook_(hook::object &value){
 	return (tree::removing_hook_(value) && dynamic_cast<hook::size *>(&value) == nullptr && dynamic_cast<hook::position *>(&value) == nullptr);
 }
 
+void cwin::ui::surface::removed_hook_(hook::object &value){
+	if (&value == size_)
+		size_ = nullptr;
+	else if (&value == position_)
+		position_ = nullptr;
+	else if (&value == handle_)
+		handle_ = nullptr;
+	else if (&value == view_)
+		view_ = nullptr;
+
+	tree::removed_hook_(value);
+}
+
 void cwin::ui::surface::set_size_(const SIZE &value){
-	if (trigger_then_report_prevented_default_<events::before_size_change>(0u, value))
+	if ((handle_ != nullptr && !handle_->is_resizable_()) || trigger_then_report_prevented_default_<events::before_size_change>(0u, value))
 		throw exception::action_canceled();
 
 	if (size_ != nullptr){
-		size_->set_value_(value, [=](const SIZE &val){
-			trigger_<events::after_size_change>(nullptr, 0u, val);
+		size_->set_value_(value, [=](){
 			return true;
-		}, [=](const SIZE &val){//Update
-			trigger_<events::after_size_update>(nullptr, 0u, val);
+		}, [=](const SIZE &old_value, const SIZE &current_value){//Update
+			if (handle_ != nullptr)
+				handle_->size_update_(old_value, current_value);
 		});
 	}
 	else//Error
@@ -322,11 +377,11 @@ void cwin::ui::surface::set_position_(const POINT &value){
 		throw exception::action_canceled();
 
 	if (position_ != nullptr){
-		position_->set_value_(value, [=](const POINT &val){
-			trigger_<events::after_position_change>(nullptr, 0u, val);
+		position_->set_value_(value, [=](){
 			return true;
-		}, [=](const POINT &val){//Update
-			trigger_<events::after_position_update>(nullptr, 0u, val);
+		}, [=](const POINT &old_value, const POINT &current_value){//Update
+			if (handle_ != nullptr)
+				handle_->position_update_(old_value, current_value);
 		});
 	}
 	else//Error
@@ -385,13 +440,15 @@ RECT cwin::ui::surface::compute_current_dimension_() const{
 
 RECT cwin::ui::surface::compute_absolute_dimension_() const{
 	auto dimension = compute_dimension_();
-	compute_relative_to_absolute_(dimension);
+	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+		surface_ancestor->compute_relative_to_absolute_(dimension);
 	return dimension;
 }
 
 RECT cwin::ui::surface::compute_current_absolute_dimension_() const{
 	auto dimension = compute_current_dimension_();
-	compute_relative_to_absolute_(dimension);
+	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+		surface_ancestor->compute_relative_to_absolute_(dimension);
 	return dimension;
 }
 

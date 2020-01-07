@@ -1,5 +1,7 @@
 #pragma once
 
+#include <variant>
+
 #include "event_message_object.h"
 
 namespace cwin::ui{
@@ -156,88 +158,61 @@ namespace cwin::events{
 		virtual ~after_destroy() = default;
 	};
 
-	class before_size_change : public disable_result<object>{
+	template <class pair_type, bool, bool>
+	class pair_change : public disable_result<object>{
 	public:
 		using base_type = disable_result<object>;
 
-		before_size_change(events::target &target, const SIZE &value);
+		pair_change(events::target &target, const pair_type &value)
+			: pair_change(target, value, value){}
 
-		virtual ~before_size_change();
+		pair_change(events::target &target, const pair_type &old_value, const pair_type &value)
+			: base_type(target), old_value_(old_value), value_(value){}
 
-		virtual const SIZE &get_value() const;
+		virtual ~pair_change() = default;
+
+		virtual const pair_type &get_old_value() const{
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			return old_value_;
+		}
+
+		virtual const pair_type &get_value() const{
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			return value_;
+		}
 
 	protected:
-		SIZE value_;
+		pair_type old_value_;
+		pair_type value_;
 	};
 
-	class after_size_change : public disable_result<object>{
+	using before_size_change = pair_change<SIZE, true, true>;
+	using after_size_change = pair_change<SIZE, true, false>;
+	using after_size_update = pair_change<SIZE, false, false>;
+
+	using before_position_change = pair_change<POINT, true, true>;
+	using after_position_change = pair_change<POINT, true, false>;
+	using after_position_update = pair_change<POINT, false, false>;
+
+	class redraw : public disable_result<object>{
 	public:
 		using base_type = disable_result<object>;
+		using value_type = std::variant<std::nullptr_t, HRGN, RECT>;
 
-		after_size_change(events::target &target, const SIZE &value);
+		explicit redraw(events::target &target);
 
-		virtual ~after_size_change();
+		redraw(events::target &target, HRGN value);
 
-		virtual const SIZE &get_value() const;
+		redraw(events::target &target, const RECT &value);
 
-	protected:
-		SIZE value_;
-	};
+		virtual ~redraw();
 
-	class after_size_update : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-
-		after_size_update(events::target &target, const SIZE &value);
-
-		virtual ~after_size_update();
-
-		virtual const SIZE &get_value() const;
+		virtual const value_type &get_value() const;
 
 	protected:
-		SIZE value_;
-	};
-
-	class before_position_change : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-
-		before_position_change(events::target &target, const POINT &value);
-
-		virtual ~before_position_change();
-
-		virtual const POINT &get_value() const;
-
-	protected:
-		POINT value_;
-	};
-
-	class after_position_change : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-
-		after_position_change(events::target &target, const POINT &value);
-
-		virtual ~after_position_change();
-
-		virtual const POINT &get_value() const;
-
-	protected:
-		POINT value_;
-	};
-
-	class after_position_update : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-
-		after_position_update(events::target &target, const POINT &value);
-
-		virtual ~after_position_update();
-
-		virtual const POINT &get_value() const;
-
-	protected:
-		POINT value_;
+		value_type value_;
 	};
 
 	class timer : public disable_result<object>{

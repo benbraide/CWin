@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../ui/ui_exception.h"
+#include "../events/general_events.h"
 #include "../utility/animation_timing.h"
 
 #include "hook_target.h"
@@ -51,7 +52,7 @@ namespace cwin::hook{
 		}
 	};
 
-	template <class pair_type>
+	template <class pair_type, class change_event_type, class update_event_type>
 	class dimension : public object{
 	public:
 		using object::object;
@@ -77,20 +78,26 @@ namespace cwin::hook{
 			return resolution_type::replace;
 		}
 
-		virtual void set_value_(const pair_type &value, const std::function<bool(const pair_type &)> &should_animate, const std::function<void(const pair_type &)> &callback){
-			value_ = value;
-			should_animate(value);
+		virtual void set_value_(const pair_type &value, const std::function<void(const pair_type &, const pair_type &)> &callback){
+			set_value_(value, nullptr, callback);
+		}
 
-			is_updating_ = true;
+		virtual void set_value_(const pair_type &value, const std::function<bool()> &should_animate, const std::function<void(const pair_type &, const pair_type &)> &callback){
 			try{
-				callback(value);
+				is_updating_ = true;
+
+				auto old_value = value_;
+				trigger_<change_event_type>(nullptr, 0u, old_value, (value_ = value));
+
+				callback(old_value, value);
+				trigger_<update_event_type>(nullptr, 0u, old_value, value);
+
+				is_updating_ = false;
 			}
 			catch (...){
 				is_updating_ = false;
 				throw;
 			}
-
-			is_updating_ = false;
 		}
 
 		virtual const pair_type &get_current_value_() const{
@@ -101,18 +108,18 @@ namespace cwin::hook{
 		bool is_updating_ = false;
 	};
 
-	using size = dimension<SIZE>;
-	using position = dimension<POINT>;
+	using size = dimension<SIZE, events::after_size_change, events::after_size_update>;
+	using position = dimension<POINT, events::after_position_change, events::after_position_update>;
 
 	class animated_dimension_helper{
 	public:
 		static void animate(thread::object &thread, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback);
 	};
 
-	template <class pair_type>
-	class animated_dimension : public derived_object<dimension<pair_type>>{
+	template <class pair_type, class change_event_type, class update_event_type>
+	class animated_dimension : public derived_object<dimension<pair_type, change_event_type, update_event_type>>{
 	public:
-		using base_type = derived_object<dimension<pair_type>>;
+		using base_type = derived_object<dimension<pair_type, change_event_type, update_event_type>>;
 		using easing_type = std::function<float(float)>;
 		using duration_type = std::chrono::nanoseconds;
 
@@ -191,23 +198,32 @@ namespace cwin::hook{
 		}
 
 	protected:
-		virtual void set_value_(const pair_type &value, const std::function<bool(const pair_type &)> &should_animate, const std::function<void(const pair_type &)> &callback) override{
-			current_value_ = base_type::value_;
-			base_type::value_ = value;
+		using base_type::set_value_;
 
-			if (!is_enabled_ || !should_animate(value)){//Animation disabled
-				base_type::is_updating_ = true;
+		virtual void set_value_(const pair_type &value, const std::function<bool()> &should_animate, const std::function<void(const pair_type &, const pair_type &)> &callback) override{
+			auto old_value = current_value_;
+			if (!is_enabled_ || (should_animate != nullptr && !should_animate())){//Animation disabled
 				try{
-					callback(value);
+					base_type::is_updating_ = true;
+					callback(old_value, (current_value_ = base_type::value_ = value));
+
+					base_type::template trigger_<change_event_type>(nullptr, 0u, old_value, value);
+					base_type::template trigger_<update_event_type>(nullptr, 0u, old_value, value);
+					base_type::is_updating_ = false;
 				}
 				catch (...){
 					base_type::is_updating_ = false;
 					throw;
 				}
 
-				base_type::is_updating_ = false;
 				return;
 			}
+
+			current_value_ = base_type::value_;
+			base_type::template trigger_<change_event_type>(nullptr, 0u, old_value, (base_type::value_ = value));
+
+			callback(old_value, current_value_);
+			base_type::template trigger_<update_event_type>(nullptr, 0u, old_value, current_value_);
 
 			auto active_id = active_id_++;
 			pair_value value_delta{
@@ -219,33 +235,38 @@ namespace cwin::hook{
 				if (active_id != active_id_)//Running a new loop
 					return false;
 
+				auto old_value = current_value_;
 				if (!has_more || !is_enabled_){//Canceled
-					base_type::is_updating_ = true;
 					try{
-						callback(current_value_ = value);
+						base_type::is_updating_ = true;
+						callback(old_value, (current_value_ = value));
+
+						base_type::template trigger_<update_event_type>(nullptr, 0u, value);
+						base_type::is_updating_ = false;
 					}
 					catch (...){
 						base_type::is_updating_ = false;
 						throw;
 					}
 
-					base_type::is_updating_ = false;
 					return false;
 				}
 
-				pair_value<pair_type>::template set_x(current_value_, (pair_value<pair_type>::template get_x(start_value) + static_cast<int>(pair_value<pair_type>::template get_x(value_delta) * progress)));
-				pair_value<pair_type>::template set_y(current_value_, (pair_value<pair_type>::template get_y(start_value) + static_cast<int>(pair_value<pair_type>::template get_y(value_delta) * progress)));
-
-				base_type::is_updating_ = true;
 				try{
-					callback(current_value_);
+					pair_value<pair_type>::template set_x(current_value_, (pair_value<pair_type>::template get_x(start_value) + static_cast<int>(pair_value<pair_type>::template get_x(value_delta) * progress)));
+					pair_value<pair_type>::template set_y(current_value_, (pair_value<pair_type>::template get_y(start_value) + static_cast<int>(pair_value<pair_type>::template get_y(value_delta) * progress)));
+
+					base_type::is_updating_ = true;
+					callback(old_value, current_value_);
+
+					base_type::template trigger_<update_event_type>(nullptr, 0u, old_value, current_value_);
+					base_type::is_updating_ = false;
 				}
 				catch (...){
 					base_type::is_updating_ = false;
 					throw;
 				}
 
-				base_type::is_updating_ = false;
 				return true;
 			}, base_type::get_talk_id());
 		}
@@ -263,6 +284,6 @@ namespace cwin::hook{
 		std::size_t active_id_ = 0u;
 	};
 
-	using animated_size = animated_dimension<SIZE>;
-	using animated_position = animated_dimension<POINT>;
+	using animated_size = animated_dimension<SIZE, events::after_size_change, events::after_size_update>;
+	using animated_position = animated_dimension<POINT, events::after_position_change, events::after_position_update>;
 }

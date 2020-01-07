@@ -1,8 +1,13 @@
 #pragma once
 
-#include "../hook/dimension_hook.h"
+#include "../hook/dimension_hooks.h"
 
 #include "ui_tree.h"
+
+namespace cwin::hook{
+	class handle;
+	class view;
+}
 
 namespace cwin::ui{
 	class surface : public tree{
@@ -99,10 +104,20 @@ namespace cwin::ui{
 
 		virtual void current_hit_test(const POINT &value, const std::function<void(UINT)> &callback) const;
 
+		virtual hook::handle &get_handle() const;
+
+		virtual void get_handle(const std::function<void(hook::handle &)> &callback) const;
+
+		virtual hook::view &get_view() const;
+
+		virtual void get_view(const std::function<void(hook::view &)> &callback) const;
+
 	protected:
 		virtual void added_hook_(hook::object &value) override;
 
 		virtual bool removing_hook_(hook::object &value) override;
+
+		virtual void removed_hook_(hook::object &value) override;
 
 		virtual void set_size_(const SIZE &value);
 
@@ -144,6 +159,10 @@ namespace cwin::ui{
 
 		hook::size *size_ = nullptr;
 		hook::position *position_ = nullptr;
+
+		hook::handle *handle_ = nullptr;
+		hook::view *view_ = nullptr;
+
 		RECT client_margin_{};
 	};
 }

@@ -26,3 +26,11 @@ bool cwin::hook::object::adding_to_target_(){
 void cwin::hook::object::added_to_target_(){}
 
 void cwin::hook::object::removed_from_target_(){}
+
+void cwin::hook::object::trigger_(events::object &e, unsigned __int64 id) const{
+	trigger_(target_, e, id);
+}
+
+void cwin::hook::object::trigger_(const events::target &context, events::object &e, unsigned __int64 id) const{
+	context.get_events().trigger_(e, id);
+}

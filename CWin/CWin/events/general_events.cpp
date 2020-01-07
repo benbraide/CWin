@@ -66,67 +66,18 @@ std::size_t cwin::events::after_child_index_change::get_old_value() const{
 	return old_value_;
 }
 
-cwin::events::before_size_change::before_size_change(events::target &target, const SIZE &value)
+cwin::events::redraw::redraw(events::target &target)
+	: base_type(target, target), value_(nullptr){}
+
+cwin::events::redraw::redraw(events::target &target, HRGN value)
 	: base_type(target, target), value_(value){}
 
-cwin::events::before_size_change::~before_size_change() = default;
-
-const SIZE &cwin::events::before_size_change::get_value() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return value_;
-}
-
-cwin::events::after_size_change::after_size_change(events::target &target, const SIZE &value)
+cwin::events::redraw::redraw(events::target &target, const RECT &value)
 	: base_type(target, target), value_(value){}
 
-cwin::events::after_size_change::~after_size_change() = default;
+cwin::events::redraw::~redraw() = default;
 
-const SIZE &cwin::events::after_size_change::get_value() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return value_;
-}
-
-cwin::events::after_size_update::after_size_update(events::target &target, const SIZE &value)
-	: base_type(target, target), value_(value){}
-
-cwin::events::after_size_update::~after_size_update() = default;
-
-const SIZE &cwin::events::after_size_update::get_value() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return value_;
-}
-
-cwin::events::before_position_change::before_position_change(events::target &target, const POINT &value)
-	: base_type(target, target), value_(value){}
-
-cwin::events::before_position_change::~before_position_change() = default;
-
-const POINT &cwin::events::before_position_change::get_value() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return value_;
-}
-
-cwin::events::after_position_change::after_position_change(events::target &target, const POINT &value)
-	: base_type(target, target), value_(value){}
-
-cwin::events::after_position_change::~after_position_change() = default;
-
-const POINT &cwin::events::after_position_change::get_value() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return value_;
-}
-
-cwin::events::after_position_update::after_position_update(events::target &target, const POINT &value)
-	: base_type(target, target), value_(value){}
-
-cwin::events::after_position_update::~after_position_update() = default;
-
-const POINT &cwin::events::after_position_update::get_value() const{
+const cwin::events::redraw::value_type &cwin::events::redraw::get_value() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
 	return value_;

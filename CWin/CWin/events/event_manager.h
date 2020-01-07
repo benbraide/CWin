@@ -4,6 +4,10 @@
 
 #include "event_object.h"
 
+namespace cwin::hook{
+	class object;
+}
+
 namespace cwin::events{
 	class handler{
 	public:
@@ -190,6 +194,8 @@ namespace cwin::events{
 	protected:
 		friend class target;
 		friend class object;
+
+		friend class hook::object;
 		friend class thread::object;
 
 		virtual thread::queue &get_queue_() const;
