@@ -89,6 +89,9 @@ HWND cwin::hook::view::get_window_handle_(HRGN *non_window_handle) const{
 	if (surface_target == nullptr)
 		return nullptr;
 
+	if (non_window_handle != nullptr)
+		*non_window_handle = nullptr;
+
 	try{
 		auto &handle_ = surface_target->get_handle();
 		if (handle_.is_window())

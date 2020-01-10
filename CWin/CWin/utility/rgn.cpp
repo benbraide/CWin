@@ -29,3 +29,7 @@ RECT cwin::utility::rgn::get_dimension(HRGN handle){
 bool cwin::utility::rgn::intersect(HRGN destination, HRGN first, HRGN second){
 	return (CombineRgn(destination, first, second, RGN_AND) != ERROR);
 }
+
+bool cwin::utility::rgn::hit_test(HRGN handle, const POINT &value){
+	return (PtInRegion(handle, value.x, value.y) != FALSE);
+}

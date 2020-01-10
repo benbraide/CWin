@@ -16,5 +16,7 @@ namespace cwin::utility{
 		static RECT get_dimension(HRGN handle);
 
 		static bool intersect(HRGN destination, HRGN first, HRGN second);
+
+		static bool hit_test(HRGN handle, const POINT &value);
 	};
 }

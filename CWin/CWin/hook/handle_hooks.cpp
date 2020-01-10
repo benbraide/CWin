@@ -20,6 +20,74 @@ void cwin::hook::handle::get_value(const std::function<void(HANDLE)> &callback) 
 	});
 }
 
+UINT cwin::hook::handle::hit_test(const POINT &value) const{
+	return execute_task([&]{
+		return hit_test_(value);
+	});
+}
+
+void cwin::hook::handle::hit_test(const POINT &value, const std::function<void(UINT)> &callback) const{
+	post_or_execute_task([=]{
+		callback(hit_test_(value));
+	});
+}
+
+void cwin::hook::handle::compute_relative_to_absolute(POINT &value) const{
+	execute_task([&]{
+		compute_relative_to_absolute_(value);
+	});
+}
+
+void cwin::hook::handle::compute_relative_to_absolute(const POINT &value, const std::function<void(const POINT &)> &callback) const{
+	post_or_execute_task([=]{
+		auto val = value;
+		compute_relative_to_absolute_(val);
+		callback(val);
+	});
+}
+
+void cwin::hook::handle::compute_relative_to_absolute(RECT &value) const{
+	execute_task([&]{
+		compute_relative_to_absolute_(value);
+	});
+}
+
+void cwin::hook::handle::compute_relative_to_absolute(const RECT &value, const std::function<void(const RECT &)> &callback) const{
+	post_or_execute_task([=]{
+		auto val = value;
+		compute_relative_to_absolute_(val);
+		callback(val);
+	});
+}
+
+void cwin::hook::handle::compute_absolute_to_relative(POINT &value) const{
+	execute_task([&]{
+		compute_absolute_to_relative_(value);
+	});
+}
+
+void cwin::hook::handle::compute_absolute_to_relative(const POINT &value, const std::function<void(const POINT &)> &callback) const{
+	post_or_execute_task([=]{
+		auto val = value;
+		compute_absolute_to_relative_(val);
+		callback(val);
+	});
+}
+
+void cwin::hook::handle::compute_absolute_to_relative(RECT &value) const{
+	execute_task([&]{
+		compute_absolute_to_relative_(value);
+	});
+}
+
+void cwin::hook::handle::compute_absolute_to_relative(const RECT &value, const std::function<void(const RECT &)> &callback) const{
+	post_or_execute_task([=]{
+		auto val = value;
+		compute_absolute_to_relative_(val);
+		callback(val);
+	});
+}
+
 bool cwin::hook::handle::is_window() const{
 	return execute_task([&]{
 		return is_window_();
@@ -50,12 +118,118 @@ void cwin::hook::handle::redraw(const RECT &region){
 	});
 }
 
+const RECT &cwin::hook::handle::get_client_margin() const{
+	return *execute_task([&]{
+		return &client_margin_;
+	});
+}
+
+void cwin::hook::handle::get_client_margin(const std::function<void(const RECT &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(client_margin_);
+	});
+}
+
 cwin::hook::object::resolution_type cwin::hook::handle::resolve_conflict_(relationship_type relationship) const{
 	return resolution_type::discard;
 }
 
+cwin::hook::handle *cwin::hook::handle::get_ancestor_handle_(ui::surface *surface_target, POINT *offset) const{
+	if (surface_target == nullptr && (surface_target = dynamic_cast<ui::surface *>(&target_)) == nullptr)
+		return nullptr;
+
+	handle *ancestor_handle = nullptr;
+	surface_target->traverse_matching_ancestors<ui::surface>([&](ui::surface &ancestor){
+		try{
+			ancestor_handle = &ancestor.get_handle();
+			return false;
+		}
+		catch (const ui::exception::not_supported &){
+			ancestor_handle = nullptr;
+		}
+
+		if (offset != nullptr){
+			auto &current_position = ancestor.get_current_position();
+			offset->x += (current_position.x + client_margin_.left);
+			offset->y += (current_position.y + client_margin_.top);
+		}
+
+		return true;
+	});
+
+	return ancestor_handle;
+}
+
 bool cwin::hook::handle::is_resizable_() const{
 	return true;
+}
+
+UINT cwin::hook::handle::hit_test_(const POINT &value) const{
+	auto surface_target = dynamic_cast<ui::surface *>(&target_);
+	if (surface_target == nullptr)
+		return HTNOWHERE;
+
+	auto dimension = surface_target->compute_current_absolute_dimension();
+	if (PtInRect(&dimension, value) == FALSE)
+		return HTNOWHERE;
+
+	dimension.left += client_margin_.left;
+	dimension.top += client_margin_.top;
+
+	dimension.right -= client_margin_.right;
+	dimension.bottom -= client_margin_.bottom;
+
+	return ((PtInRect(&dimension, value) == FALSE) ? HTBORDER : HTCLIENT);
+}
+
+void cwin::hook::handle::compute_relative_to_absolute_(POINT &value) const{
+	auto surface_target = dynamic_cast<ui::surface *>(&target_);
+	if (surface_target == nullptr)
+		return;
+
+	auto offset = surface_target->get_current_position();
+	if (auto ancestor_handle = get_ancestor_handle_(surface_target, &offset); ancestor_handle != nullptr)
+		ancestor_handle->compute_relative_to_absolute_(value);
+
+	value.x += (offset.x + client_margin_.left);
+	value.y += (offset.y + client_margin_.top);
+}
+
+void cwin::hook::handle::compute_relative_to_absolute_(RECT &value) const{
+	auto surface_target = dynamic_cast<ui::surface *>(&target_);
+	if (surface_target == nullptr)
+		return;
+
+	auto offset = surface_target->get_current_position();
+	if (auto ancestor_handle = get_ancestor_handle_(surface_target, &offset); ancestor_handle != nullptr)
+		ancestor_handle->compute_relative_to_absolute_(value);
+
+	OffsetRect(&value, (offset.x + client_margin_.left), (offset.y + client_margin_.top));
+}
+
+void cwin::hook::handle::compute_absolute_to_relative_(POINT &value) const{
+	auto surface_target = dynamic_cast<ui::surface *>(&target_);
+	if (surface_target == nullptr)
+		return;
+
+	auto offset = surface_target->get_current_position();
+	if (auto ancestor_handle = get_ancestor_handle_(surface_target, &offset); ancestor_handle != nullptr)
+		ancestor_handle->compute_absolute_to_relative_(value);
+
+	value.x -= (offset.x + client_margin_.left);
+	value.y -= (offset.y + client_margin_.top);
+}
+
+void cwin::hook::handle::compute_absolute_to_relative_(RECT &value) const{
+	auto surface_target = dynamic_cast<ui::surface *>(&target_);
+	if (surface_target == nullptr)
+		return;
+
+	auto offset = surface_target->get_current_position();
+	if (auto ancestor_handle = get_ancestor_handle_(surface_target, &offset); ancestor_handle != nullptr)
+		ancestor_handle->compute_absolute_to_relative_(value);
+
+	OffsetRect(&value, -(offset.x + client_margin_.left), -(offset.y + client_margin_.top));
 }
 
 cwin::hook::window_handle::~window_handle(){
@@ -77,6 +251,48 @@ void cwin::hook::window_handle::get_typed_value(const std::function<void(HWND)> 
 	post_or_execute_task([=]{
 		callback(get_typed_value_());
 	});
+}
+
+UINT cwin::hook::window_handle::hit_test_(const POINT &value) const{
+	return ((value_ == nullptr) ? handle::hit_test_(value) : static_cast<UINT>(SendMessageW(value_, WM_NCHITTEST, 0, MAKELONG(value.x, value.y))));
+}
+
+void cwin::hook::window_handle::compute_relative_to_absolute_(POINT &value) const{
+	if (value_ != nullptr){
+		ClientToScreen(value_, &value);
+		value.x += client_margin_.left;
+		value.y += client_margin_.top;
+	}
+	else
+		handle::compute_relative_to_absolute_(value);
+}
+
+void cwin::hook::window_handle::compute_relative_to_absolute_(RECT &value) const{
+	if (value_ != nullptr){
+		MapWindowPoints(value_, HWND_DESKTOP, reinterpret_cast<POINT *>(&value), 2u);
+		OffsetRect(&value, client_margin_.left, client_margin_.top);
+	}
+	else
+		handle::compute_relative_to_absolute_(value);
+}
+
+void cwin::hook::window_handle::compute_absolute_to_relative_(POINT &value) const{
+	if (value_ != nullptr){
+		ScreenToClient(value_, &value);
+		value.x += client_margin_.left;
+		value.y += client_margin_.top;
+	}
+	else
+		handle::compute_absolute_to_relative_(value);
+}
+
+void cwin::hook::window_handle::compute_absolute_to_relative_(RECT &value) const{
+	if (value_ != nullptr){
+		MapWindowPoints(HWND_DESKTOP, value_, reinterpret_cast<POINT *>(&value), 2u);
+		OffsetRect(&value, -client_margin_.left, -client_margin_.top);
+	}
+	else
+		handle::compute_absolute_to_relative_(value);
 }
 
 void cwin::hook::window_handle::create_(){
@@ -103,6 +319,7 @@ void cwin::hook::window_handle::create_(){
 			ancestor_handle = nullptr;
 		}
 
+		auto &ancestor_position = ancestor.get_current_position();
 		if (ancestor_handle != nullptr){
 			auto handle_value = ancestor_handle->get_value();
 			if (handle_value == nullptr)
@@ -112,13 +329,15 @@ void cwin::hook::window_handle::create_(){
 				ancestor_handle_value = static_cast<HWND>(handle_value);
 				return false;//Stop traversal
 			}
+
+			auto &ancestor_client_margin = ancestor_handle->get_client_margin();
+			position.x += (ancestor_position.x + ancestor_client_margin.left);
+			position.y += (ancestor_position.y + ancestor_client_margin.top);
 		}
-
-		auto &ancestor_position = ancestor.get_current_position();
-		auto &ancestor_client_margin = ancestor.get_client_margin();
-
-		position.x += (ancestor_position.x + ancestor_client_margin.left);
-		position.y += (ancestor_position.y + ancestor_client_margin.top);
+		else{
+			position.x += ancestor_position.x;
+			position.y += ancestor_position.y;
+		}
 
 		return true;
 	});
@@ -165,10 +384,8 @@ void cwin::hook::window_handle::redraw_(HRGN region){
 	if (value_ == nullptr)
 		return;
 
-	if (auto surface_target = dynamic_cast<ui::surface *>(&target_); surface_target != nullptr && region != nullptr){
-		auto &client_margin = surface_target->get_client_margin();
-		utility::rgn::offset(region, POINT{ client_margin.left, client_margin.top });
-	}
+	if (region != nullptr)
+		utility::rgn::offset(region, POINT{ client_margin_.left, client_margin_.top });
 
 	InvalidateRgn(value_, region, TRUE);
 }
@@ -178,11 +395,8 @@ void cwin::hook::window_handle::redraw_(const RECT &region){
 		return;
 
 	if (auto surface_target = dynamic_cast<ui::surface *>(&target_); surface_target != nullptr){
-		auto &client_margin = surface_target->get_client_margin();
-
 		auto region_copy = region;
-		OffsetRect(&region_copy, client_margin.left, client_margin.top);
-
+		OffsetRect(&region_copy, client_margin_.left, client_margin_.top);
 		InvalidateRect(value_, &region_copy, TRUE);
 	}
 	else
@@ -245,6 +459,27 @@ void cwin::hook::non_window_handle::get_typed_value(const std::function<void(HRG
 	});
 }
 
+UINT cwin::hook::non_window_handle::hit_test_(const POINT &value) const{
+	if (value_ == nullptr)
+		return handle::hit_test_(value);
+
+	auto surface_target = dynamic_cast<ui::surface *>(&target_);
+	if (surface_target == nullptr)
+		return handle::hit_test_(value);
+
+	auto absolute_position = surface_target->compute_current_absolute_position();
+	utility::rgn::move(value_, absolute_position);
+	if (!utility::rgn::hit_test(value_, value))
+		return HTNOWHERE;
+
+	if (client_ != nullptr && client_->value_ != nullptr){
+		utility::rgn::move(client_->value_, POINT{ (absolute_position.x + client_margin_.left), (absolute_position.y + client_margin_.top) });
+		return (utility::rgn::hit_test(client_->value_, value) ? HTCLIENT : HTBORDER);
+	}
+
+	return HTBORDER;
+}
+
 void cwin::hook::non_window_handle::create_(){
 	if (value_ != nullptr)
 		return;
@@ -262,14 +497,11 @@ void cwin::hook::non_window_handle::create_(){
 	else if (value_ == nullptr)
 		throw ui::exception::action_failed();
 
-	if (client_ == nullptr){
-		if (is_client_)
-			surface_target->get_handle().redraw();
-		else
-			redraw_(nullptr);
-	}
-	else
+	if (client_ != nullptr)
 		client_->create_();
+	
+	if (is_client_)
+		surface_target->get_handle().redraw();
 }
 
 void cwin::hook::non_window_handle::destroy_(){
@@ -310,12 +542,10 @@ void cwin::hook::non_window_handle::redraw_(HRGN region){
 	auto destination_region = target_.get_thread().get_destination_rgn();
 
 	if (region != nullptr){
-		auto &client_margin = surface_target->get_client_margin();
-		utility::rgn::offset(region, POINT{ client_margin.left, client_margin.top });
-
+		utility::rgn::offset(region, POINT{ client_margin_.left, client_margin_.top });
 		if (client_ != nullptr){
 			if (auto client_handle_value = static_cast<HRGN>(client_->get_value()); client_handle_value != nullptr){
-				utility::rgn::move(client_handle_value, POINT{ client_margin.left, client_margin.top });
+				utility::rgn::move(client_handle_value, POINT{ client_margin_.left, client_margin_.top });
 				utility::rgn::intersect(destination_region, client_handle_value, region);
 			}
 			else
@@ -361,10 +591,9 @@ void cwin::hook::non_window_handle::size_update_(const SIZE &old_value, const SI
 		return;
 
 	if (client_ != nullptr){//Resize client handle
-		auto &client_margin = surface_target->get_client_margin();
 		auto client_handle_value = client_->get_resized_handle_(SIZE{
-			(current_value.cx - (client_margin.left + client_margin.right)),
-			(current_value.cy - (client_margin.top + client_margin.bottom))
+			(current_value.cx - (client_margin_.left + client_margin_.right)),
+			(current_value.cy - (client_margin_.top + client_margin_.bottom))
 		});
 
 		if (client_handle_value == nullptr){//Ignore
@@ -429,11 +658,9 @@ void cwin::hook::non_window_handle::set_client_(std::shared_ptr<non_window_handl
 		return;
 
 	auto &current_size = surface_target->get_current_size();
-	auto &client_margin = surface_target->get_client_margin();
-
 	client_->size_update_(SIZE{}, SIZE{
-		(current_size.cx - (client_margin.left + client_margin.right)),
-		(current_size.cy - (client_margin.top + client_margin.bottom))
+		(current_size.cx - (client_margin_.left + client_margin_.right)),
+		(current_size.cy - (client_margin_.top + client_margin_.bottom))
 	});
 }
 
@@ -443,32 +670,4 @@ HRGN cwin::hook::non_window_handle::get_typed_value_() const{
 
 void cwin::hook::non_window_handle::delete_handle_(HRGN value) const{
 	DeleteObject(value);
-}
-
-cwin::hook::non_window_handle::handle *cwin::hook::non_window_handle::get_ancestor_handle_(ui::surface *surface_target, POINT *offset) const{
-	if (surface_target == nullptr && (surface_target = dynamic_cast<ui::surface *>(&target_)) == nullptr)
-		return nullptr;
-
-	handle *ancestor_handle = nullptr;
-	surface_target->traverse_matching_ancestors<ui::surface>([&](ui::surface &ancestor){
-		try{
-			ancestor_handle = &ancestor.get_handle();
-			return false;
-		}
-		catch (const ui::exception::not_supported &){
-			ancestor_handle = nullptr;
-		}
-
-		if (offset != nullptr){
-			auto &current_position = ancestor.get_current_position();
-			auto &client_margin = ancestor.get_client_margin();
-
-			offset->x += (current_position.x + client_margin.left);
-			offset->y += (current_position.y + client_margin.top);
-		}
-
-		return true;
-	});
-
-	return ancestor_handle;
 }

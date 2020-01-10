@@ -22,6 +22,26 @@ namespace cwin::hook{
 
 		virtual void get_value(const std::function<void(HANDLE)> &callback) const;
 
+		virtual UINT hit_test(const POINT &value) const;
+
+		virtual void hit_test(const POINT &value, const std::function<void(UINT)> &callback) const;
+
+		virtual void compute_relative_to_absolute(POINT &value) const;
+
+		virtual void compute_relative_to_absolute(const POINT &value, const std::function<void(const POINT &)> &callback) const;
+
+		virtual void compute_relative_to_absolute(RECT &value) const;
+
+		virtual void compute_relative_to_absolute(const RECT &value, const std::function<void(const RECT &)> &callback) const;
+
+		virtual void compute_absolute_to_relative(POINT &value) const;
+
+		virtual void compute_absolute_to_relative(const POINT &value, const std::function<void(const POINT &)> &callback) const;
+
+		virtual void compute_absolute_to_relative(RECT &value) const;
+
+		virtual void compute_absolute_to_relative(const RECT &value, const std::function<void(const RECT &)> &callback) const;
+
 		virtual bool is_window() const;
 
 		virtual void is_window(const std::function<void(bool)> &callback) const;
@@ -32,12 +52,28 @@ namespace cwin::hook{
 
 		virtual void redraw(const RECT &region);
 
+		virtual const RECT &get_client_margin() const;
+
+		virtual void get_client_margin(const std::function<void(const RECT &)> &callback) const;
+
 	protected:
 		friend class ui::surface;
 
 		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
 
+		virtual handle *get_ancestor_handle_(ui::surface *surface_target, POINT *offset) const;
+
 		virtual bool is_resizable_() const;
+
+		virtual UINT hit_test_(const POINT &value) const;
+
+		virtual void compute_relative_to_absolute_(POINT &value) const;
+
+		virtual void compute_relative_to_absolute_(RECT &value) const;
+
+		virtual void compute_absolute_to_relative_(POINT &value) const;
+
+		virtual void compute_absolute_to_relative_(RECT &value) const;
 
 		virtual void create_() = 0;
 
@@ -54,6 +90,8 @@ namespace cwin::hook{
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) = 0;
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value) = 0;
+
+		RECT client_margin_{};
 	};
 
 	class window_handle : public handle{
@@ -68,6 +106,16 @@ namespace cwin::hook{
 
 	protected:
 		friend class ui::window_surface;
+
+		virtual UINT hit_test_(const POINT &value) const override;
+
+		virtual void compute_relative_to_absolute_(POINT &value) const override;
+
+		virtual void compute_relative_to_absolute_(RECT &value) const override;
+
+		virtual void compute_absolute_to_relative_(POINT &value) const override;
+
+		virtual void compute_absolute_to_relative_(RECT &value) const override;
 
 		virtual void create_() override;
 
@@ -117,6 +165,8 @@ namespace cwin::hook{
 	protected:
 		friend class ui::non_window_surface;
 
+		virtual UINT hit_test_(const POINT &value) const override;
+
 		virtual void create_() override;
 
 		virtual void destroy_() override;
@@ -140,8 +190,6 @@ namespace cwin::hook{
 		virtual HRGN get_resized_handle_(const SIZE &value) const = 0;
 
 		virtual void delete_handle_(HRGN value) const;
-
-		virtual handle *get_ancestor_handle_(ui::surface *surface_target, POINT *offset) const;
 
 		HRGN value_ = nullptr;
 		std::shared_ptr<non_window_handle> client_;

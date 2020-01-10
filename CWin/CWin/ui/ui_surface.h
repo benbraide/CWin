@@ -67,9 +67,9 @@ namespace cwin::ui{
 
 		virtual void compute_absolute_position(const std::function<void(const POINT &)> &callback) const;
 
-		virtual const RECT &get_client_margin() const;
+		virtual POINT compute_current_absolute_position() const;
 
-		virtual void get_client_margin(const std::function<void(const RECT &)> &callback) const;
+		virtual void compute_current_absolute_position(const std::function<void(const POINT &)> &callback) const;
 
 		virtual SIZE compute_client_size() const;
 
@@ -164,8 +164,6 @@ namespace cwin::ui{
 
 		virtual const POINT &get_current_position_() const;
 
-		virtual const RECT &get_client_margin_() const;
-
 		virtual RECT compute_client_dimension_() const;
 
 		virtual RECT compute_current_client_dimension_() const;
@@ -196,7 +194,5 @@ namespace cwin::ui{
 		hook::handle *handle_ = nullptr;
 		hook::view *view_ = nullptr;
 		hook::frame *frame_ = nullptr;
-
-		RECT client_margin_{};
 	};
 }

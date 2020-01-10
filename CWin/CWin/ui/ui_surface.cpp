@@ -164,15 +164,18 @@ void cwin::ui::surface::compute_absolute_position(const std::function<void(const
 	});
 }
 
-const RECT &cwin::ui::surface::get_client_margin() const{
-	return *execute_task([&]{
-		return &client_margin_;
+POINT cwin::ui::surface::compute_current_absolute_position() const{
+	return execute_task([&]{
+		auto position = get_current_position_();
+		if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+			surface_ancestor->compute_relative_to_absolute_(position);
+		return position;
 	});
 }
 
-void cwin::ui::surface::get_client_margin(const std::function<void(const RECT &)> &callback) const{
+void cwin::ui::surface::compute_current_absolute_position(const std::function<void(const POINT &)> &callback) const{
 	post_or_execute_task([=]{
-		callback(client_margin_);
+		callback(compute_current_absolute_position());
 	});
 }
 
@@ -501,27 +504,33 @@ const POINT &cwin::ui::surface::get_current_position_() const{
 	return position_->get_current_value_();
 }
 
-const RECT &cwin::ui::surface::get_client_margin_() const{
-	return client_margin_;
-}
-
 RECT cwin::ui::surface::compute_client_dimension_() const{
+	if (handle_ == nullptr)
+		return compute_dimension_();
+
 	auto dimension = compute_dimension_();
+	auto &client_margin = handle_->get_client_margin();
+
 	return RECT{
-		(dimension.left + client_margin_.left),
-		(dimension.top + client_margin_.top),
-		(dimension.right - client_margin_.right),
-		(dimension.bottom - client_margin_.bottom)
+		(dimension.left + client_margin.left),
+		(dimension.top + client_margin.top),
+		(dimension.right - client_margin.right),
+		(dimension.bottom - client_margin.bottom)
 	};
 }
 
 RECT cwin::ui::surface::compute_current_client_dimension_() const{
+	if (handle_ == nullptr)
+		return compute_current_dimension_();
+
 	auto dimension = compute_current_dimension_();
+	auto &client_margin = handle_->get_client_margin();
+
 	return RECT{
-		(dimension.left + client_margin_.left),
-		(dimension.top + client_margin_.top),
-		(dimension.right - client_margin_.right),
-		(dimension.bottom - client_margin_.bottom)
+		(dimension.left + client_margin.left),
+		(dimension.top + client_margin.top),
+		(dimension.right - client_margin.right),
+		(dimension.bottom - client_margin.bottom)
 	};
 }
 
@@ -554,41 +563,57 @@ RECT cwin::ui::surface::compute_current_absolute_dimension_() const{
 }
 
 void cwin::ui::surface::compute_relative_to_absolute_(POINT &value) const{
-	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr){
-		auto &position = get_current_position_();
-
-		surface_ancestor->compute_relative_to_absolute_(value);
-		value.x += (position.x + client_margin_.left);
-		value.y += (position.y + client_margin_.top);
+	if (handle_ != nullptr){
+		handle_->compute_relative_to_absolute(value);
+		return;
 	}
+
+	auto &position = get_current_position_();
+	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+		surface_ancestor->compute_relative_to_absolute_(value);
+
+	value.x += position.x;
+	value.y += position.y;
 }
 
 void cwin::ui::surface::compute_relative_to_absolute_(RECT &value) const{
-	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr){
-		auto &position = get_current_position_();
-
-		surface_ancestor->compute_relative_to_absolute_(value);
-		OffsetRect(&value, (position.x + client_margin_.left), (position.y + client_margin_.top));
+	if (handle_ != nullptr){
+		handle_->compute_relative_to_absolute(value);
+		return;
 	}
+
+	auto &position = get_current_position_();
+	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+		surface_ancestor->compute_relative_to_absolute_(value);
+
+	OffsetRect(&value, position.x, position.y);
 }
 
 void cwin::ui::surface::compute_absolute_to_relative_(POINT &value) const{
-	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr){
-		auto &position = get_current_position_();
-
-		surface_ancestor->compute_absolute_to_relative_(value);
-		value.x -= (position.x + client_margin_.left);
-		value.y -= (position.y + client_margin_.top);
+	if (handle_ != nullptr){
+		handle_->compute_absolute_to_relative(value);
+		return;
 	}
+
+	auto &position = get_current_position_();
+	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+		surface_ancestor->compute_absolute_to_relative_(value);
+
+	value.x -= position.x;
+	value.y -= position.y;
 }
 
 void cwin::ui::surface::compute_absolute_to_relative_(RECT &value) const{
-	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr){
-		auto &position = get_current_position_();
-
-		surface_ancestor->compute_absolute_to_relative_(value);
-		OffsetRect(&value, -(position.x + client_margin_.left), -(position.y + client_margin_.top));
+	if (handle_ != nullptr){
+		handle_->compute_absolute_to_relative(value);
+		return;
 	}
+
+	auto &position = get_current_position_();
+	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+		surface_ancestor->compute_absolute_to_relative_(value);
+
+	OffsetRect(&value, -position.x, -position.y);
 }
 
 UINT cwin::ui::surface::hit_test_(const POINT &value) const{
@@ -596,25 +621,26 @@ UINT cwin::ui::surface::hit_test_(const POINT &value) const{
 	if (PtInRect(&dimension, value) == FALSE)
 		return HTNOWHERE;
 
-	dimension.left += client_margin_.left;
-	dimension.top += client_margin_.top;
+	if (handle_ != nullptr){
+		auto &client_margin = handle_->get_client_margin();
 
-	dimension.right -= client_margin_.right;
-	dimension.bottom -= client_margin_.bottom;
+		dimension.left += client_margin.left;
+		dimension.top += client_margin.top;
+
+		dimension.right -= client_margin.right;
+		dimension.bottom -= client_margin.bottom;
+	}
 
 	return ((PtInRect(&dimension, value) == FALSE) ? HTBORDER : HTCLIENT);
 }
 
 UINT cwin::ui::surface::current_hit_test_(const POINT &value) const{
+	if (handle_ != nullptr)
+		return handle_->hit_test_(value);
+
 	auto dimension = compute_current_absolute_dimension_();
 	if (PtInRect(&dimension, value) == FALSE)
 		return HTNOWHERE;
-
-	dimension.left += client_margin_.left;
-	dimension.top += client_margin_.top;
-
-	dimension.right -= client_margin_.right;
-	dimension.bottom -= client_margin_.bottom;
 
 	return ((PtInRect(&dimension, value) == FALSE) ? HTBORDER : HTCLIENT);
 }
