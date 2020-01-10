@@ -34,9 +34,16 @@ namespace cwin::ui{
 		virtual void get_top_ancestor(const std::function<void(tree *)> &callback) const;
 		
 		template <typename target_type>
-		target_type *get_matching_ancestor() const{
+		target_type *get_matching_ancestor(const std::function<bool(target_type &)> &filter_callback = nullptr) const{
 			return execute_task([&]{
-				return get_matching_ancestor_<target_type>();
+				return get_matching_ancestor_<target_type>(filter_callback);
+			});
+		}
+		
+		template <typename target_type>
+		void get_matching_ancestor(const std::function<void(target_type *)> &callback, const std::function<bool(target_type &)> &filter_callback = nullptr) const{
+			post_or_execute_task([=]{
+				callback(get_matching_ancestor_<target_type>(filter_callback));
 			});
 		}
 
@@ -203,9 +210,11 @@ namespace cwin::ui{
 		virtual tree *get_top_ancestor_() const;
 
 		template <typename target_type>
-		target_type *get_matching_ancestor_() const{
+		target_type *get_matching_ancestor_(const std::function<bool(target_type &)> &filter_callback) const{
 			target_type *value = nullptr;
 			traverse_matching_ancestors_<target_type>([&](target_type &val){
+				if (filter_callback != nullptr && !filter_callback(val))
+					return true;
 				value = &val;
 				return false;//Halt
 			});

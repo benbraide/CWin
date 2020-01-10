@@ -79,8 +79,17 @@ bool cwin::thread::queue::run_next_(int min_priority, bool single){
 		}
 	}
 
-	for (auto match : matched)
-		match();
+	for (auto match : matched){
+		try{
+			match();
+		}
+		catch (const exception::thread_exit &){
+			throw;//Forward
+		}
+		catch (const cwin::exception_base &){
+			// #TODO: Log exception
+		}
+	}
 
 	return !matched.empty();
 }

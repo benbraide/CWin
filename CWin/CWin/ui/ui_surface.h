@@ -7,6 +7,7 @@
 namespace cwin::hook{
 	class handle;
 	class view;
+	class frame;
 }
 
 namespace cwin::ui{
@@ -19,6 +20,12 @@ namespace cwin::ui{
 		surface(tree &parent, std::size_t index);
 
 		virtual ~surface();
+
+		virtual void redraw();
+
+		virtual void redraw(HRGN region);
+
+		virtual void redraw(const RECT &region);
 
 		virtual void set_size(const SIZE &value);
 
@@ -108,9 +115,25 @@ namespace cwin::ui{
 
 		virtual void get_handle(const std::function<void(hook::handle &)> &callback) const;
 
+		virtual bool has_handle() const;
+
+		virtual void has_handle(const std::function<void(bool)> &callback) const;
+
 		virtual hook::view &get_view() const;
 
 		virtual void get_view(const std::function<void(hook::view &)> &callback) const;
+
+		virtual bool has_view() const;
+
+		virtual void has_view(const std::function<void(bool)> &callback) const;
+
+		virtual hook::frame &get_frame() const;
+
+		virtual void get_frame(const std::function<void(hook::frame &)> &callback) const;
+
+		virtual bool has_frame() const;
+
+		virtual void has_frame(const std::function<void(bool)> &callback) const;
 
 	protected:
 		virtual void added_hook_(hook::object &value) override;
@@ -118,6 +141,16 @@ namespace cwin::ui{
 		virtual bool removing_hook_(hook::object &value) override;
 
 		virtual void removed_hook_(hook::object &value) override;
+
+		virtual void create_() override;
+
+		virtual void destroy_() override;
+
+		virtual bool is_created_() const override;
+
+		virtual void redraw_(HRGN region);
+
+		virtual void redraw_(const RECT &region);
 
 		virtual void set_size_(const SIZE &value);
 
@@ -162,6 +195,7 @@ namespace cwin::ui{
 
 		hook::handle *handle_ = nullptr;
 		hook::view *view_ = nullptr;
+		hook::frame *frame_ = nullptr;
 
 		RECT client_margin_{};
 	};

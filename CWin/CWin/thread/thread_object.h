@@ -60,6 +60,10 @@ namespace cwin::thread{
 
 		virtual bool post_message(UINT message, WPARAM wparam, LPARAM lparam) const;
 
+		virtual HRGN get_source_rgn() const;
+
+		virtual HRGN get_destination_rgn() const;
+
 		virtual float convert_pixel_to_dip_x(int value) const;
 
 		virtual float convert_pixel_to_dip_y(int value) const;
@@ -166,5 +170,8 @@ namespace cwin::thread{
 
 		std::unordered_map<unsigned __int64, std::function<void(unsigned __int64)>> timers_;
 		utility::random_integral_number_generator random_generator_;
+
+		HRGN source_rgn_ = nullptr;
+		HRGN destination_rgn_ = nullptr;
 	};
 }

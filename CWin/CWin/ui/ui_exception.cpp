@@ -26,3 +26,12 @@ cwin::ui::exception::duplicate_entry::~duplicate_entry() = default;
 cwin::ui::exception::code cwin::ui::exception::duplicate_entry::get_code() const{
 	return code::duplicate_entry;
 }
+
+cwin::ui::exception::action_failed::action_failed()
+	: base("Failed to carry out action"){}
+
+cwin::ui::exception::action_failed::~action_failed() = default;
+
+cwin::ui::exception::code cwin::ui::exception::action_failed::get_code() const{
+	return code::action_failed;
+}

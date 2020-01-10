@@ -65,20 +65,3 @@ std::size_t cwin::events::after_child_index_change::get_old_value() const{
 		throw thread::exception::outside_context();
 	return old_value_;
 }
-
-cwin::events::redraw::redraw(events::target &target)
-	: base_type(target, target), value_(nullptr){}
-
-cwin::events::redraw::redraw(events::target &target, HRGN value)
-	: base_type(target, target), value_(value){}
-
-cwin::events::redraw::redraw(events::target &target, const RECT &value)
-	: base_type(target, target), value_(value){}
-
-cwin::events::redraw::~redraw() = default;
-
-const cwin::events::redraw::value_type &cwin::events::redraw::get_value() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return value_;
-}

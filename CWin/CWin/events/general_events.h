@@ -1,7 +1,5 @@
 #pragma once
 
-#include <variant>
-
 #include "event_message_object.h"
 
 namespace cwin::ui{
@@ -195,25 +193,6 @@ namespace cwin::events{
 	using before_position_change = pair_change<POINT, true, true>;
 	using after_position_change = pair_change<POINT, true, false>;
 	using after_position_update = pair_change<POINT, false, false>;
-
-	class redraw : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-		using value_type = std::variant<std::nullptr_t, HRGN, RECT>;
-
-		explicit redraw(events::target &target);
-
-		redraw(events::target &target, HRGN value);
-
-		redraw(events::target &target, const RECT &value);
-
-		virtual ~redraw();
-
-		virtual const value_type &get_value() const;
-
-	protected:
-		value_type value_;
-	};
 
 	class timer : public disable_result<object>{
 	public:

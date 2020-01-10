@@ -11,11 +11,15 @@ namespace cwin::ui{
 }
 
 namespace cwin::hook{
+	struct dimension_pair_helper{
+		static object *get_existing_hook(hook::target &target, const std::type_info &type);
+	};
+
 	template <class pair_type>
-	struct pair_value;
+	struct dimension_pair_value;
 
 	template <>
-	struct pair_value<SIZE>{
+	struct dimension_pair_value<SIZE>{
 		static void set_x(SIZE &pair, int value){
 			pair.cx = value;
 		}
@@ -31,10 +35,14 @@ namespace cwin::hook{
 		static int get_y(const SIZE &pair){
 			return pair.cy;
 		}
+
+		static object *get_existing_hook(hook::target &target){
+			return dimension_pair_helper::get_existing_hook(target, typeid(SIZE));
+		}
 	};
 
 	template <>
-	struct pair_value<POINT>{
+	struct dimension_pair_value<POINT>{
 		static void set_x(POINT &pair, int value){
 			pair.x = value;
 		}
@@ -49,6 +57,10 @@ namespace cwin::hook{
 
 		static int get_y(const POINT &pair){
 			return pair.y;
+		}
+
+		static object *get_existing_hook(hook::target &target){
+			return dimension_pair_helper::get_existing_hook(target, typeid(POINT));
 		}
 	};
 
@@ -76,6 +88,16 @@ namespace cwin::hook{
 
 		virtual resolution_type resolve_conflict_(relationship_type relationship) const override{
 			return resolution_type::replace;
+		}
+
+		virtual bool adding_to_target_() override{
+			if (!object::adding_to_target_())
+				return false;
+
+			if (auto existing_dimension = dynamic_cast<dimension *>(dimension_pair_value<pair_type>::template get_existing_hook(target_)); existing_dimension != nullptr)
+				value_ = existing_dimension->value_;
+
+			return true;
 		}
 
 		virtual void set_value_(const pair_type &value, const std::function<void(const pair_type &, const pair_type &)> &callback){
@@ -198,6 +220,11 @@ namespace cwin::hook{
 		}
 
 	protected:
+		virtual void added_to_target_() override{
+			current_value_ = base_type::value_;
+			base_type::added_to_target_();
+		}
+
 		using base_type::set_value_;
 
 		virtual void set_value_(const pair_type &value, const std::function<bool()> &should_animate, const std::function<void(const pair_type &, const pair_type &)> &callback) override{
@@ -226,9 +253,9 @@ namespace cwin::hook{
 			base_type::template trigger_<update_event_type>(nullptr, 0u, old_value, current_value_);
 
 			auto active_id = active_id_++;
-			pair_value value_delta{
-				(pair_value<pair_type>::template get_x(value) - pair_value<pair_type>::template get_x(current_value_)),
-				(pair_value<pair_type>::template get_y(value) - pair_value<pair_type>::template get_y(current_value_))
+			dimension_pair_value value_delta{
+				(dimension_pair_value<pair_type>::template get_x(value) - dimension_pair_value<pair_type>::template get_x(current_value_)),
+				(dimension_pair_value<pair_type>::template get_y(value) - dimension_pair_value<pair_type>::template get_y(current_value_))
 			}, start_value = current_value_;
 
 			animated_dimension_helper::animate(easing_, duration_, [=](float progress, bool has_more){
@@ -253,8 +280,8 @@ namespace cwin::hook{
 				}
 
 				try{
-					pair_value<pair_type>::template set_x(current_value_, (pair_value<pair_type>::template get_x(start_value) + static_cast<int>(pair_value<pair_type>::template get_x(value_delta) * progress)));
-					pair_value<pair_type>::template set_y(current_value_, (pair_value<pair_type>::template get_y(start_value) + static_cast<int>(pair_value<pair_type>::template get_y(value_delta) * progress)));
+					dimension_pair_value<pair_type>::template set_x(current_value_, (dimension_pair_value<pair_type>::template get_x(start_value) + static_cast<int>(dimension_pair_value<pair_type>::template get_x(value_delta) * progress)));
+					dimension_pair_value<pair_type>::template set_y(current_value_, (dimension_pair_value<pair_type>::template get_y(start_value) + static_cast<int>(dimension_pair_value<pair_type>::template get_y(value_delta) * progress)));
 
 					base_type::is_updating_ = true;
 					callback(old_value, current_value_);

@@ -64,18 +64,16 @@ void cwin::ui::tree::get_child_at(std::size_t index, const std::function<void(ob
 	});
 }
 
-bool cwin::ui::tree::before_destroy_(){
-	if (!object::before_destroy_())
-		return false;
-
-	for (auto child : children_){
+void cwin::ui::tree::after_destroy_(){
+	auto children = children_;
+	for (auto child : children){
 		try{
 			child->destroy();
 		}
 		catch (const exception::not_supported &){}
 	}
 
-	return true;
+	object::after_destroy_();
 }
 
 void cwin::ui::tree::insert_child_(object &child){

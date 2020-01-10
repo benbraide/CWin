@@ -1,4 +1,5 @@
 #include "../hook/view_hook.h"
+#include "../hook/frame_hooks.h"
 #include "../hook/handle_hooks.h"
 #include "../events/general_events.h"
 
@@ -16,6 +17,24 @@ cwin::ui::surface::surface(tree &parent, std::size_t index)
 	: tree(parent, index){
 	insert_hook_<hook::size>();
 	insert_hook_<hook::position>();
+}
+
+cwin::ui::surface::~surface() = default;
+
+void cwin::ui::surface::redraw(){
+	redraw(nullptr);
+}
+
+void cwin::ui::surface::redraw(HRGN region){
+	post_or_execute_task([=]{
+		redraw_(region);
+	});
+}
+
+void cwin::ui::surface::redraw(const RECT &region){
+	post_or_execute_task([=]{
+		redraw_(region);
+	});
 }
 
 void cwin::ui::surface::set_size(const SIZE &value){
@@ -297,6 +316,18 @@ void cwin::ui::surface::get_handle(const std::function<void(hook::handle &)> &ca
 	});
 }
 
+bool cwin::ui::surface::has_handle() const{
+	return execute_task([&]{
+		return (handle_ != nullptr);
+	});
+}
+
+void cwin::ui::surface::has_handle(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(handle_ != nullptr);
+	});
+}
+
 cwin::hook::view &cwin::ui::surface::get_view() const{
 	auto value = execute_task([&]{
 		return view_;
@@ -315,6 +346,48 @@ void cwin::ui::surface::get_view(const std::function<void(hook::view &)> &callba
 	});
 }
 
+bool cwin::ui::surface::has_view() const{
+	return execute_task([&]{
+		return (view_ != nullptr);
+	});
+}
+
+void cwin::ui::surface::has_view(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(view_ != nullptr);
+	});
+}
+
+cwin::hook::frame &cwin::ui::surface::get_frame() const{
+	auto value = execute_task([&]{
+		return frame_;
+	});
+
+	if (value == nullptr)
+		throw exception::not_supported();
+
+	return *value;
+}
+
+void cwin::ui::surface::get_frame(const std::function<void(hook::frame &)> &callback) const{
+	post_or_execute_task([=]{
+		if (frame_ != nullptr)
+			callback(*frame_);
+	});
+}
+
+bool cwin::ui::surface::has_frame() const{
+	return execute_task([&]{
+		return (frame_ != nullptr);
+	});
+}
+
+void cwin::ui::surface::has_frame(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(frame_ != nullptr);
+	});
+}
+
 void cwin::ui::surface::added_hook_(hook::object &value){
 	tree::added_hook_(value);
 	if (auto size_value = dynamic_cast<hook::size *>(&value); size_value != nullptr)
@@ -325,6 +398,8 @@ void cwin::ui::surface::added_hook_(hook::object &value){
 		handle_ = handle_value;
 	else if (auto view_value = dynamic_cast<hook::view *>(&value); view_value != nullptr)
 		view_ = view_value;
+	else if (auto frame_value = dynamic_cast<hook::frame *>(&value); frame_value != nullptr)
+		frame_ = frame_value;
 }
 
 bool cwin::ui::surface::removing_hook_(hook::object &value){
@@ -340,8 +415,34 @@ void cwin::ui::surface::removed_hook_(hook::object &value){
 		handle_ = nullptr;
 	else if (&value == view_)
 		view_ = nullptr;
+	else if (&value == frame_)
+		frame_ = nullptr;
 
 	tree::removed_hook_(value);
+}
+
+void cwin::ui::surface::create_(){
+	if (handle_ != nullptr)
+		handle_->create_();
+}
+
+void cwin::ui::surface::destroy_(){
+	if (handle_ != nullptr)
+		handle_->destroy_();
+}
+
+bool cwin::ui::surface::is_created_() const{
+	return ((handle_ == nullptr) ? tree::is_created_() : (handle_->get_value_() != nullptr));
+}
+
+void cwin::ui::surface::redraw_(HRGN region){
+	if (handle_ != nullptr && view_ != nullptr)
+		handle_->redraw_(region);
+}
+
+void cwin::ui::surface::redraw_(const RECT &region){
+	if (handle_ != nullptr && view_ != nullptr)
+		handle_->redraw_(region);
 }
 
 void cwin::ui::surface::set_size_(const SIZE &value){
@@ -517,5 +618,3 @@ UINT cwin::ui::surface::current_hit_test_(const POINT &value) const{
 
 	return ((PtInRect(&dimension, value) == FALSE) ? HTBORDER : HTCLIENT);
 }
-
-cwin::ui::surface::~surface() = default;

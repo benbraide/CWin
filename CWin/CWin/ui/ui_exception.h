@@ -8,6 +8,7 @@ namespace cwin::ui::exception{
 		not_supported,
 		action_canceled,
 		duplicate_entry,
+		action_failed,
 	};
 
 	class base : public exception_base{
@@ -42,6 +43,15 @@ namespace cwin::ui::exception{
 		duplicate_entry();
 
 		virtual ~duplicate_entry();
+
+		virtual code get_code() const override;
+	};
+
+	class action_failed : public base{
+	public:
+		action_failed();
+
+		virtual ~action_failed();
 
 		virtual code get_code() const override;
 	};

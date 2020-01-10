@@ -2,11 +2,24 @@
 
 cwin::thread::object::object()
 	: queue_(*this), id_(GetCurrentThreadId()){
+	source_rgn_ = CreateRectRgn(0, 0, 1, 1);
+	destination_rgn_ = CreateRectRgn(0, 0, 1, 1);
+
 	std::lock_guard<std::mutex> guard(app::object::lock_);
 	app::object::threads_[GetCurrentThreadId()] = this;
 }
 
 cwin::thread::object::~object(){
+	if (source_rgn_ != nullptr){
+		DeleteObject(source_rgn_);
+		source_rgn_ = nullptr;
+	}
+
+	if (destination_rgn_ != nullptr){
+		DeleteObject(destination_rgn_);
+		destination_rgn_ = nullptr;
+	}
+
 	std::lock_guard<std::mutex> guard(app::object::lock_);
 	app::object::threads_.erase(GetCurrentThreadId());
 	stop(-1);
@@ -41,43 +54,15 @@ int cwin::thread::object::run(){
 
 	MSG msg{};
 	while (/*!item_manager_.top_level_windows_.empty()*/true){
-		try{
-			if (queue_.run_next_(queue::highest_task_priority))
-				continue;//Task ran
-		}
-		catch (const exception::thread_exit &){
-			throw;//Forward
-		}
-		catch (const cwin::exception_base &e){
-			// #TODO: Log exception
-		}
+		if (queue_.run_next_(queue::highest_task_priority))
+			continue;//Task ran
 
 		if (auto peek_status = PeekMessageW(&msg, nullptr, 0u, 0u, PM_NOREMOVE); peek_status != FALSE){//Message found in queue
-			if ((msg.message == WM_TIMER || msg.message == WM_PAINT || msg.message == WM_NCPAINT)){
-				try{
-					if (queue_.run_next_(queue::default_task_priority))
-						continue;//Task ran
-				}
-				catch (const exception::thread_exit &){
-					throw;//Forward
-				}
-				catch (const cwin::exception_base &e){
-					// #TODO: Log exception
-				}
-			}
+			if ((msg.message == WM_TIMER || msg.message == WM_PAINT || msg.message == WM_NCPAINT) && queue_.run_next_(queue::default_task_priority))
+				continue;//Task ran
 		}
-		else{//No message in queue
-			try{
-				if (queue_.run_next_())
-					continue;//Task ran
-			}
-			catch (const exception::thread_exit &){
-				throw;//Forward
-			}
-			catch (const cwin::exception_base &e){
-				// #TODO: Log exception
-			}
-		}
+		else if (queue_.run_next_())//No message in queue
+			continue;//Task ran
 
 		if (GetMessageW(&msg, nullptr, 0u, 0u) == -1){
 			running_animation_loop_ = false;
@@ -98,21 +83,13 @@ int cwin::thread::object::run(){
 		catch (const exception::thread_exit &){
 			throw;//Forward
 		}
-		catch (const cwin::exception_base &e){
+		catch (const cwin::exception_base &){
 			// #TODO: Log exception
 		}
 	}
 
 	running_animation_loop_ = false;
-	try{
-		queue_.run_next_(queue::lowest_task_priority, false);//Run remaining tasks
-	}
-	catch (const exception::thread_exit &){
-		throw;//Forward
-	}
-	catch (const cwin::exception_base & e){
-		// #TODO: Log exception
-	}
+	queue_.run_next_(queue::lowest_task_priority, false);//Run remaining tasks
 
 	for (auto count = 0; inside_animation_loop_ && count < 1008; ++count)//Wait for animation loop to exit
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
@@ -136,6 +113,18 @@ void cwin::thread::object::request_animation_frame(const animation_request_callb
 
 bool cwin::thread::object::post_message(UINT message, WPARAM wparam, LPARAM lparam) const{
 	return (PostThreadMessageW(id_, message, wparam, lparam) != FALSE);
+}
+
+HRGN cwin::thread::object::get_source_rgn() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return source_rgn_;
+}
+
+HRGN cwin::thread::object::get_destination_rgn() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return destination_rgn_;
 }
 
 float cwin::thread::object::convert_pixel_to_dip_x(int value) const{

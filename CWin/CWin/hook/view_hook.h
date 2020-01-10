@@ -13,7 +13,7 @@ namespace cwin::ui{
 namespace cwin::hook{
 	class view : public object{
 	public:
-		explicit view(hook::target &target);
+		using object::object;
 
 		virtual ~view();
 
@@ -34,11 +34,7 @@ namespace cwin::hook{
 	protected:
 		friend class ui::surface;
 
-		virtual void redraw_();
-
-		virtual void redraw_(HRGN region);
-
-		virtual void redraw_(const RECT &region);
+		virtual bool adding_to_target_() override;
 
 		virtual void show_();
 
@@ -48,6 +44,6 @@ namespace cwin::hook{
 
 		virtual HWND get_window_handle_(HRGN *non_window_handle) const;
 
-		mutable bool visibility_value_ = false;
+		mutable bool value_ = false;
 	};
 }
