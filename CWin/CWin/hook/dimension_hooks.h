@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../ui/ui_exception.h"
 #include "../events/general_events.h"
 #include "../utility/animation_timing.h"
 
@@ -67,7 +66,8 @@ namespace cwin::hook{
 	template <class pair_type, class change_event_type, class update_event_type>
 	class dimension : public object{
 	public:
-		using object::object;
+		explicit dimension(ui::surface &target)
+			: object(target){}
 
 		virtual ~dimension() = default;
 
@@ -145,16 +145,16 @@ namespace cwin::hook{
 		using easing_type = std::function<float(float)>;
 		using duration_type = std::chrono::nanoseconds;
 
-		explicit animated_dimension(hook::target &target)
+		explicit animated_dimension(ui::surface &target)
 			: animated_dimension(target, utility::animation_timing::linear::ease, std::chrono::milliseconds(500)){}
 
-		animated_dimension(hook::target &target, const easing_type &easing)
+		animated_dimension(ui::surface &target, const easing_type &easing)
 			: animated_dimension(target, easing, std::chrono::milliseconds(500)){}
 
-		animated_dimension(hook::target &target, const duration_type &duration)
+		animated_dimension(ui::surface &target, const duration_type &duration)
 			: animated_dimension(target, utility::animation_timing::linear::ease, duration){}
 
-		animated_dimension(hook::target &target, const easing_type &easing, const duration_type &duration)
+		animated_dimension(ui::surface &target, const easing_type &easing, const duration_type &duration)
 			: base_type(target), easing_(easing), duration_(duration){}
 
 		virtual ~animated_dimension() = default;
@@ -313,4 +313,24 @@ namespace cwin::hook{
 
 	using animated_size = animated_dimension<SIZE, events::after_size_change, events::after_size_update>;
 	using animated_position = animated_dimension<POINT, events::after_position_change, events::after_position_update>;
+
+	template <>
+	struct target_type<size>{
+		using value = ui::surface;
+	};
+
+	template <>
+	struct target_type<position>{
+		using value = ui::surface;
+	};
+
+	template <>
+	struct target_type<animated_size>{
+		using value = ui::surface;
+	};
+
+	template <>
+	struct target_type<animated_position>{
+		using value = ui::surface;
+	};
 }

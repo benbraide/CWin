@@ -1,19 +1,16 @@
 #pragma once
 
-#include "../ui/ui_exception.h"
-
 #include "hook_target.h"
 
 namespace cwin::ui{
 	class surface;
-	class window_surface;
-	class non_window_surface;
 }
 
 namespace cwin::hook{
-	class view : public object{
+	class view : public typed_object<ui::surface>{
 	public:
-		using object::object;
+		using base_type = typed_object<ui::surface>;
+		using base_type::base_type;
 
 		virtual ~view();
 
@@ -45,5 +42,10 @@ namespace cwin::hook{
 		virtual HWND get_window_handle_(HRGN *non_window_handle) const;
 
 		mutable bool value_ = false;
+	};
+
+	template <>
+	struct target_type<view>{
+		using value = ui::surface;
 	};
 }

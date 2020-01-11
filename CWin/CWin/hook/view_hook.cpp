@@ -14,8 +14,7 @@ void cwin::hook::view::redraw(){
 void cwin::hook::view::redraw(HRGN region){
 	post_or_execute_task([=]{
 		try{
-			if (auto surface_target = dynamic_cast<ui::surface *>(&target_); surface_target != nullptr)
-				surface_target->get_handle().redraw(region);
+			get_typed_target_().get_handle().redraw(region);
 		}
 		catch (const ui::exception::not_supported &){}
 	});
@@ -24,8 +23,7 @@ void cwin::hook::view::redraw(HRGN region){
 void cwin::hook::view::redraw(const RECT &region){
 	post_or_execute_task([=]{
 		try{
-			if (auto surface_target = dynamic_cast<ui::surface *>(&target_); surface_target != nullptr)
-				surface_target->get_handle().redraw(region);
+			get_typed_target_().get_handle().redraw(region);
 		}
 		catch (const ui::exception::not_supported &){}
 	});
@@ -85,15 +83,11 @@ bool cwin::hook::view::is_visible_() const{
 }
 
 HWND cwin::hook::view::get_window_handle_(HRGN *non_window_handle) const{
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return nullptr;
-
 	if (non_window_handle != nullptr)
 		*non_window_handle = nullptr;
 
 	try{
-		auto &handle_ = surface_target->get_handle();
+		auto &handle_ = get_typed_target_().get_handle();
 		if (handle_.is_window())
 			return static_cast<HWND>(handle_.get_value());
 

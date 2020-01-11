@@ -19,7 +19,9 @@ cwin::ui::surface::surface(tree &parent, std::size_t index)
 	insert_hook_<hook::position>();
 }
 
-cwin::ui::surface::~surface() = default;
+cwin::ui::surface::~surface(){
+	force_destroy_();
+}
 
 void cwin::ui::surface::redraw(){
 	redraw(nullptr);
@@ -643,4 +645,56 @@ UINT cwin::ui::surface::current_hit_test_(const POINT &value) const{
 		return HTNOWHERE;
 
 	return ((PtInRect(&dimension, value) == FALSE) ? HTBORDER : HTCLIENT);
+}
+
+cwin::ui::window_surface::~window_surface() = default;
+
+bool cwin::ui::window_surface::adding_hook_(hook::object &value){
+	if (!surface::adding_hook_(value))
+		return false;
+
+	if (dynamic_cast<hook::handle *>(&value) != nullptr)
+		return (handle_ == nullptr);
+
+	if (dynamic_cast<hook::view *>(&value) != nullptr)
+		return (view_ == nullptr);
+
+	if (dynamic_cast<hook::frame *>(&value) != nullptr)
+		return (frame_ == nullptr);
+
+	return true;
+}
+
+bool cwin::ui::window_surface::removing_hook_(hook::object &value){
+	return (surface::removing_hook_(value) && dynamic_cast<hook::handle *>(&value) == nullptr && dynamic_cast<hook::view *>(&value) == nullptr && dynamic_cast<hook::frame *>(&value) == nullptr);
+}
+
+void cwin::ui::window_surface::insert_view_hook_(){
+	insert_hook_<hook::view>();
+}
+
+cwin::ui::fixed_non_window_surface::~fixed_non_window_surface() = default;
+
+bool cwin::ui::fixed_non_window_surface::adding_hook_(hook::object & value){
+	if (!non_window_surface::adding_hook_(value))
+		return false;
+
+	if (dynamic_cast<hook::handle *>(&value) != nullptr)
+		return (handle_ == nullptr);
+
+	if (dynamic_cast<hook::view *>(&value) != nullptr)
+		return (view_ == nullptr);
+
+	if (dynamic_cast<hook::frame *>(&value) != nullptr)
+		return (frame_ == nullptr);
+
+	return true;
+}
+
+bool cwin::ui::fixed_non_window_surface::removing_hook_(hook::object & value){
+	return (non_window_surface::removing_hook_(value) && dynamic_cast<hook::handle *>(&value) == nullptr && dynamic_cast<hook::view *>(&value) == nullptr && dynamic_cast<hook::frame *>(&value) == nullptr);
+}
+
+void cwin::ui::fixed_non_window_surface::insert_view_hook_(){
+	insert_hook_<hook::view>();
 }

@@ -275,6 +275,15 @@ bool cwin::ui::object::before_create_(){
 
 void cwin::ui::object::after_create_(){}
 
+void cwin::ui::object::force_destroy_(){
+	try{
+		destroy_();
+	}
+	catch (const ui::exception::not_supported &){}
+	catch (const ui::exception::action_canceled &){}
+	catch (const ui::exception::action_failed &){}
+}
+
 void cwin::ui::object::destroy_(){
 	throw exception::not_supported();
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../ui/ui_exception.h"
 #include "../utility/rgn.h"
 
 #include "hook_target.h"
@@ -12,9 +11,10 @@ namespace cwin::ui{
 }
 
 namespace cwin::hook{
-	class handle : public object{
+	class handle : public typed_object<ui::surface>{
 	public:
-		using object::object;
+		using base_type = typed_object<ui::surface>;
+		using base_type::base_type;
 
 		virtual ~handle();
 
@@ -63,9 +63,9 @@ namespace cwin::hook{
 
 		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
 
-		virtual handle *get_ancestor_handle_(ui::surface *surface_target, POINT *offset, const std::function<bool(handle &)> &callback) const;
+		virtual handle *get_ancestor_handle_(POINT *offset, const std::function<bool(handle &)> &callback) const;
 
-		virtual handle *get_ancestor_handle_(ui::surface *surface_target, POINT *offset, bool is_window) const;
+		virtual handle *get_ancestor_handle_(POINT *offset, bool is_window) const;
 
 		virtual bool is_resizable_() const;
 
@@ -106,7 +106,7 @@ namespace cwin::hook{
 
 	class window_handle : public handle{
 	public:
-		using handle::handle;
+		explicit window_handle(ui::window_surface &target);
 
 		virtual ~window_handle();
 
@@ -150,15 +150,18 @@ namespace cwin::hook{
 
 	class non_window_handle : public handle{
 	public:
-		using handle::handle;
+		explicit non_window_handle(ui::non_window_surface &target);
 
 		virtual ~non_window_handle();
 
 		template <typename hook_type, typename... args_types>
 		void set_client(args_types &&... args){
 			post_or_execute_task([=]{
-				if (!is_client_)
-					set_client_(std::make_shared<hook_type>(target_, std::forward<args_types>(args)...));
+				if (!is_client_){
+					auto compatible_target = dynamic_cast<typename hook::target_type<hook_type>::value *>(&target_);
+					if (compatible_target != nullptr)
+						set_client_(std::make_shared<hook_type>(*compatible_target, std::forward<args_types>(args)...));
+				}
 			});
 		}
 
@@ -204,5 +207,15 @@ namespace cwin::hook{
 		HRGN value_ = nullptr;
 		std::shared_ptr<non_window_handle> client_;
 		bool is_client_ = false;
+	};
+
+	template <>
+	struct target_type<window_handle>{
+		using value = ui::window_surface;
+	};
+
+	template <>
+	struct target_type<non_window_handle>{
+		using value = ui::non_window_surface;
 	};
 }

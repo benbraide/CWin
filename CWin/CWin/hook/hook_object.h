@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../ui/ui_exception.h"
+
 #include "../thread/thread_item.h"
 
 namespace cwin::hook{
@@ -193,13 +195,22 @@ namespace cwin::hook{
 	template <class target_type>
 	class typed_object : public object{
 	public:
-		using object::object;
+		explicit typed_object(target_type &target)
+			: object(target){}
 
 		virtual ~typed_object() = default;
 
 	protected:
-		virtual typed_object &get_typed_target_() const{
-			return dynamic_cast<target_type &>(target_);
+		virtual target_type &get_typed_target_() const{
+			auto compatible_target = dynamic_cast<target_type *>(&target_);
+			if (compatible_target == nullptr)
+				throw ui::exception::not_supported();
+			return *compatible_target;
 		}
+	};
+
+	template <class object_type>
+	struct target_type{
+		using value = hook::target;
 	};
 }

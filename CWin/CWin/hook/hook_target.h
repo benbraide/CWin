@@ -151,7 +151,11 @@ namespace cwin::hook{
 
 		template <typename hook_type, typename... args_types>
 		hook_type *insert_hook_(args_types &&... args){
-			std::shared_ptr<object> value = std::make_shared<hook_type>(*this, std::forward<args_types>(args)...);
+			auto compatible_self = dynamic_cast<typename hook::target_type<hook_type>::value *>(this);
+			if (compatible_self == nullptr)
+				throw ui::exception::not_supported();
+
+			std::shared_ptr<object> value = std::make_shared<hook_type>(*compatible_self, std::forward<args_types>(args)...);
 			if (value == nullptr || adding_hook_(*value) || !value->adding_to_target_())//Failed to create object
 				return nullptr;
 

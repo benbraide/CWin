@@ -140,40 +140,43 @@ cwin::hook::object::resolution_type cwin::hook::handle::resolve_conflict_(relati
 	return resolution_type::discard;
 }
 
-cwin::hook::handle *cwin::hook::handle::get_ancestor_handle_(ui::surface *surface_target, POINT *offset, const std::function<bool(handle &)> &callback) const{
-	if (surface_target == nullptr && (surface_target = dynamic_cast<ui::surface *>(&target_)) == nullptr)
-		return nullptr;
-
+cwin::hook::handle *cwin::hook::handle::get_ancestor_handle_(POINT *offset, const std::function<bool(handle &)> &callback) const{
 	handle *ancestor_handle = nullptr;
-	surface_target->traverse_matching_ancestors<ui::surface>([&](ui::surface &ancestor){
-		try{
-			ancestor_handle = &ancestor.get_handle();
-			if (offset != nullptr){
-				offset->x += ancestor_handle->client_margin_.left;
-				offset->y += ancestor_handle->client_margin_.top;
+	try{
+		get_typed_target_().traverse_matching_ancestors<ui::surface>([&](ui::surface &ancestor){
+			try{
+				ancestor_handle = &ancestor.get_handle();
+				if (offset != nullptr){
+					offset->x += ancestor_handle->client_margin_.left;
+					offset->y += ancestor_handle->client_margin_.top;
+				}
+
+				if (callback == nullptr || callback(*ancestor_handle))
+					return false;
+			}
+			catch (const ui::exception::not_supported &){
+				ancestor_handle = nullptr;
 			}
 
-			if (callback == nullptr || callback(*ancestor_handle))
-				return false;
-		}
-		catch (const ui::exception::not_supported &){
-			ancestor_handle = nullptr;
-		}
+			if (offset != nullptr){
+				auto &current_position = ancestor.get_current_position();
+				offset->x += current_position.x;
+				offset->y += current_position.y;
+			}
 
-		if (offset != nullptr){
-			auto &current_position = ancestor.get_current_position();
-			offset->x += current_position.x;
-			offset->y += current_position.y;
-		}
-
-		return true;
-	});
+			return true;
+		});
+	
+	}
+	catch (const ui::exception::not_supported &){
+		ancestor_handle = nullptr;
+	}
 
 	return ancestor_handle;
 }
 
-cwin::hook::handle *cwin::hook::handle::get_ancestor_handle_(ui::surface *surface_target, POINT *offset, bool is_window) const{
-	return get_ancestor_handle_(surface_target, offset, [&](handle &value){
+cwin::hook::handle *cwin::hook::handle::get_ancestor_handle_(POINT *offset, bool is_window) const{
+	return get_ancestor_handle_(offset, [&](handle &value){
 		return (value.is_window_() == is_window);
 	});
 }
@@ -183,11 +186,7 @@ bool cwin::hook::handle::is_resizable_() const{
 }
 
 UINT cwin::hook::handle::hit_test_(const POINT &value) const{
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return HTNOWHERE;
-
-	auto dimension = surface_target->compute_current_absolute_dimension();
+	auto dimension = get_typed_target_().compute_current_absolute_dimension();
 	if (PtInRect(&dimension, value) == FALSE)
 		return HTNOWHERE;
 
@@ -201,12 +200,8 @@ UINT cwin::hook::handle::hit_test_(const POINT &value) const{
 }
 
 void cwin::hook::handle::compute_relative_to_absolute_(POINT &value) const{
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return;
-
-	auto offset = surface_target->get_current_position();
-	if (auto ancestor_handle = get_ancestor_handle_(surface_target, &offset, true); ancestor_handle != nullptr)
+	auto offset = get_typed_target_().get_current_position();
+	if (auto ancestor_handle = get_ancestor_handle_(&offset, true); ancestor_handle != nullptr)
 		ancestor_handle->compute_relative_to_absolute_(value);
 
 	value.x += (offset.x + client_margin_.left);
@@ -214,24 +209,16 @@ void cwin::hook::handle::compute_relative_to_absolute_(POINT &value) const{
 }
 
 void cwin::hook::handle::compute_relative_to_absolute_(RECT &value) const{
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return;
-
-	auto offset = surface_target->get_current_position();
-	if (auto ancestor_handle = get_ancestor_handle_(surface_target, &offset, true); ancestor_handle != nullptr)
+	auto offset = get_typed_target_().get_current_position();
+	if (auto ancestor_handle = get_ancestor_handle_(&offset, true); ancestor_handle != nullptr)
 		ancestor_handle->compute_relative_to_absolute_(value);
 
 	OffsetRect(&value, (offset.x + client_margin_.left), (offset.y + client_margin_.top));
 }
 
 void cwin::hook::handle::compute_absolute_to_relative_(POINT &value) const{
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return;
-
-	auto offset = surface_target->get_current_position();
-	if (auto ancestor_handle = get_ancestor_handle_(surface_target, &offset, true); ancestor_handle != nullptr)
+	auto offset = get_typed_target_().get_current_position();
+	if (auto ancestor_handle = get_ancestor_handle_(&offset, true); ancestor_handle != nullptr)
 		ancestor_handle->compute_absolute_to_relative_(value);
 
 	value.x -= (offset.x + client_margin_.left);
@@ -239,12 +226,8 @@ void cwin::hook::handle::compute_absolute_to_relative_(POINT &value) const{
 }
 
 void cwin::hook::handle::compute_absolute_to_relative_(RECT &value) const{
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return;
-
-	auto offset = surface_target->get_current_position();
-	if (auto ancestor_handle = get_ancestor_handle_(surface_target, &offset, true); ancestor_handle != nullptr)
+	auto offset = get_typed_target_().get_current_position();
+	if (auto ancestor_handle = get_ancestor_handle_(&offset, true); ancestor_handle != nullptr)
 		ancestor_handle->compute_absolute_to_relative_(value);
 
 	OffsetRect(&value, -(offset.x + client_margin_.left), -(offset.y + client_margin_.top));
@@ -252,37 +235,31 @@ void cwin::hook::handle::compute_absolute_to_relative_(RECT &value) const{
 
 void cwin::hook::handle::set_client_margin_(const RECT &value){
 	client_margin_ = value;
-	if (auto surface_target = dynamic_cast<ui::surface *>(&target_); surface_target != nullptr){
-		surface_target->traverse_matching_children<ui::surface>([&](ui::surface &child){
-			try{
-				child.get_handle().update_window_relative_position_();
-			}
-			catch (const ui::exception::not_supported &){}
-		});
-	}
+	get_typed_target_().traverse_matching_children<ui::surface>([&](ui::surface &child){
+		try{
+			child.get_handle().update_window_relative_position_();
+		}
+		catch (const ui::exception::not_supported &){}
+	});
 }
 
 void cwin::hook::handle::position_update_(const POINT &old_value, const POINT &current_value){
-	if (auto surface_target = dynamic_cast<ui::surface *>(&target_); surface_target != nullptr){
-		surface_target->traverse_matching_children<ui::surface>([&](ui::surface &child){
-			try{
-				child.get_handle().update_window_relative_position_();
-			}
-			catch (const ui::exception::not_supported &){}
-		});
-	}
+	get_typed_target_().traverse_matching_children<ui::surface>([&](ui::surface &child){
+		try{
+			child.get_handle().update_window_relative_position_();
+		}
+		catch (const ui::exception::not_supported &){}
+	});
 }
 
 POINT cwin::hook::handle::compute_window_relative_offset_() const{
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return POINT{};
-
 	POINT offset{};
-	get_ancestor_handle_(surface_target, &offset, true);
-
+	get_ancestor_handle_(&offset, true);
 	return offset;
 }
+
+cwin::hook::window_handle::window_handle(ui::window_surface &target)
+	: handle(target){}
 
 cwin::hook::window_handle::~window_handle(){
 	try{
@@ -351,22 +328,19 @@ void cwin::hook::window_handle::create_(){
 	if (value_ != nullptr)
 		return;
 
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		throw ui::exception::not_supported();
-
-	auto window_frame = dynamic_cast<hook::window_frame *>(&surface_target->get_frame());
+	auto &surface_target = get_typed_target_();
+	auto window_frame = dynamic_cast<hook::window_frame *>(&surface_target.get_frame());
 	if (window_frame == nullptr)
 		throw ui::exception::not_supported();
 
-	auto position = surface_target->get_current_position();
-	auto ancestor_handle = get_ancestor_handle_(surface_target, &position, true);
+	auto position = surface_target.get_current_position();
+	auto ancestor_handle = get_ancestor_handle_(&position, true);
 
 	HWND ancestor_handle_value = nullptr;
 	if (ancestor_handle != nullptr && (ancestor_handle_value = static_cast<HWND>(ancestor_handle->get_value())) == nullptr)
 		throw ui::exception::not_supported();
 
-	auto &size = surface_target->get_current_size();
+	auto &size = surface_target.get_current_size();
 	value_ = CreateWindowExW(
 		window_frame->get_computed_extended_styles(),	//Extended styles
 		window_frame->get_class_name(),					//Class name
@@ -379,7 +353,7 @@ void cwin::hook::window_handle::create_(){
 		ancestor_handle_value,							//Parent handle
 		nullptr,										//Menu handle
 		window_frame->get_instance(),					//Instance handle
-		surface_target									//Parameters
+		&surface_target									//Parameters
 	);
 
 	if (value_ != nullptr)
@@ -415,16 +389,11 @@ void cwin::hook::window_handle::redraw_(HRGN region){
 }
 
 void cwin::hook::window_handle::redraw_(const RECT &region){
-	if (value_ == nullptr)
-		return;
-
-	if (auto surface_target = dynamic_cast<ui::surface *>(&target_); surface_target != nullptr){
+	if (value_ != nullptr){
 		auto region_copy = region;
 		OffsetRect(&region_copy, client_margin_.left, client_margin_.top);
 		InvalidateRect(value_, &region_copy, TRUE);
 	}
-	else
-		InvalidateRect(value_, &region, TRUE);
 }
 
 void cwin::hook::window_handle::size_update_(const SIZE &old_value, const SIZE &current_value){
@@ -440,6 +409,9 @@ void cwin::hook::window_handle::position_update_(const POINT &old_value, const P
 HWND cwin::hook::window_handle::get_typed_value_() const{
 	return value_;
 }
+
+cwin::hook::non_window_handle::non_window_handle(ui::non_window_surface &target)
+	: handle(target){}
 
 cwin::hook::non_window_handle::~non_window_handle(){
 	try{
@@ -487,11 +459,7 @@ UINT cwin::hook::non_window_handle::hit_test_(const POINT &value) const{
 	if (value_ == nullptr)
 		return handle::hit_test_(value);
 
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return handle::hit_test_(value);
-
-	auto absolute_position = surface_target->compute_current_absolute_position();
+	auto absolute_position = get_typed_target_().compute_current_absolute_position();
 	utility::rgn::move(value_, absolute_position);
 	if (!utility::rgn::hit_test(value_, value))
 		return HTNOWHERE;
@@ -508,14 +476,10 @@ void cwin::hook::non_window_handle::create_(){
 	if (value_ != nullptr)
 		return;
 
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return;
-
-	if (auto ancestor_handle = get_ancestor_handle_(surface_target, nullptr, false); ancestor_handle != nullptr && ancestor_handle->get_value() == nullptr)
+	if (auto ancestor_handle = get_ancestor_handle_(nullptr, false); ancestor_handle != nullptr && ancestor_handle->get_value() == nullptr)
 		throw ui::exception::not_supported();
 
-	size_update_(SIZE{}, surface_target->get_current_size());
+	size_update_(SIZE{}, get_typed_target_().get_current_size());
 	if (value_ != nullptr && !is_client_)
 		trigger_<events::after_create>(nullptr, 0u);
 	else if (value_ == nullptr)
@@ -525,7 +489,7 @@ void cwin::hook::non_window_handle::create_(){
 		client_->create_();
 	
 	if (is_client_)
-		surface_target->get_handle().redraw();
+		get_typed_target_().get_handle().redraw();
 }
 
 void cwin::hook::non_window_handle::destroy_(){
@@ -558,10 +522,6 @@ void cwin::hook::non_window_handle::redraw_(HRGN region){
 	if (value_ == nullptr)
 		return;
 
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return;
-
 	utility::rgn::move(value_, POINT{ 0, 0 });
 	auto destination_region = target_.get_thread().get_destination_rgn();
 
@@ -581,8 +541,8 @@ void cwin::hook::non_window_handle::redraw_(HRGN region){
 	else//Use entire region
 		destination_region = value_;
 
-	auto position = surface_target->get_current_position();
-	if (auto ancestor_handle = get_ancestor_handle_(surface_target, &position, false); ancestor_handle != nullptr){
+	auto position = get_typed_target_().get_current_position();
+	if (auto ancestor_handle = get_ancestor_handle_(&position, false); ancestor_handle != nullptr){
 		utility::rgn::offset(destination_region, position);
 		ancestor_handle->redraw(destination_region);
 	}
@@ -610,10 +570,6 @@ void cwin::hook::non_window_handle::size_update_(const SIZE &old_value, const SI
 		return;
 	}
 
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return;
-
 	if (client_ != nullptr){//Resize client handle
 		auto client_handle_value = client_->get_resized_handle_(SIZE{
 			(current_value.cx - (client_margin_.left + client_margin_.right)),
@@ -632,8 +588,8 @@ void cwin::hook::non_window_handle::size_update_(const SIZE &old_value, const SI
 		client_->value_ = client_handle_value;
 	}
 
-	auto position = surface_target->get_current_position();
-	auto ancestor_handle = get_ancestor_handle_(surface_target, &position, false);
+	auto position = get_typed_target_().get_current_position();
+	auto ancestor_handle = get_ancestor_handle_(&position, false);
 	if (ancestor_handle == nullptr)
 		return;
 
@@ -653,12 +609,8 @@ void cwin::hook::non_window_handle::position_update_(const POINT &old_value, con
 	if (value_ == nullptr || is_client_)
 		return;
 
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return;
-
 	POINT non_view_offset{};
-	auto ancestor_handle = get_ancestor_handle_(surface_target, &non_view_offset, false);
+	auto ancestor_handle = get_ancestor_handle_(&non_view_offset, false);
 	if (ancestor_handle == nullptr)
 		return;
 
@@ -677,11 +629,7 @@ void cwin::hook::non_window_handle::set_client_(std::shared_ptr<non_window_handl
 	if (value_ == nullptr)
 		return;
 
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return;
-
-	auto &current_size = surface_target->get_current_size();
+	auto &current_size = get_typed_target_().get_current_size();
 	client_->size_update_(SIZE{}, SIZE{
 		(current_size.cx - (client_margin_.left + client_margin_.right)),
 		(current_size.cy - (client_margin_.top + client_margin_.bottom))

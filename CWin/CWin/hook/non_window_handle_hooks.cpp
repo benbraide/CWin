@@ -2,6 +2,45 @@
 
 #include "non_window_handle_hooks.h"
 
+cwin::hook::non_window::triangle_handle::triangle_handle(ui::non_window_surface &target)
+	: triangle_handle(target, pivot_type::top_left, SIZE{}){}
+
+cwin::hook::non_window::triangle_handle::triangle_handle(ui::non_window_surface &target, pivot_type pivot)
+	: triangle_handle(target, pivot, SIZE{}){}
+
+cwin::hook::non_window::triangle_handle::triangle_handle(ui::non_window_surface &target, pivot_type pivot, const SIZE &pivot_offset)
+	: non_window_handle(target), pivot_(pivot), pivot_offset_(pivot_offset){}
+
+cwin::hook::non_window::triangle_handle::~triangle_handle() = default;
+
+HRGN cwin::hook::non_window::triangle_handle::get_resized_handle_(const SIZE &value) const{
+	POINT points[3];
+	switch (pivot_){
+	case pivot_type::top_right:
+		points[0] = POINT{ (value.cx + pivot_offset_.cx), pivot_offset_.cy };
+		points[1] = POINT{ 0, value.cy };
+		points[2] = POINT{ value.cx, value.cy };
+		break;
+	case pivot_type::bottom_left:
+		points[0] = POINT{ pivot_offset_.cx, (value.cy + pivot_offset_.cy) };
+		points[1] = POINT{ value.cx, value.cy };
+		points[2] = POINT{ value.cx, 0 };
+		break;
+	case pivot_type::bottom_right:
+		points[0] = POINT{ (value.cx + pivot_offset_.cx), (value.cy + pivot_offset_.cy) };
+		points[1] = POINT{ value.cx, 0 };
+		points[2] = POINT{ 0, 0 };
+		break;
+	default:
+		points[0] = POINT{ pivot_offset_.cx, pivot_offset_.cy };
+		points[1] = POINT{ 0, value.cy };
+		points[2] = POINT{ value.cx, value.cy };
+		break;
+	}
+
+	return CreatePolygonRgn(points, 3, WINDING);
+}
+
 cwin::hook::non_window::rectangle_handle::~rectangle_handle() = default;
 
 HRGN cwin::hook::non_window::rectangle_handle::get_resized_handle_(const SIZE &value) const{
@@ -12,10 +51,10 @@ HRGN cwin::hook::non_window::rectangle_handle::get_resized_handle_(const SIZE &v
 	return value_;
 }
 
-cwin::hook::non_window::round_rectangle_handle::round_rectangle_handle(hook::target &target)
+cwin::hook::non_window::round_rectangle_handle::round_rectangle_handle(ui::non_window_surface &target)
 	: round_rectangle_handle(target, SIZE{}){}
 
-cwin::hook::non_window::round_rectangle_handle::round_rectangle_handle(hook::target &target, const SIZE &border_curve_size)
+cwin::hook::non_window::round_rectangle_handle::round_rectangle_handle(ui::non_window_surface &target, const SIZE &border_curve_size)
 	: non_window_handle(target), border_curve_size_(border_curve_size){}
 
 cwin::hook::non_window::round_rectangle_handle::~round_rectangle_handle() = default;

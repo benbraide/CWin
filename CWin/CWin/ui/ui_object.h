@@ -264,6 +264,8 @@ namespace cwin::ui{
 
 		virtual void after_create_();
 
+		virtual void force_destroy_();
+
 		virtual void destroy_();
 
 		virtual bool before_destroy_();

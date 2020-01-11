@@ -1,5 +1,5 @@
 #pragma once
-#include "../ui/ui_exception.h"
+
 #include "../utility/rgn.h"
 
 #include "hook_target.h"
@@ -11,16 +11,17 @@ namespace cwin::ui{
 }
 
 namespace cwin::hook{
-	class frame : public object{
+	class frame : public typed_object<ui::surface>{
 	public:
-		using object::object;
+		using base_type = typed_object<ui::surface>;
+		using base_type::base_type;
 
 		virtual ~frame() = default;
 	};
 
 	class window_frame : public frame{
 	public:
-		using frame::frame;
+		explicit window_frame(ui::window_surface &target);
 
 		virtual ~window_frame();
 
@@ -96,5 +97,33 @@ namespace cwin::hook{
 		std::wstring caption_;
 		DWORD styles_ = (WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		DWORD extended_styles_ = 0u;
+	};
+
+	class non_window_frame : public frame{
+	public:
+		explicit non_window_frame(ui::non_window_surface &target);
+
+		virtual ~non_window_frame();
+
+		virtual void set_caption(const std::wstring &value);
+
+		virtual const std::wstring &get_caption() const;
+
+		virtual void get_caption(const std::function<void(const std::wstring &)> &callback) const;
+
+	protected:
+		virtual void set_caption_(const std::wstring &value);
+
+		std::wstring caption_;
+	};
+
+	template <>
+	struct target_type<window_frame>{
+		using value = ui::window_surface;
+	};
+
+	template <>
+	struct target_type<non_window_frame>{
+		using value = ui::non_window_surface;
 	};
 }

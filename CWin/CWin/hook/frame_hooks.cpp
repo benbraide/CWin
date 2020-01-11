@@ -4,6 +4,9 @@
 #include "handle_hooks.h"
 #include "frame_hooks.h"
 
+cwin::hook::window_frame::window_frame(ui::window_surface &target)
+	: frame(target){}
+
 cwin::hook::window_frame::~window_frame() = default;
 
 HINSTANCE cwin::hook::window_frame::get_instance() const{
@@ -200,12 +203,8 @@ DWORD cwin::hook::window_frame::get_persistent_extended_styles_() const{
 }
 
 HWND cwin::hook::window_frame::get_target_handle_value_() const{
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
-	if (surface_target == nullptr)
-		return nullptr;
-
 	try{
-		auto &handle = surface_target->get_handle();
+		auto &handle = get_typed_target_().get_handle();
 		if (!handle.is_window())
 			return nullptr;
 
@@ -214,4 +213,35 @@ HWND cwin::hook::window_frame::get_target_handle_value_() const{
 	catch (const ui::exception::not_supported &){}
 	
 	return nullptr;
+}
+
+cwin::hook::non_window_frame::non_window_frame(ui::non_window_surface &target)
+	: frame(target){}
+
+cwin::hook::non_window_frame::~non_window_frame() = default;
+
+void cwin::hook::non_window_frame::set_caption(const std::wstring &value){
+	post_or_execute_task([=]{
+		set_caption_(value);
+	});
+}
+
+const std::wstring &cwin::hook::non_window_frame::get_caption() const{
+	return *execute_task([&]{
+		return &caption_;
+	});
+}
+
+void cwin::hook::non_window_frame::get_caption(const std::function<void(const std::wstring &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(caption_);
+	});
+}
+
+void cwin::hook::non_window_frame::set_caption_(const std::wstring &value){
+	try{
+		caption_ = value;
+		get_typed_target_().get_handle().redraw();
+	}
+	catch (const ui::exception::not_supported &){}
 }
