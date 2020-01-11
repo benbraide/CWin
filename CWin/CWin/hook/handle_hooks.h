@@ -52,6 +52,8 @@ namespace cwin::hook{
 
 		virtual void redraw(const RECT &region);
 
+		virtual void set_client_margin(const RECT &value);
+
 		virtual const RECT &get_client_margin() const;
 
 		virtual void get_client_margin(const std::function<void(const RECT &)> &callback) const;
@@ -61,7 +63,9 @@ namespace cwin::hook{
 
 		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
 
-		virtual handle *get_ancestor_handle_(ui::surface *surface_target, POINT *offset) const;
+		virtual handle *get_ancestor_handle_(ui::surface *surface_target, POINT *offset, const std::function<bool(handle &)> &callback) const;
+
+		virtual handle *get_ancestor_handle_(ui::surface *surface_target, POINT *offset, bool is_window) const;
 
 		virtual bool is_resizable_() const;
 
@@ -74,6 +78,8 @@ namespace cwin::hook{
 		virtual void compute_absolute_to_relative_(POINT &value) const;
 
 		virtual void compute_absolute_to_relative_(RECT &value) const;
+
+		virtual void set_client_margin_(const RECT &value);
 
 		virtual void create_() = 0;
 
@@ -89,7 +95,11 @@ namespace cwin::hook{
 
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) = 0;
 
-		virtual void position_update_(const POINT &old_value, const POINT &current_value) = 0;
+		virtual void position_update_(const POINT &old_value, const POINT &current_value);
+
+		virtual void update_window_relative_position_() = 0;
+
+		virtual POINT compute_window_relative_offset_() const;
 
 		RECT client_margin_{};
 	};
