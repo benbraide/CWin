@@ -97,7 +97,7 @@ namespace cwin::hook{
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value);
 
-		virtual void update_window_relative_position_() = 0;
+		virtual void update_window_relative_position_();
 
 		virtual POINT compute_window_relative_offset_() const;
 

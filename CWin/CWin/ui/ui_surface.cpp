@@ -669,10 +669,6 @@ bool cwin::ui::window_surface::removing_hook_(hook::object &value){
 	return (surface::removing_hook_(value) && dynamic_cast<hook::handle *>(&value) == nullptr && dynamic_cast<hook::view *>(&value) == nullptr && dynamic_cast<hook::frame *>(&value) == nullptr);
 }
 
-void cwin::ui::window_surface::insert_view_hook_(){
-	insert_hook_<hook::view>();
-}
-
 cwin::ui::fixed_non_window_surface::~fixed_non_window_surface() = default;
 
 bool cwin::ui::fixed_non_window_surface::adding_hook_(hook::object & value){
@@ -693,8 +689,4 @@ bool cwin::ui::fixed_non_window_surface::adding_hook_(hook::object & value){
 
 bool cwin::ui::fixed_non_window_surface::removing_hook_(hook::object & value){
 	return (non_window_surface::removing_hook_(value) && dynamic_cast<hook::handle *>(&value) == nullptr && dynamic_cast<hook::view *>(&value) == nullptr && dynamic_cast<hook::frame *>(&value) == nullptr);
-}
-
-void cwin::ui::fixed_non_window_surface::insert_view_hook_(){
-	insert_hook_<hook::view>();
 }

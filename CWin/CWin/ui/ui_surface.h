@@ -198,37 +198,14 @@ namespace cwin::ui{
 
 	class window_surface : public surface{
 	public:
+		using surface::surface;
+
 		virtual ~window_surface();
 
 	protected:
-		template <typename handle_hook_type, typename frame_hook_type>
-		window_surface(){
-			insert_hook_<handle_hook_type>();
-			insert_hook_<frame_hook_type>();
-			insert_view_hook_();
-		}
-
-		template <typename handle_hook_type, typename frame_hook_type>
-		explicit window_surface(tree &parent)
-			: surface(parent, static_cast<std::size_t>(-1)){
-			insert_hook_<handle_hook_type>();
-			insert_hook_<frame_hook_type>();
-			insert_view_hook_();
-		}
-
-		template <typename handle_hook_type, typename frame_hook_type>
-		window_surface(tree &parent, std::size_t index)
-			: surface(parent, index){
-			insert_hook_<handle_hook_type>();
-			insert_hook_<frame_hook_type>();
-			insert_view_hook_();
-		}
-
 		virtual bool adding_hook_(hook::object &value) override;
 
 		virtual bool removing_hook_(hook::object &value) override;
-
-		void insert_view_hook_();
 	};
 
 	class non_window_surface : public surface{
@@ -243,33 +220,8 @@ namespace cwin::ui{
 		virtual ~fixed_non_window_surface();
 
 	protected:
-		template <typename handle_hook_type, typename frame_hook_type>
-		fixed_non_window_surface(){
-			insert_hook_<handle_hook_type>();
-			insert_hook_<frame_hook_type>();
-			insert_view_hook_();
-		}
-
-		template <typename handle_hook_type, typename frame_hook_type>
-		explicit fixed_non_window_surface(tree &parent)
-			: surface(parent, static_cast<std::size_t>(-1)){
-			insert_hook_<handle_hook_type>();
-			insert_hook_<frame_hook_type>();
-			insert_view_hook_();
-		}
-
-		template <typename handle_hook_type, typename frame_hook_type>
-		fixed_non_window_surface(tree &parent, std::size_t index)
-			: surface(parent, index){
-			insert_hook_<handle_hook_type>();
-			insert_hook_<frame_hook_type>();
-			insert_view_hook_();
-		}
-
 		virtual bool adding_hook_(hook::object &value) override;
 
 		virtual bool removing_hook_(hook::object &value) override;
-
-		void insert_view_hook_();
 	};
 }

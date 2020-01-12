@@ -234,7 +234,18 @@ void cwin::hook::handle::compute_absolute_to_relative_(RECT &value) const{
 }
 
 void cwin::hook::handle::set_client_margin_(const RECT &value){
+	if (EqualRect(&value, &client_margin_) != FALSE)
+		return;
+
+	get_typed_target_().traverse_matching_children<ui::surface>([&](ui::surface &child){
+		try{
+			child.get_handle().redraw_(nullptr);
+		}
+		catch (const ui::exception::not_supported &){}
+	});
+
 	client_margin_ = value;
+
 	get_typed_target_().traverse_matching_children<ui::surface>([&](ui::surface &child){
 		try{
 			child.get_handle().update_window_relative_position_();
@@ -250,6 +261,13 @@ void cwin::hook::handle::position_update_(const POINT &old_value, const POINT &c
 		}
 		catch (const ui::exception::not_supported &){}
 	});
+}
+
+void cwin::hook::handle::update_window_relative_position_(){
+	if (get_value_() != nullptr){
+		auto &current_position = get_typed_target_().get_current_position();
+		position_update_(current_position, current_position);
+	}
 }
 
 POINT cwin::hook::handle::compute_window_relative_offset_() const{
@@ -402,8 +420,10 @@ void cwin::hook::window_handle::size_update_(const SIZE &old_value, const SIZE &
 }
 
 void cwin::hook::window_handle::position_update_(const POINT &old_value, const POINT &current_value){
-	if (value_ != nullptr)
-		SetWindowPos(value_, nullptr, current_value.x, current_value.y, 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
+	if (value_ != nullptr){
+		auto window_relative_offset = compute_window_relative_offset_();
+		SetWindowPos(value_, nullptr, (current_value.x + window_relative_offset.x), (current_value.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
+	}
 }
 
 HWND cwin::hook::window_handle::get_typed_value_() const{
@@ -619,6 +639,8 @@ void cwin::hook::non_window_handle::position_update_(const POINT &old_value, con
 
 	utility::rgn::move(value_, POINT{ (current_value.x + non_view_offset.x), (current_value.y + non_view_offset.y) });
 	ancestor_handle->redraw(value_);//Redraw new region
+
+	handle::position_update_(old_value, current_value);
 }
 
 void cwin::hook::non_window_handle::set_client_(std::shared_ptr<non_window_handle> value){
