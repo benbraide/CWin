@@ -4,28 +4,17 @@
 
 #include "ui_tree.h"
 
-namespace cwin::hook{
+namespace cwin::hook::non_window{
 	class handle;
-	class view;
-	class frame;
+	class client_handle;
 }
 
 namespace cwin::ui{
 	class surface : public tree{
 	public:
-		surface();
-
-		explicit surface(tree &parent);
-
-		surface(tree &parent, std::size_t index);
+		using tree::tree;
 
 		virtual ~surface();
-
-		virtual void redraw();
-
-		virtual void redraw(HRGN region);
-
-		virtual void redraw(const RECT &region);
 
 		virtual void set_size(const SIZE &value);
 
@@ -79,6 +68,12 @@ namespace cwin::ui{
 
 		virtual void compute_current_client_size(const std::function<void(const SIZE &)> &callback) const;
 
+		virtual void set_client_margin(const RECT &value);
+
+		virtual const RECT &get_client_margin() const;
+
+		virtual void get_client_margin(const std::function<void(const RECT &)> &callback) const;
+
 		virtual RECT compute_client_dimension() const;
 
 		virtual void compute_client_dimension(const std::function<void(const RECT &)> &callback) const;
@@ -111,58 +106,30 @@ namespace cwin::ui{
 
 		virtual void current_hit_test(const POINT &value, const std::function<void(UINT)> &callback) const;
 
-		virtual hook::handle &get_handle() const;
-
-		virtual void get_handle(const std::function<void(hook::handle &)> &callback) const;
-
-		virtual bool has_handle() const;
-
-		virtual void has_handle(const std::function<void(bool)> &callback) const;
-
-		virtual hook::view &get_view() const;
-
-		virtual void get_view(const std::function<void(hook::view &)> &callback) const;
-
-		virtual bool has_view() const;
-
-		virtual void has_view(const std::function<void(bool)> &callback) const;
-
-		virtual hook::frame &get_frame() const;
-
-		virtual void get_frame(const std::function<void(hook::frame &)> &callback) const;
-
-		virtual bool has_frame() const;
-
-		virtual void has_frame(const std::function<void(bool)> &callback) const;
-
 	protected:
 		virtual void added_hook_(hook::object &value) override;
 
-		virtual bool removing_hook_(hook::object &value) override;
-
 		virtual void removed_hook_(hook::object &value) override;
-
-		virtual void create_() override;
-
-		virtual void destroy_() override;
-
-		virtual bool is_created_() const override;
-
-		virtual void redraw_(HRGN region);
-
-		virtual void redraw_(const RECT &region);
 
 		virtual void set_size_(const SIZE &value);
 
-		virtual const SIZE &get_size_() const;
+		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) = 0;
 
 		virtual const SIZE &get_current_size_() const;
 
 		virtual void set_position_(const POINT &value);
 
-		virtual const POINT &get_position_() const;
+		virtual void position_update_(const POINT &old_value, const POINT &current_value);
+
+		virtual void update_window_relative_position_();
 
 		virtual const POINT &get_current_position_() const;
+
+		virtual POINT compute_absolute_position_() const;
+
+		virtual POINT compute_current_absolute_position_() const;
+
+		virtual void set_client_margin_(const RECT &value);
 
 		virtual RECT compute_client_dimension_() const;
 
@@ -188,40 +155,41 @@ namespace cwin::ui{
 
 		virtual UINT current_hit_test_(const POINT &value) const;
 
-		hook::size *size_ = nullptr;
-		hook::position *position_ = nullptr;
+		template <typename surface_type>
+		POINT compute_matching_surface_relative_offset_() const{
+			POINT offset{};
+			return ((find_matching_surface_ancestor_<surface_type>(&offset) == nullptr) ? POINT{} : offset);
+		}
 
-		hook::handle *handle_ = nullptr;
-		hook::view *view_ = nullptr;
-		hook::frame *frame_ = nullptr;
-	};
+		template <typename surface_type>
+		surface_type *find_matching_surface_ancestor_(POINT *offset) const{
+			surface_type *value = nullptr;
+			traverse_matching_ancestors_<surface>([&](surface &ancestor){
+				if (offset != nullptr){
+					offset->x += ancestor.client_margin_.left;
+					offset->y += ancestor.client_margin_.top;
+				}
 
-	class window_surface : public surface{
-	public:
-		using surface::surface;
+				if ((value = dynamic_cast<surface_type *>(&ancestor)) != nullptr)
+					return false;//Ancestor is a window
 
-		virtual ~window_surface();
+				if (offset != nullptr){
+					auto &current_position = ancestor.get_current_position_();
+					offset->x += current_position.x;
+					offset->y += current_position.y;
+				}
 
-	protected:
-		virtual bool adding_hook_(hook::object &value) override;
+				return true;
+			});
 
-		virtual bool removing_hook_(hook::object &value) override;
-	};
+			return value;
+		}
 
-	class non_window_surface : public surface{
-	public:
-		using surface::surface;
+		SIZE size_{};
+		POINT position_{};
+		RECT client_margin_{};
 
-		virtual ~non_window_surface() = default;
-	};
-
-	class fixed_non_window_surface : public non_window_surface{
-	public:
-		virtual ~fixed_non_window_surface();
-
-	protected:
-		virtual bool adding_hook_(hook::object &value) override;
-
-		virtual bool removing_hook_(hook::object &value) override;
+		hook::animated_size *size_hook_ = nullptr;
+		hook::animated_position *position_hook_ = nullptr;
 	};
 }

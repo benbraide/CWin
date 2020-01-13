@@ -1,9 +1,6 @@
 #pragma once
 
-#include "../hook/view_hook.h"
-#include "../hook/handle_hooks.h"
-#include "../hook/window_frame_hooks.h"
-#include "../ui/ui_surface.h"
+#include "../ui/ui_window_surface.h"
 
 namespace cwin::window{
 	class child : public ui::window_surface{

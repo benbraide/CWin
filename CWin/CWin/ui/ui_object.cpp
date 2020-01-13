@@ -130,10 +130,17 @@ void cwin::ui::object::create(){
 		if (is_created_())
 			return;
 
-		if (!before_create_())
+		traverse_ancestors_([&](tree &ancestor){
+			if (!ancestor.is_created_())
+				throw exception::not_supported();
+			return true;
+		});
+
+		if (!before_create_() || trigger_then_report_prevented_default_<events::before_create>(0u))
 			throw exception::action_canceled();
 
 		create_();
+		trigger_<events::after_create>(nullptr, 0u);
 		after_create_();
 	});
 }
@@ -143,10 +150,11 @@ void cwin::ui::object::destroy(){
 		if (!is_created_())
 			return;
 
-		if ((parent_ == nullptr || parent_->is_created_()) && !before_destroy_())
+		if (!before_destroy_() || trigger_then_report_prevented_default_<events::before_destroy>(0u))
 			throw exception::action_canceled();
 
 		destroy_();
+		trigger_<events::after_destroy>(nullptr, 0u);
 		after_destroy_();
 	});
 }
@@ -270,7 +278,7 @@ void cwin::ui::object::create_(){
 }
 
 bool cwin::ui::object::before_create_(){
-	return !trigger_then_report_prevented_default_<events::before_create>(0u);
+	return true;
 }
 
 void cwin::ui::object::after_create_(){}
@@ -289,12 +297,10 @@ void cwin::ui::object::destroy_(){
 }
 
 bool cwin::ui::object::before_destroy_(){
-	return !trigger_then_report_prevented_default_<events::before_destroy>(0u);
+	return true;
 }
 
-void cwin::ui::object::after_destroy_(){
-	
-}
+void cwin::ui::object::after_destroy_(){}
 
 bool cwin::ui::object::is_created_() const{
 	return (parent_ != nullptr && parent_->is_created_());
