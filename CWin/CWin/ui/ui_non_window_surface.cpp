@@ -3,6 +3,42 @@
 
 #include "ui_non_window_surface.h"
 
+HRGN cwin::ui::non_window_surface::get_handle() const{
+	return execute_task([&]{
+		return handle_;
+	});
+}
+
+void cwin::ui::non_window_surface::get_handle(const std::function<void(HRGN)> &callback) const{
+	post_or_execute_task([=]{
+		callback(handle_);
+	});
+}
+
+HRGN cwin::ui::non_window_surface::get_client_handle() const{
+	return execute_task([&]{
+		return client_handle_;
+	});
+}
+
+void cwin::ui::non_window_surface::get_client_handle(const std::function<void(HRGN)> &callback) const{
+	post_or_execute_task([=]{
+		callback(client_handle_);
+	});
+}
+
+HRGN cwin::ui::non_window_surface::compute_bounded_region(const POINT &offset) const{
+	return execute_task([&]{
+		return compute_bounded_region_(nullptr, true, offset);
+	});
+}
+
+void cwin::ui::non_window_surface::compute_bounded_region(const POINT &offset, const std::function<void(HRGN)> &callback) const{
+	post_or_execute_task([=]{
+		callback(compute_bounded_region_(nullptr, true, offset));
+	});
+}
+
 void cwin::ui::non_window_surface::added_hook_(hook::object &value){
 	visible_surface::added_hook_(value);
 	if (auto client_handle_value = dynamic_cast<hook::non_window::client_handle *>(&value); client_handle_value != nullptr){
@@ -82,7 +118,7 @@ void cwin::ui::non_window_surface::create_(){
 		}
 	}
 
-	bounding_handle_ = CreateRectRgn(0, 0, current_size.cx, current_size.cy);
+	update_bounding_region_();
 	if (is_visible_())
 		redraw_(nullptr);
 }
@@ -107,13 +143,7 @@ void cwin::ui::non_window_surface::destroy_(){
 
 	handle_hook_->destroy_value_(handle_);
 	handle_ = nullptr;
-
-	DeleteObject(bounding_handle_);
-	bounding_handle_ = nullptr;
-}
-
-bool cwin::ui::non_window_surface::is_created_() const{
-	return (bounding_handle_ != nullptr);
+	destroy_bounding_region_();
 }
 
 void cwin::ui::non_window_surface::size_update_(const SIZE &old_value, const SIZE &current_value){
@@ -154,7 +184,7 @@ void cwin::ui::non_window_surface::size_update_(const SIZE &old_value, const SIZ
 	if (is_visible_())
 		redraw_(nullptr);
 
-	utility::rgn::resize(bounding_handle_, current_value);
+	update_bounding_region_();
 	if (handle_value != handle_)//Destroy old handle
 		handle_hook_->destroy_value_(handle_);
 

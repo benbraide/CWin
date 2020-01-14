@@ -9,6 +9,10 @@ namespace cwin::ui{
 
 		virtual ~window_surface();
 
+		virtual HWND get_handle() const;
+
+		virtual void get_handle(const std::function<void(HWND)> &callback) const;
+
 		virtual void set_styles(DWORD value);
 
 		virtual void add_styles(DWORD value);
@@ -42,8 +46,6 @@ namespace cwin::ui{
 
 		virtual void destroy_() override;
 
-		virtual bool is_created_() const override;
-
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) override;
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value) override;
@@ -69,6 +71,8 @@ namespace cwin::ui{
 		virtual void hide_() override;
 
 		virtual bool is_visible_() const override;
+
+		virtual void activate_bounding_region_();
 
 		virtual void set_styles_(DWORD value);
 

@@ -112,6 +112,12 @@ namespace cwin::ui{
 
 		virtual void removed_hook_(hook::object &value) override;
 
+		virtual bool is_created_() const override;
+
+		virtual void update_bounding_region_();
+
+		virtual void destroy_bounding_region_();
+
 		virtual void set_size_(const SIZE &value);
 
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) = 0;
@@ -197,5 +203,6 @@ namespace cwin::ui{
 
 		hook::animated_size *size_hook_ = nullptr;
 		hook::animated_position *position_hook_ = nullptr;
+		HRGN bounding_handle_ = nullptr;
 	};
 }

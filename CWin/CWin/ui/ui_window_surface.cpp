@@ -1,6 +1,21 @@
+#include "../thread/thread_object.h"
+
+#include "ui_non_window_surface.h"
 #include "ui_window_surface.h"
 
 cwin::ui::window_surface::~window_surface() = default;
+
+HWND cwin::ui::window_surface::get_handle() const{
+	return execute_task([&]{
+		return handle_;
+	});
+}
+
+void cwin::ui::window_surface::get_handle(const std::function<void(HWND)> &callback) const{
+	post_or_execute_task([=]{
+		callback(handle_);
+	});
+}
 
 void cwin::ui::window_surface::set_styles(DWORD value){
 	post_or_execute_task([=]{
@@ -114,30 +129,37 @@ void cwin::ui::window_surface::create_(){
 
 	if (handle_ == nullptr)
 		throw ui::exception::action_failed();
+
+	update_bounding_region_();
+	activate_bounding_region_();
 }
 
 void cwin::ui::window_surface::destroy_(){
 	if (handle_ != nullptr){
 		if (DestroyWindow(handle_) == FALSE)
 			throw exception::action_failed();
-		handle_ = nullptr;
-	}
-}
 
-bool cwin::ui::window_surface::is_created_() const{
-	return (handle_ != nullptr);
+		handle_ = nullptr;
+		destroy_bounding_region_();
+	}
 }
 
 void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &current_value){
-	if (handle_ != nullptr)
-		SetWindowPos(handle_, nullptr, 0, 0, current_value.cx, current_value.cy, (SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE));
+	if (handle_ == nullptr)
+		return;
+
+	SetWindowPos(handle_, nullptr, 0, 0, current_value.cx, current_value.cy, (SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE));
+	update_bounding_region_();
+	activate_bounding_region_();
 }
 
 void cwin::ui::window_surface::position_update_(const POINT &old_value, const POINT &current_value){
-	if (handle_ != nullptr){
-		auto window_relative_offset = compute_matching_surface_relative_offset_<window_surface>(true);
-		SetWindowPos(handle_, nullptr, (current_value.x + window_relative_offset.x), (current_value.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
-	}
+	if (handle_ == nullptr)
+		return;
+
+	auto window_relative_offset = compute_matching_surface_relative_offset_<window_surface>(true);
+	SetWindowPos(handle_, nullptr, (current_value.x + window_relative_offset.x), (current_value.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
+	activate_bounding_region_();
 }
 
 void cwin::ui::window_surface::compute_relative_to_absolute_(POINT &value) const{
@@ -222,6 +244,48 @@ void cwin::ui::window_surface::hide_(){
 
 bool cwin::ui::window_surface::is_visible_() const{
 	return ((handle_ == nullptr) ? ((get_computed_styles_() & WS_VISIBLE) != 0u) : (IsWindowVisible(handle_) != FALSE));
+}
+
+void cwin::ui::window_surface::activate_bounding_region_(){
+	if (bounding_handle_ == nullptr)
+		return;
+
+	auto offset = get_current_position_();
+	non_window_surface *non_window_ancestor = nullptr;
+
+	traverse_matching_ancestors_<surface>([&](surface &ancestor){
+		if (dynamic_cast<window_surface *>(&ancestor) != nullptr)
+			return false;
+
+		auto &client_margin = ancestor.get_client_margin();
+		offset.x += client_margin.left;
+		offset.y += client_margin.top;
+
+		if ((non_window_ancestor = dynamic_cast<non_window_surface *>(&ancestor)); non_window_ancestor == nullptr)
+			return true;
+
+		auto &current_position = ancestor.get_current_position();
+		offset.x += current_position.x;
+		offset.y += current_position.y;
+
+		return true;
+	});
+
+	if (non_window_ancestor == nullptr){//Remove previous bounding region if any
+		SetWindowRgn(handle_, nullptr, TRUE);
+		return;
+	}
+
+	auto bounding_handle_copy = CreateRectRgn(0, 0, 0, 0);
+	utility::rgn::copy(bounding_handle_copy, bounding_handle_);
+	utility::rgn::move(bounding_handle_copy, POINT{});
+
+	auto source_region = thread_.get_source_rgn();
+	auto destination_region = non_window_ancestor->compute_bounded_region(POINT{ -offset.x, -offset.y });
+
+	utility::rgn::copy(source_region, bounding_handle_copy);
+	utility::rgn::intersect(bounding_handle_copy, destination_region, source_region);
+	SetWindowRgn(handle_, bounding_handle_copy, TRUE);
 }
 
 void cwin::ui::window_surface::set_styles_(DWORD value){

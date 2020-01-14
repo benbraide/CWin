@@ -9,6 +9,18 @@ namespace cwin::ui{
 
 		virtual ~non_window_surface() = default;
 
+		virtual HRGN get_handle() const;
+
+		virtual void get_handle(const std::function<void(HRGN)> &callback) const;
+
+		virtual HRGN get_client_handle() const;
+
+		virtual void get_client_handle(const std::function<void(HRGN)> &callback) const;
+
+		virtual HRGN compute_bounded_region(const POINT &offset) const;
+
+		virtual void compute_bounded_region(const POINT &offset, const std::function<void(HRGN)> &callback) const;
+
 	protected:
 		virtual void added_hook_(hook::object &value) override;
 
@@ -17,8 +29,6 @@ namespace cwin::ui{
 		virtual void create_() override;
 
 		virtual void destroy_() override;
-
-		virtual bool is_created_() const override;
 
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) override;
 
@@ -44,7 +54,6 @@ namespace cwin::ui{
 
 		HRGN handle_ = nullptr;
 		HRGN client_handle_ = nullptr;
-		HRGN bounding_handle_ = nullptr;
 
 		hook::non_window::handle *handle_hook_ = nullptr;
 		hook::non_window::client_handle *client_handle_hook_ = nullptr;

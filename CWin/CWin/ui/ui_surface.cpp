@@ -303,6 +303,23 @@ void cwin::ui::surface::removed_hook_(hook::object &value){
 	tree::removed_hook_(value);
 }
 
+bool cwin::ui::surface::is_created_() const{
+	return (bounding_handle_ != nullptr);
+}
+
+void cwin::ui::surface::update_bounding_region_(){
+	auto &current_size = get_current_size_();
+	if (bounding_handle_ == nullptr)
+		bounding_handle_ = CreateRectRgn(0, 0, current_size.cx, current_size.cy);
+	else//Resize
+		utility::rgn::resize(bounding_handle_, current_size);
+}
+
+void cwin::ui::surface::destroy_bounding_region_(){
+	DeleteObject(bounding_handle_);
+	bounding_handle_ = nullptr;
+}
+
 void cwin::ui::surface::set_size_(const SIZE &value){
 	if (value.cx == size_.cx && value.cy == size_.cy)
 		return;//No changes
