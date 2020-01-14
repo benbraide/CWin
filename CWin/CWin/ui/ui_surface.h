@@ -5,11 +5,6 @@
 
 #include "ui_tree.h"
 
-namespace cwin::hook::non_window{
-	class handle;
-	class client_handle;
-}
-
 namespace cwin::ui{
 	class surface : public tree{
 	public:
@@ -120,11 +115,19 @@ namespace cwin::ui{
 
 		virtual void set_size_(const SIZE &value);
 
+		virtual void set_size_(const SIZE &value, bool should_animate);
+
+		virtual void set_size_(const SIZE &value, bool should_animate, const std::function<void(const SIZE &, const SIZE &)> &callback);
+
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) = 0;
 
 		virtual const SIZE &get_current_size_() const;
 
 		virtual void set_position_(const POINT &value);
+
+		virtual void set_position_(const POINT &value, bool should_animate);
+
+		virtual void set_position_(const POINT &value, bool should_animate, const std::function<void(const POINT &, const POINT &)> &callback);
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value);
 

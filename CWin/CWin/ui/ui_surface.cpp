@@ -321,6 +321,17 @@ void cwin::ui::surface::destroy_bounding_region_(){
 }
 
 void cwin::ui::surface::set_size_(const SIZE &value){
+	set_size_(value, true);
+}
+
+void cwin::ui::surface::set_size_(const SIZE &value, bool should_animate){
+	set_size_(value, should_animate, [=](const SIZE &old_value, const SIZE &current_value){
+		trigger_<events::after_size_update>(nullptr, 0u, old_value, current_value);
+		size_update_(old_value, current_value);
+	});
+}
+
+void cwin::ui::surface::set_size_(const SIZE &value, bool should_animate, const std::function<void(const SIZE &, const SIZE &)> &callback){
 	if (value.cx == size_.cx && value.cy == size_.cy)
 		return;//No changes
 
@@ -331,14 +342,10 @@ void cwin::ui::surface::set_size_(const SIZE &value){
 	size_ = value;
 	trigger_<events::after_size_change>(nullptr, 0u, old_value, value);
 
-	if (size_hook_ != nullptr){
-		size_hook_->set_value_(old_value, size_, true, [=](const SIZE &old_value, const SIZE &current_value){
-			trigger_<events::after_size_update>(nullptr, 0u, old_value, current_value);
-			size_update_(old_value, current_value);
-		});
-	}
-	else//No hook
+	if (size_hook_ == nullptr)
 		trigger_<events::after_size_update>(nullptr, 0u, old_value, size_);
+	else//Use hook
+		size_hook_->set_value_(old_value, size_, should_animate, callback);
 }
 
 const SIZE &cwin::ui::surface::get_current_size_() const{
@@ -346,6 +353,17 @@ const SIZE &cwin::ui::surface::get_current_size_() const{
 }
 
 void cwin::ui::surface::set_position_(const POINT &value){
+	set_position_(value, true);
+}
+
+void cwin::ui::surface::set_position_(const POINT &value, bool should_animate){
+	set_position_(value, should_animate, [=](const POINT &old_value, const POINT &current_value){
+		trigger_<events::after_position_update>(nullptr, 0u, old_value, current_value);
+		position_update_(old_value, current_value);
+	});
+}
+
+void cwin::ui::surface::set_position_(const POINT &value, bool should_animate, const std::function<void(const POINT &, const POINT &)> &callback){
 	if (value.x == position_.x && value.y == position_.y)
 		return;//No changes
 
@@ -356,14 +374,10 @@ void cwin::ui::surface::set_position_(const POINT &value){
 	position_ = value;
 	trigger_<events::after_position_change>(nullptr, 0u, old_value, value);
 
-	if (position_hook_ != nullptr){
-		position_hook_->set_value_(old_value, position_, true, [=](const POINT &old_value, const POINT &current_value){
-			trigger_<events::after_position_update>(nullptr, 0u, old_value, current_value);
-			position_update_(old_value, current_value);
-		});
-	}
-	else//No hook
+	if (position_hook_ == nullptr)
 		trigger_<events::after_position_update>(nullptr, 0u, old_value, position_);
+	else//Use hook
+		position_hook_->set_value_(old_value, position_, should_animate, callback);
 }
 
 void cwin::ui::surface::position_update_(const POINT &old_value, const POINT &current_value){

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "event_message_object.h"
+#include "event_object.h"
 
 namespace cwin::ui{
 	class object;

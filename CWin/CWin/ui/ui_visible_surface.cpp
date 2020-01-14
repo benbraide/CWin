@@ -1,3 +1,4 @@
+#include "../hook/io_hook.h"
 #include "../thread/thread_object.h"
 
 #include "ui_visible_surface.h"
@@ -42,6 +43,41 @@ void cwin::ui::visible_surface::is_visible(const std::function<void(bool)> &call
 	post_or_execute_task([=]{
 		callback(is_visible_());
 	});
+}
+
+cwin::hook::io &cwin::ui::visible_surface::get_io_hook() const{
+	return *execute_task([&]{
+		if (io_hook_ == nullptr)
+			throw exception::not_supported();
+		return io_hook_;
+	});
+}
+
+void cwin::ui::visible_surface::get_io_hook(const std::function<void(hook::io &)> &callback) const{
+	post_or_execute_task([=]{
+		if (io_hook_ != nullptr)
+			callback(*io_hook_);
+	});
+}
+
+void cwin::ui::visible_surface::added_hook_(hook::object &value){
+	surface::added_hook_(value);
+	if (auto io_value = dynamic_cast<hook::io *>(&value); io_value != nullptr){
+		io_hook_ = io_value;
+		if (auto client_drag_hook = dynamic_cast<hook::client_drag *>(io_value); client_drag_hook != nullptr){
+			client_drag_hook->callback_ = [=](const SIZE &delta){
+				auto current_position = get_current_position_();
+				set_position_(POINT{ (current_position.x + delta.cx), (current_position.y + delta.cy) }, false);
+			};
+		}
+	}
+}
+
+void cwin::ui::visible_surface::removed_hook_(hook::object &value){
+	if (&value == io_hook_)
+		io_hook_ = nullptr;
+
+	surface::removed_hook_(value);
 }
 
 void cwin::ui::visible_surface::redraw_(HRGN region){

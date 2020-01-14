@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../thread/thread_exception.h"
 #include "../utility/animation_timing.h"
 
 #include "hook_target.h"
@@ -104,6 +105,12 @@ namespace cwin::hook{
 			post_or_execute_task([=]{
 				callback(is_enabled_);
 			});
+		}
+
+		virtual bool is_updating() const{
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			return is_updating_;
 		}
 
 	protected:

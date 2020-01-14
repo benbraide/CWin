@@ -2,6 +2,11 @@
 
 #include "ui_visible_surface.h"
 
+namespace cwin::hook::non_window{
+	class handle;
+	class client_handle;
+}
+
 namespace cwin::ui{
 	class non_window_surface : public visible_surface{
 	public:

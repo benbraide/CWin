@@ -15,9 +15,11 @@ namespace cwin::thread{
 
 		virtual object &get_thread() const;
 
-		void post_task(const std::function<void()> &task) const;
+		virtual bool is_thread_context() const;
 
-		void post_or_execute_task(const std::function<void()> &task) const;
+		virtual void post_task(const std::function<void()> &task) const;
+
+		virtual void post_or_execute_task(const std::function<void()> &task) const;
 
 		template <typename function_type>
 		auto execute_task(const function_type &task) const{

@@ -16,6 +16,10 @@ cwin::thread::object &cwin::thread::cross_object::get_thread() const{
 	return thread_;
 }
 
+bool cwin::thread::cross_object::is_thread_context() const{
+	return thread_.is_context();
+}
+
 void cwin::thread::cross_object::post_task(const std::function<void()> &task) const{
 	get_queue_().post_task(task, get_talk_id(), thread::queue::highest_task_priority);
 }
