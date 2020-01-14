@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../hook/dimension_hooks.h"
+#include "../utility/rgn.h"
 
 #include "ui_tree.h"
 
@@ -156,16 +157,16 @@ namespace cwin::ui{
 		virtual UINT current_hit_test_(const POINT &value) const;
 
 		template <typename surface_type>
-		POINT compute_matching_surface_relative_offset_() const{
+		POINT compute_matching_surface_relative_offset_(bool include_client_margin) const{
 			POINT offset{};
-			return ((find_matching_surface_ancestor_<surface_type>(&offset) == nullptr) ? POINT{} : offset);
+			return ((find_matching_surface_ancestor_<surface_type>(&offset, include_client_margin) == nullptr) ? POINT{} : offset);
 		}
 
 		template <typename surface_type>
-		surface_type *find_matching_surface_ancestor_(POINT *offset) const{
+		surface_type *find_matching_surface_ancestor_(POINT *offset, bool include_client_margin) const{
 			surface_type *value = nullptr;
 			traverse_matching_ancestors_<surface>([&](surface &ancestor){
-				if (offset != nullptr){
+				if (offset != nullptr && include_client_margin){
 					offset->x += ancestor.client_margin_.left;
 					offset->y += ancestor.client_margin_.top;
 				}
@@ -174,6 +175,11 @@ namespace cwin::ui{
 					return false;//Ancestor is a window
 
 				if (offset != nullptr){
+					if (!include_client_margin){
+						offset->x += ancestor.client_margin_.left;
+						offset->y += ancestor.client_margin_.top;
+					}
+
 					auto &current_position = ancestor.get_current_position_();
 					offset->x += current_position.x;
 					offset->y += current_position.y;

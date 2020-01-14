@@ -24,9 +24,9 @@ namespace cwin::ui{
 		virtual void is_visible(const std::function<void(bool)> &callback) const;
 
 	protected:
-		virtual void redraw_(HRGN region) = 0;
+		virtual void redraw_(HRGN region);
 
-		virtual void redraw_(const RECT &region) = 0;
+		virtual void redraw_(const RECT &region);
 
 		virtual void show_() = 0;
 

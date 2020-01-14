@@ -1,3 +1,5 @@
+#include "../thread/thread_object.h"
+
 #include "ui_visible_surface.h"
 
 cwin::ui::visible_surface::~visible_surface() = default;
@@ -40,4 +42,24 @@ void cwin::ui::visible_surface::is_visible(const std::function<void(bool)> &call
 	post_or_execute_task([=]{
 		callback(is_visible_());
 	});
+}
+
+void cwin::ui::visible_surface::redraw_(HRGN region){
+	if (region == nullptr)
+		return redraw_(compute_client_dimension_());
+
+
+}
+
+void cwin::ui::visible_surface::redraw_(const RECT &region){
+	auto source_region = CreateRectRgn(region.left, region.top, region.right, region.bottom);
+	utility::rgn::set_dimension(source_region, region);
+	try{
+		redraw_(source_region);
+		DeleteObject(source_region);
+	}
+	catch (...){
+		DeleteObject(source_region);
+		throw;
+	}
 }

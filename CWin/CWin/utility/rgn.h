@@ -17,6 +17,8 @@ namespace cwin::utility{
 
 		static bool intersect(HRGN destination, HRGN first, HRGN second);
 
+		static bool copy(HRGN destination, HRGN target);
+
 		static bool hit_test(HRGN handle, const POINT &value);
 	};
 }

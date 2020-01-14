@@ -91,7 +91,7 @@ void cwin::ui::window_surface::create_(){
 		return;
 
 	auto position = get_current_position_();
-	auto window_ancestor = find_matching_surface_ancestor_<window_surface>(&position);
+	auto window_ancestor = find_matching_surface_ancestor_<window_surface>(&position, true);
 
 	HWND ancestor_handle_value = nullptr;
 	if (window_ancestor != nullptr && (ancestor_handle_value = window_ancestor->handle_) == nullptr)
@@ -135,7 +135,7 @@ void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &c
 
 void cwin::ui::window_surface::position_update_(const POINT &old_value, const POINT &current_value){
 	if (handle_ != nullptr){
-		auto window_relative_offset = compute_matching_surface_relative_offset_<window_surface>();
+		auto window_relative_offset = compute_matching_surface_relative_offset_<window_surface>(true);
 		SetWindowPos(handle_, nullptr, (current_value.x + window_relative_offset.x), (current_value.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
 	}
 }

@@ -304,6 +304,9 @@ void cwin::ui::surface::removed_hook_(hook::object &value){
 }
 
 void cwin::ui::surface::set_size_(const SIZE &value){
+	if (value.cx == size_.cx && value.cy == size_.cy)
+		return;//No changes
+
 	auto old_value = size_;
 	if (trigger_then_report_prevented_default_<events::before_size_change>(0u, old_value, value))
 		throw exception::action_canceled();
@@ -326,6 +329,9 @@ const SIZE &cwin::ui::surface::get_current_size_() const{
 }
 
 void cwin::ui::surface::set_position_(const POINT &value){
+	if (value.x == position_.x && value.y == position_.y)
+		return;//No changes
+
 	auto old_value = position_;
 	if (trigger_then_report_prevented_default_<events::before_position_change>(0u, old_value, value))
 		throw exception::action_canceled();
@@ -500,6 +506,12 @@ UINT cwin::ui::surface::current_hit_test_(const POINT &value) const{
 	auto dimension = compute_current_absolute_dimension_();
 	if (PtInRect(&dimension, value) == FALSE)
 		return HTNOWHERE;
+
+	dimension.left += client_margin_.left;
+	dimension.top += client_margin_.top;
+
+	dimension.right -= client_margin_.right;
+	dimension.bottom -= client_margin_.bottom;
 
 	return ((PtInRect(&dimension, value) == FALSE) ? HTBORDER : HTCLIENT);
 }

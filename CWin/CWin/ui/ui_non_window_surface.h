@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../utility/rgn.h"
-
 #include "ui_visible_surface.h"
 
 namespace cwin::ui{
@@ -13,8 +11,6 @@ namespace cwin::ui{
 
 	protected:
 		virtual void added_hook_(hook::object &value) override;
-
-		virtual bool removing_hook_(hook::object &value) override;
 
 		virtual void removed_hook_(hook::object &value) override;
 
@@ -32,9 +28,9 @@ namespace cwin::ui{
 
 		virtual UINT current_hit_test_(const POINT &value) const override;
 
-		virtual void redraw_(HRGN region) override;
+		using visible_surface::redraw_;
 
-		virtual void redraw_(const RECT &region) override;
+		virtual void redraw_(HRGN region) override;
 
 		virtual void show_() override;
 
@@ -42,8 +38,13 @@ namespace cwin::ui{
 
 		virtual bool is_visible_() const override;
 
+		virtual void redraw_at_(HRGN region, POINT position);
+
+		virtual HRGN compute_bounded_region_(HRGN target, bool is_client, const POINT &offset) const;
+
 		HRGN handle_ = nullptr;
 		HRGN client_handle_ = nullptr;
+		HRGN bounding_handle_ = nullptr;
 
 		hook::non_window::handle *handle_hook_ = nullptr;
 		hook::non_window::client_handle *client_handle_hook_ = nullptr;
