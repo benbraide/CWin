@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../ui/ui_window_surface.h"
+#include "window_object.h"
 
 namespace cwin::window{
-	class child : public ui::window_surface{
+	class child : public object{
 	public:
 		explicit child(ui::surface &parent);
 
@@ -13,5 +13,7 @@ namespace cwin::window{
 
 	protected:
 		virtual bool changing_parent_(tree *value) override;
+
+		virtual bool is_dialog_message_(MSG &msg) const override;
 	};
 }

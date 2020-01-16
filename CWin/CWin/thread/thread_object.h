@@ -4,6 +4,7 @@
 
 #include "../utility/windows.h"
 #include "../utility/random_number_generator.h"
+#include "../ui/ui_window_surface_manager.h"
 
 #include "thread_item.h"
 
@@ -38,6 +39,10 @@ namespace cwin::thread{
 		virtual queue &get_queue();
 
 		virtual const queue &get_queue() const;
+
+		virtual ui::window_surface_manager &get_window_manager();
+
+		virtual const ui::window_surface_manager &get_window_manager() const;
 
 		virtual DWORD get_id() const;
 
@@ -153,6 +158,7 @@ namespace cwin::thread{
 		static void CALLBACK timer_entry_(HWND handle, UINT message, UINT_PTR id, DWORD time);
 
 		queue queue_;
+		ui::window_surface_manager window_manager_;
 
 		DWORD id_;
 		mutable D2D1_POINT_2F dpi_scale_{};

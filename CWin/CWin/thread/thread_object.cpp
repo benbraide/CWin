@@ -1,12 +1,31 @@
 #include "../app/app_object.h"
 
 cwin::thread::object::object()
-	: queue_(*this), id_(GetCurrentThreadId()){
-	source_rgn_ = CreateRectRgn(0, 0, 1, 1);
-	destination_rgn_ = CreateRectRgn(0, 0, 1, 1);
+	: queue_(*this), window_manager_(*this), id_(GetCurrentThreadId()){
+	source_rgn_ = CreateRectRgn(0, 0, 0, 0);
+	destination_rgn_ = CreateRectRgn(0, 0, 0, 0);
 
 	std::lock_guard<std::mutex> guard(app::object::lock_);
 	app::object::threads_[GetCurrentThreadId()] = this;
+	
+	if (app::object::class_id_ == 0u){//Register app class
+		WNDCLASSEXW class_info{
+			sizeof(WNDCLASSEXW),							//Structure size
+			(CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS),			//Styles
+			ui::window_surface_manager::entry_,				//Message entry
+			0,												//Class extra bytes
+			0,												//Window extra bytes
+			GetModuleHandleW(nullptr),						//Instance
+			nullptr,										//Icon
+			nullptr,										//Cursor
+			nullptr,										//Background brush
+			nullptr,										//Menu name
+			WINP_CLASS_WUUID,								//Class name
+			nullptr											//Small icon
+		};
+
+		app::object::class_id_ = RegisterClassExW(&class_info);
+	}
 }
 
 cwin::thread::object::~object(){
@@ -34,6 +53,14 @@ const cwin::thread::queue &cwin::thread::object::get_queue() const{
 
 }
 
+cwin::ui::window_surface_manager &cwin::thread::object::get_window_manager(){
+	return window_manager_;
+}
+
+const cwin::ui::window_surface_manager &cwin::thread::object::get_window_manager() const{
+	return window_manager_;
+}
+
 DWORD cwin::thread::object::get_id() const{
 	return id_;
 }
@@ -53,7 +80,7 @@ int cwin::thread::object::run(){
 	}
 
 	MSG msg{};
-	while (/*!item_manager_.top_level_windows_.empty()*/true){
+	while (!window_manager_.top_level_windows_.empty()){
 		if (queue_.run_next_(queue::highest_task_priority))
 			continue;//Task ran
 
@@ -75,7 +102,7 @@ int cwin::thread::object::run(){
 		}
 
 		try{
-			if (msg.hwnd == nullptr/* || !item_manager_.is_dialog_message_(msg)*/){
+			if (msg.hwnd == nullptr || !window_manager_.is_dialog_message_(msg)){
 				TranslateMessage(&msg);
 				DispatchMessageW(&msg);
 			}
@@ -273,18 +300,21 @@ void cwin::thread::object::remove_timer_(unsigned __int64 id, const item *owner)
 }
 
 WNDPROC cwin::thread::object::get_class_entry_(const std::wstring &class_name) const{
-	//if (&class_name == &app::object::get_class_name())
-		//return DefWindowProcW;
+	if (class_name == WINP_CLASS_WUUID)
+		return DefWindowProcW;
 
 	if (auto it = class_info_map_.find(class_name); it != class_info_map_.end())
 		return it->second;
 
-	if (WNDCLASSEXW class_info{ sizeof(WNDCLASSEXW) }; GetClassInfoExW(nullptr, class_name.data(), &class_info) != FALSE){
-		class_info_map_[class_name] = class_info.lpfnWndProc;
-		return class_info.lpfnWndProc;
+	WNDCLASSEXW class_info{ sizeof(WNDCLASSEXW) };
+	if (GetClassInfoExW(nullptr, class_name.data(), &class_info) != FALSE){
+		if (class_info.lpfnWndProc == ui::window_surface_manager::entry_)
+			class_info_map_[class_name] = (class_info.lpfnWndProc = DefWindowProcW);
+		else
+			class_info_map_[class_name] = class_info.lpfnWndProc;
 	}
 
-	return nullptr;
+	return class_info.lpfnWndProc;
 }
 
 void cwin::thread::object::run_animation_loop_(){

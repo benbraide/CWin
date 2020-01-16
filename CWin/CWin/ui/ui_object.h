@@ -270,6 +270,8 @@ namespace cwin::ui{
 
 		virtual bool before_destroy_();
 
+		virtual bool should_call_after_destroy_() const;
+
 		virtual void after_destroy_();
 
 		virtual bool is_created_() const;

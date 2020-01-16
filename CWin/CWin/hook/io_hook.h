@@ -12,6 +12,8 @@ namespace cwin::ui{
 namespace cwin::hook{
 	class io : public object{
 	public:
+		using mouse_button_type = events::io::mouse_button::button_type;
+
 		explicit io(ui::visible_surface &target);
 
 		virtual ~io();
@@ -27,9 +29,11 @@ namespace cwin::hook{
 
 		virtual void mouse_leave_();
 
-		virtual void mouse_move_(const MSG &msg);
+		virtual void mouse_enter_();
 
-		virtual void mouse_move_(ui::visible_surface *&target, const MSG &msg);
+		virtual void mouse_move_();
+
+		virtual void mouse_move_(ui::visible_surface *&target);
 
 		virtual bool mouse_drag_begin_();
 
@@ -43,24 +47,30 @@ namespace cwin::hook{
 
 		virtual void mouse_drag_end_(ui::visible_surface *&target);
 
-		virtual void mouse_down_(const MSG &msg);
+		virtual void mouse_down_(mouse_button_type button);
 
-		virtual void mouse_down_(ui::visible_surface *&target, const MSG &msg);
+		virtual void mouse_down_(ui::visible_surface *&target, mouse_button_type button);
 
-		virtual void mouse_up_();
+		virtual void mouse_up_(mouse_button_type button);
 
-		virtual void mouse_up_(ui::visible_surface *&target);
+		virtual void mouse_up_(ui::visible_surface *&target, mouse_button_type button);
 
-		virtual void mouse_dbl_click_(const MSG &msg);
+		virtual void mouse_dbl_click_(mouse_button_type button);
 
-		virtual void mouse_dbl_click_(ui::visible_surface *&target, const MSG &msg);
+		virtual void mouse_dbl_click_(ui::visible_surface *&target, mouse_button_type button);
+
+		virtual void mouse_wheel_(const SIZE &delta);
+
+		virtual void mouse_wheel_(ui::visible_surface *&target, const SIZE &delta);
+
+		virtual bool check_drag_state_() const;
 
 		virtual void after_mouse_drag_(const SIZE &delta);
 
 		ui::visible_surface *mouse_over_ = nullptr;
 		ui::visible_surface *mouse_press_ = nullptr;
 
-		events::io::mouse_button::button_type pressed_button_ = events::io::mouse_button::button_type::nil;
+		mouse_button_type pressed_button_ = mouse_button_type::nil;
 		bool is_dragging_ = false;
 	};
 

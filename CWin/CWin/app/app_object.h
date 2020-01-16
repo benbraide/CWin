@@ -9,9 +9,11 @@ namespace cwin::app{
 	class object{
 	public:
 		static thread_local thread::object thread;
+
 	private:
 		friend class thread::object;
 
+		static ATOM class_id_;
 		static std::unordered_map<DWORD, thread::object *> threads_;
 		static std::mutex lock_;
 	};

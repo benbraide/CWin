@@ -155,7 +155,9 @@ void cwin::ui::object::destroy(){
 
 		destroy_();
 		trigger_<events::after_destroy>(nullptr, 0u);
-		after_destroy_();
+
+		if (should_call_after_destroy_())
+			after_destroy_();
 	});
 }
 
@@ -297,6 +299,10 @@ void cwin::ui::object::destroy_(){
 }
 
 bool cwin::ui::object::before_destroy_(){
+	return true;
+}
+
+bool cwin::ui::object::should_call_after_destroy_() const{
 	return true;
 }
 

@@ -1,7 +1,7 @@
 #include "../thread/thread_object.h"
 
 cwin::events::manager::manager(events::target &target)
-	: cross_object(target_.get_thread()), target_(target){}
+	: cross_object(target.get_thread()), target_(target){}
 
 cwin::events::manager::~manager(){
 	count_ = 0u;

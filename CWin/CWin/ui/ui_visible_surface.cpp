@@ -60,6 +60,18 @@ void cwin::ui::visible_surface::get_io_hook(const std::function<void(hook::io &)
 	});
 }
 
+bool cwin::ui::visible_surface::has_io_hook() const{
+	return execute_task([&]{
+		return (io_hook_ != nullptr);
+	});
+}
+
+void cwin::ui::visible_surface::has_io_hook(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(io_hook_ != nullptr);
+	});
+}
+
 void cwin::ui::visible_surface::added_hook_(hook::object &value){
 	surface::added_hook_(value);
 	if (auto io_value = dynamic_cast<hook::io *>(&value); io_value != nullptr){

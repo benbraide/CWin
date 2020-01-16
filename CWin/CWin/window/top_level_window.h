@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../ui/ui_window_surface.h"
+#include "window_object.h"
 
 namespace cwin::window{
-	class top_level : public ui::window_surface{
+	class top_level : public object{
 	public:
 		top_level();
 

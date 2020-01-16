@@ -7,18 +7,15 @@ namespace cwin::ui{
 }
 
 namespace cwin::events::io{
-	class mouse_leave : public disable_result<object>{
+	class mouse_leave : public object{
 	public:
-		using base_type = disable_result<object>;
-		using base_type::base_type;
+		using object::object;
 
 		virtual ~mouse_leave() = default;
 	};
 
-	class mouse_enter : public disable_result<object>{
+	class mouse_enter : public object{
 	public:
-		using base_type = disable_result<object>;
-
 		mouse_enter(events::target &target, const POINT &position);
 
 		mouse_enter(events::target &context, events::target &target, const POINT &position);
@@ -31,10 +28,8 @@ namespace cwin::events::io{
 		POINT position_;
 	};
 
-	class mouse_move : public disable_result<object>{
+	class mouse_move : public object{
 	public:
-		using base_type = disable_result<object>;
-		
 		mouse_move(events::target &target, const POINT &position);
 
 		mouse_move(events::target &context, events::target &target, const POINT &position);
@@ -47,31 +42,13 @@ namespace cwin::events::io{
 		POINT position_;
 	};
 
-	class mouse_drag_begin : public object{
+	class mouse_wheel : public object{
 	public:
-		mouse_drag_begin(events::target &target, const POINT &position);
+		mouse_wheel(events::target &target, const POINT &position, const SIZE &delta);
 
-		mouse_drag_begin(events::target &context, events::target &target, const POINT &position);
+		mouse_wheel(events::target &context, events::target &target, const POINT &position, const SIZE &delta);
 
-		virtual ~mouse_drag_begin();
-
-		virtual const POINT &get_position() const;
-
-	protected:
-		virtual void prevent_default_() override;
-
-		POINT position_;
-	};
-
-	class mouse_drag : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-
-		mouse_drag(events::target &target, const POINT &position, const SIZE &delta);
-
-		mouse_drag(events::target &context, events::target &target, const POINT &position, const SIZE &delta);
-
-		virtual ~mouse_drag();
+		virtual ~mouse_wheel();
 
 		virtual const POINT &get_position() const;
 
@@ -82,26 +59,8 @@ namespace cwin::events::io{
 		SIZE delta_;
 	};
 
-	class mouse_drag_end : public disable_result<object>{
+	class mouse_button : public object{
 	public:
-		using base_type = disable_result<object>;
-
-		mouse_drag_end(events::target &target, const POINT &position);
-
-		mouse_drag_end(events::target &context, events::target &target, const POINT &position);
-
-		virtual ~mouse_drag_end();
-
-		virtual const POINT &get_position() const;
-
-	protected:
-		POINT position_;
-	};
-
-	class mouse_button : public disable_result<object>{
-	public:
-		using base_type = disable_result<object>;
-
 		enum class button_type{
 			nil,
 			left,
@@ -123,6 +82,37 @@ namespace cwin::events::io{
 	protected:
 		POINT position_;
 		button_type button_;
+	};
+
+	class mouse_drag_begin : public mouse_button{
+	public:
+		using mouse_button::mouse_button;
+
+		virtual ~mouse_drag_begin();
+
+	protected:
+		virtual void prevent_default_() override;
+	};
+
+	class mouse_drag : public mouse_button{
+	public:
+		mouse_drag(events::target &target, const POINT &position, button_type button, const SIZE &delta);
+
+		mouse_drag(events::target &context, events::target &target, const POINT &position, button_type button, const SIZE &delta);
+
+		virtual ~mouse_drag();
+
+		virtual const SIZE &get_delta() const;
+
+	protected:
+		SIZE delta_;
+	};
+
+	class mouse_drag_end : public mouse_button{
+	public:
+		using mouse_button::mouse_button;
+
+		virtual ~mouse_drag_end() = default;
 	};
 
 	class mouse_down : public mouse_button{

@@ -1,6 +1,8 @@
 #include "top_level_window.h"
 
-cwin::window::top_level::top_level(){}
+cwin::window::top_level::top_level(){
+	styles_ |= WS_OVERLAPPEDWINDOW;
+}
 
 cwin::window::top_level::~top_level() = default;
 

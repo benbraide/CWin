@@ -7,6 +7,8 @@ namespace cwin::hook{
 }
 
 namespace cwin::ui{
+	class window_surface_manager;
+
 	class visible_surface : public surface{
 	public:
 		using surface::surface;
@@ -31,7 +33,13 @@ namespace cwin::ui{
 
 		virtual void get_io_hook(const std::function<void(hook::io &)> &callback) const;
 
+		virtual bool has_io_hook() const;
+
+		virtual void has_io_hook(const std::function<void(bool)> &callback) const;
+
 	protected:
+		friend class window_surface_manager;
+
 		virtual void added_hook_(hook::object &value) override;
 
 		virtual void removed_hook_(hook::object &value) override;

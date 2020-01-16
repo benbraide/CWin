@@ -5,7 +5,11 @@
 namespace cwin::ui{
 	class window_surface : public visible_surface{
 	public:
-		using visible_surface::visible_surface;
+		window_surface();
+
+		explicit window_surface(tree &parent);
+
+		window_surface(tree &parent, std::size_t index);
 
 		virtual ~window_surface();
 
@@ -41,10 +45,20 @@ namespace cwin::ui{
 
 		virtual void get_computed_extended_styles(const std::function<void(DWORD)> &callback) const;
 
+		virtual const wchar_t *get_class_name() const;
+
+		virtual void get_class_name(const std::function<void(const wchar_t *)> &callback) const;
+
 	protected:
+		friend class window_surface_manager;
+
 		virtual void create_() override;
 
 		virtual void destroy_() override;
+
+		virtual bool should_call_after_destroy_() const override;
+
+		virtual void after_destroy_() override;
 
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) override;
 
@@ -71,6 +85,8 @@ namespace cwin::ui{
 		virtual void hide_() override;
 
 		virtual bool is_visible_() const override;
+
+		virtual bool is_dialog_message_(MSG &msg) const;
 
 		virtual void activate_bounding_region_();
 
