@@ -54,6 +54,69 @@ cwin::hook::object::resolution_type cwin::hook::io::resolve_conflict_(relationsh
 	return resolution_type::replace;
 }
 
+bool cwin::hook::io::mouse_cursor_(UINT hit_target){
+	ui::visible_surface *target = nullptr;
+	return mouse_cursor_(target, hit_target);
+}
+
+bool cwin::hook::io::mouse_cursor_(ui::visible_surface *&target, UINT hit_target){
+	if ((target = dynamic_cast<ui::visible_surface *>(&target_)) == nullptr)
+		return false;
+
+	auto pos = GetMessagePos();
+	POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
+
+	if (mouse_over_ != nullptr && hit_target == HTCLIENT){
+		try{
+			if (mouse_over_->get_io_hook().mouse_cursor_(target, mouse_over_->current_hit_test(position)))
+				return true;
+		}
+		catch (const ui::exception::not_supported &){
+			mouse_over_ = nullptr;
+		}
+	}
+
+	auto value = reinterpret_cast<HCURSOR>(trigger_then_report_result_<events::io::mouse_cursor>(0u, position, hit_target));
+	auto window_target = dynamic_cast<ui::window_surface *>(&target_);
+
+	if (value == nullptr && (window_target != nullptr || hit_target != HTCLIENT)){//Use default
+		switch (hit_target){
+		case HTERROR:
+			break;
+		case HTCLIENT:
+			if ((value = reinterpret_cast<HCURSOR>(GetClassLongPtrW(window_target->get_handle(), GCLP_HCURSOR))) == nullptr)
+				value = LoadCursorW(nullptr, IDC_ARROW);
+			break;
+		case HTLEFT:
+		case HTRIGHT:
+			value = LoadCursorW(nullptr, IDC_SIZEWE);
+			break;
+		case HTTOP:
+		case HTBOTTOM:
+			value = LoadCursorW(nullptr, IDC_SIZENS);
+			break;
+		case HTTOPLEFT:
+		case HTBOTTOMRIGHT:
+			value = LoadCursorW(nullptr, IDC_SIZENWSE);
+			break;
+		case HTTOPRIGHT:
+		case HTBOTTOMLEFT:
+			value = LoadCursorW(nullptr, IDC_SIZENESW);
+			break;
+		default:
+			value = LoadCursorW(nullptr, IDC_ARROW);
+			break;
+		}
+	}
+
+	if (value != nullptr){
+		SetCursor(value);
+		return true;
+	}
+
+	return false;
+}
+
 void cwin::hook::io::mouse_leave_(){
 	if (mouse_over_ != nullptr){
 		try{

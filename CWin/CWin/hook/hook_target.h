@@ -156,7 +156,7 @@ namespace cwin::hook{
 				throw ui::exception::not_supported();
 
 			std::shared_ptr<object> value = std::make_shared<hook_type>(*compatible_self, std::forward<args_types>(args)...);
-			if (value == nullptr || adding_hook_(*value) || !value->adding_to_target_())//Failed to create object
+			if (value == nullptr || !adding_hook_(*value) || !value->adding_to_target_())//Failed to create object
 				return nullptr;
 
 			std::list<std::list<std::shared_ptr<object>>::iterator> marked_its;

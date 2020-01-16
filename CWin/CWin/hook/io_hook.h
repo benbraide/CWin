@@ -27,6 +27,10 @@ namespace cwin::hook{
 
 		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
 
+		virtual bool mouse_cursor_(UINT hit_target);
+
+		virtual bool mouse_cursor_(ui::visible_surface *&target, UINT hit_target);
+
 		virtual void mouse_leave_();
 
 		virtual void mouse_enter_();

@@ -1,5 +1,25 @@
 #include "io_events.h"
 
+cwin::events::io::mouse_cursor::mouse_cursor(events::target &target, const POINT &position, UINT hit_target)
+	: mouse_cursor(target, target, position, hit_target){}
+
+cwin::events::io::mouse_cursor::mouse_cursor(events::target &context, events::target &target, const POINT &position, UINT hit_target)
+	: object(target, context), position_(position), hit_target_(hit_target){}
+
+cwin::events::io::mouse_cursor::~mouse_cursor() = default;
+
+const POINT &cwin::events::io::mouse_cursor::get_position() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return position_;
+}
+
+UINT cwin::events::io::mouse_cursor::get_hit_target() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return hit_target_;
+}
+
 cwin::events::io::mouse_enter::mouse_enter(events::target &target, const POINT &position)
 	: mouse_enter(target, target, position){}
 

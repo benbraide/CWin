@@ -7,6 +7,23 @@ namespace cwin::ui{
 }
 
 namespace cwin::events::io{
+	class mouse_cursor : public object{
+	public:
+		mouse_cursor(events::target &target, const POINT &position, UINT hit_target);
+
+		mouse_cursor(events::target &context, events::target &target, const POINT &position, UINT hit_target);
+
+		virtual ~mouse_cursor();
+
+		virtual const POINT &get_position() const;
+
+		virtual UINT get_hit_target() const;
+
+	protected:
+		POINT position_;
+		UINT hit_target_;
+	};
+
 	class mouse_leave : public object{
 	public:
 		using object::object;

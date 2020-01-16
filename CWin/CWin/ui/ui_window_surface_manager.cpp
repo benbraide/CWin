@@ -128,6 +128,10 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 	case WM_CLOSE:
 		target.destroy();
 		return 0;
+	case WM_SETCURSOR:
+		if (target.io_hook_ != nullptr && target.io_hook_->mouse_cursor_(static_cast<UINT>(LOWORD(lparam))))
+			return 0;
+		break;
 	case WM_NCMOUSELEAVE:
 	case WM_MOUSELEAVE:
 		mouse_leave_(target);
