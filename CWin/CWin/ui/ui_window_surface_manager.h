@@ -1,6 +1,10 @@
 #pragma once
 
+#define CAPSTONE_HAS_X86
+
 #include <unordered_map>
+
+#include "../subhook/subhook.h"
 
 #include "../events/io_events.h"
 
@@ -9,6 +13,7 @@ namespace cwin::thread{
 }
 
 namespace cwin::ui{
+	class visible_surface;
 	class window_surface;
 
 	class window_surface_manager{
@@ -36,6 +41,8 @@ namespace cwin::ui{
 
 		const mouse_info &get_mouse_info() const;
 
+		const PAINTSTRUCT &get_paint_info() const;
+
 		HWND create(window_surface &owner, const wchar_t *class_name, const wchar_t *caption, HINSTANCE instance);
 
 	protected:
@@ -46,6 +53,8 @@ namespace cwin::ui{
 		bool is_dialog_message_(MSG &msg);
 
 		LRESULT dispatch_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);
+
+		void paint_(visible_surface &target, UINT message, WPARAM wparam, LPARAM lparam);
 
 		void mouse_leave_(window_surface &target);
 
@@ -63,6 +72,10 @@ namespace cwin::ui{
 
 		static LRESULT CALLBACK hook_entry_(int code, WPARAM wparam, LPARAM lparam);
 
+		static HDC WINAPI begin_paint_entry_(HWND handle, PAINTSTRUCT *info);
+
+		static BOOL WINAPI end_paint_entry_(HWND handle, const PAINTSTRUCT *info);
+
 		thread::object &thread_;
 		HHOOK hook_handle_ = nullptr;
 
@@ -71,6 +84,15 @@ namespace cwin::ui{
 
 		cache_info cache_{};
 		mouse_info mouse_info_{};
+
+		subhook_t begin_paint_detour_;
+		subhook_t end_paint_detour_;
+
+		decltype(&BeginPaint) begin_paint_ = nullptr;
+		decltype(&EndPaint) end_paint_ = nullptr;
+
+		window_surface *paint_target_ = nullptr;
+		PAINTSTRUCT paint_info_{};
 	};
 }
 

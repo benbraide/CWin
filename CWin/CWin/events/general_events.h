@@ -202,6 +202,10 @@ namespace cwin::events{
 	using after_position_change = pair_change<POINT, true, false>;
 	using after_position_update = pair_change<POINT, false, false>;
 
+	using before_background_color_change = pair_change<D2D1_COLOR_F, true, true>;
+	using after_background_color_change = pair_change<D2D1_COLOR_F, true, false>;
+	using after_background_color_update = pair_change<D2D1_COLOR_F, false, false>;
+
 	class timer : public disable_result<object>{
 	public:
 		using base_type = disable_result<object>;

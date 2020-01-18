@@ -1,8 +1,13 @@
 #include "../app/app_object.h"
 #include "../hook/io_hook.h"
+
 #include "../events/general_events.h"
+#include "../events/drawing_events.h"
+
+#include "../subhook/subhook.c"
 
 #include "ui_window_surface.h"
+#include "ui_non_window_surface.h"
 #include "ui_window_surface_manager.h"
 
 cwin::ui::window_surface_manager::window_surface_manager(thread::object &thread)
@@ -11,6 +16,19 @@ cwin::ui::window_surface_manager::window_surface_manager(thread::object &thread)
 
 	mouse_info_.drag_threshold.cx = GetSystemMetrics(SM_CXDRAG);
 	mouse_info_.drag_threshold.cy = GetSystemMetrics(SM_CYDRAG);
+
+	if (auto user32 = LoadLibraryW(L"user32.dll"); user32 != nullptr){
+		begin_paint_detour_ = subhook_new(GetProcAddress(user32, "BeginPaint"), begin_paint_entry_, subhook_flags_t::SUBHOOK_64BIT_OFFSET);
+		end_paint_detour_ = subhook_new(GetProcAddress(user32, "EndPaint"), end_paint_entry_, subhook_flags_t::SUBHOOK_64BIT_OFFSET);
+
+		subhook_install(begin_paint_detour_);
+		subhook_install(end_paint_detour_);
+
+		begin_paint_ = (decltype(&BeginPaint))subhook_get_trampoline(begin_paint_detour_);
+		end_paint_ = (decltype(&EndPaint))subhook_get_trampoline(end_paint_detour_);
+
+		FreeLibrary(user32);
+	}
 }
 
 cwin::ui::window_surface_manager::~window_surface_manager(){
@@ -28,6 +46,12 @@ const cwin::ui::window_surface_manager::mouse_info &cwin::ui::window_surface_man
 	if (!thread_.is_context())
 		throw thread::exception::outside_context();
 	return mouse_info_;
+}
+
+const PAINTSTRUCT &cwin::ui::window_surface_manager::get_paint_info() const{
+	if (!thread_.is_context())
+		throw thread::exception::outside_context();
+	return paint_info_;
 }
 
 HWND cwin::ui::window_surface_manager::create(window_surface &owner, const wchar_t *class_name, const wchar_t *caption, HINSTANCE instance){
@@ -128,6 +152,29 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 	case WM_CLOSE:
 		target.destroy();
 		return 0;
+	case WM_ERASEBKGND:
+		target.trigger_<events::erase_background>(nullptr, 0u, MSG{ target.handle_, message, wparam, lparam }, thread_.get_class_entry(target.get_class_name_()));
+		return 0;
+	case WM_PAINT:
+		try{
+			paint_target_ = &target;
+			paint_(target, message, wparam, lparam);
+			paint_target_ = nullptr;
+
+			if (paint_info_.hdc != nullptr)
+				EndPaint(target.handle_, &paint_info_);
+
+			paint_info_.hdc = nullptr;
+		}
+		catch (...){
+			paint_target_ = nullptr;
+			if (paint_info_.hdc != nullptr)
+				EndPaint(target.handle_, &paint_info_);
+
+			paint_info_.hdc = nullptr;
+			throw;
+		}
+		return 0;
 	case WM_SETCURSOR:
 		if (target.io_hook_ != nullptr && target.io_hook_->mouse_cursor_(static_cast<UINT>(LOWORD(lparam))))
 			return 0;
@@ -187,6 +234,23 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 	}
 	
 	return CallWindowProcW(thread_.get_class_entry(target.get_class_name_()), target.handle_, message, wparam, lparam);
+}
+
+void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
+	if (auto non_window_target = dynamic_cast<non_window_surface *>(&target); non_window_target != nullptr){
+		if (non_window_target->client_handle_hook_ != nullptr)
+			target.trigger_<events::non_client_paint>(nullptr, 0u);
+
+		target.trigger_<events::erase_background>(nullptr, 0u);
+		target.trigger_<events::paint>(nullptr, 0u);
+	}
+	else if (auto window_target = dynamic_cast<window_surface *>(&target); window_target != nullptr)
+		target.trigger_<events::paint>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()));
+
+	target.traverse_matching_children<non_window_surface>([&](non_window_surface &child){
+		if (child.is_visible_())
+			paint_(child, message, 0, 0);
+	});
 }
 
 void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
@@ -298,4 +362,31 @@ LRESULT CALLBACK cwin::ui::window_surface_manager::hook_entry_(int code, WPARAM 
 		SetWindowLongPtrW(manager.cache_.key, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(entry_));//Subclass window
 
 	return CallNextHookEx(nullptr, code, wparam, lparam);
+}
+
+HDC WINAPI cwin::ui::window_surface_manager::begin_paint_entry_(HWND handle, PAINTSTRUCT *info){
+	auto &manager = app::object::thread.get_window_manager();
+	if (manager.paint_target_ != nullptr && handle == manager.paint_target_->handle_ && manager.paint_info_.hdc != nullptr)
+		return (*info = manager.paint_info_).hdc;
+
+	subhook_remove(manager.begin_paint_detour_);
+	auto result = BeginPaint(handle, info);
+	subhook_install(manager.begin_paint_detour_);
+
+	if (manager.paint_target_ != nullptr && handle == manager.paint_target_->handle_)
+		manager.paint_info_ = *info;
+
+	return result;
+}
+
+BOOL WINAPI cwin::ui::window_surface_manager::end_paint_entry_(HWND handle, const PAINTSTRUCT *info){
+	auto &manager = app::object::thread.get_window_manager();
+	if (manager.paint_target_ != nullptr && handle == manager.paint_target_->handle_)
+		return TRUE;
+
+	subhook_remove(manager.end_paint_detour_);
+	auto result = EndPaint(handle, info);
+	subhook_install(manager.end_paint_detour_);
+
+	return result;
 }

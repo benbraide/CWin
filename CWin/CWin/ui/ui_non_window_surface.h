@@ -27,6 +27,8 @@ namespace cwin::ui{
 		virtual void compute_bounded_region(const POINT &offset, const std::function<void(HRGN)> &callback) const;
 
 	protected:
+		friend class window_surface_manager;
+
 		virtual void added_hook_(hook::object &value) override;
 
 		virtual void removed_hook_(hook::object &value) override;

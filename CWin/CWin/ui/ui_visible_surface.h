@@ -4,6 +4,7 @@
 
 namespace cwin::hook{
 	class io;
+	class background;
 }
 
 namespace cwin::ui{
@@ -29,6 +30,16 @@ namespace cwin::ui{
 
 		virtual void is_visible(const std::function<void(bool)> &callback) const;
 
+		virtual void set_background_color(const D2D1_COLOR_F &value);
+
+		virtual const D2D1_COLOR_F &get_background_color() const;
+
+		virtual void get_background_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const;
+
+		virtual const D2D1_COLOR_F &get_current_background_color() const;
+
+		virtual void get_current_background_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const;
+
 		virtual hook::io &get_io_hook() const;
 
 		virtual void get_io_hook(const std::function<void(hook::io &)> &callback) const;
@@ -44,6 +55,16 @@ namespace cwin::ui{
 
 		virtual void removed_hook_(hook::object &value) override;
 
+		virtual void set_background_color_(const D2D1_COLOR_F &value);
+
+		virtual void set_background_color_(const D2D1_COLOR_F &value, bool should_animate);
+
+		virtual void set_background_color_(const D2D1_COLOR_F &value, bool should_animate, const std::function<void(const D2D1_COLOR_F &, const D2D1_COLOR_F &)> &callback);
+
+		virtual const D2D1_COLOR_F &get_background_color_() const;
+
+		virtual const D2D1_COLOR_F &get_current_background_color_() const;
+
 		virtual void redraw_(HRGN region);
 
 		virtual void redraw_(const RECT &region);
@@ -55,5 +76,6 @@ namespace cwin::ui{
 		virtual bool is_visible_() const = 0;
 
 		hook::io *io_hook_ = nullptr;
+		hook::background *background_hook_ = nullptr;
 	};
 }

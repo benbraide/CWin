@@ -5,13 +5,15 @@
 namespace cwin::events{
 	class message_object : public object{
 	public:
-		message_object(events::target &target, MSG &message_info, WNDPROC default_callback);
+		message_object(events::target &target, const MSG &message_info, WNDPROC default_callback);
 
-		message_object(events::target &context, events::target &target, MSG &message_info, WNDPROC default_callback);
+		message_object(events::target &context, events::target &target, const MSG &message_info, WNDPROC default_callback);
 
 		virtual ~message_object();
 
-		virtual MSG &get_message() const;
+		virtual const MSG &get_message() const;
+
+		virtual MSG &get_message();
 
 	protected:
 		virtual void call_handler_() override;
@@ -20,7 +22,7 @@ namespace cwin::events{
 
 		virtual LRESULT get_called_handler_value_() const;
 
-		MSG &message_info_;
+		MSG message_info_;
 		WNDPROC default_callback_;
 	};
 }

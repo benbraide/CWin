@@ -1,5 +1,8 @@
 #include "../hook/io_hook.h"
+#include "../hook/background_hooks.h"
+
 #include "../thread/thread_object.h"
+#include "../events/general_events.h"
 
 #include "ui_visible_surface.h"
 
@@ -45,6 +48,36 @@ void cwin::ui::visible_surface::is_visible(const std::function<void(bool)> &call
 	});
 }
 
+void cwin::ui::visible_surface::set_background_color(const D2D1_COLOR_F &value){
+	post_or_execute_task([=]{
+		set_background_color_(value);
+	});
+}
+
+const D2D1_COLOR_F &cwin::ui::visible_surface::get_background_color() const{
+	return *execute_task([&]{
+		return &get_background_color_();
+	});
+}
+
+void cwin::ui::visible_surface::get_background_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_background_color_());
+	});
+}
+
+const D2D1_COLOR_F &cwin::ui::visible_surface::get_current_background_color() const{
+	return *execute_task([&]{
+		return &get_current_background_color_();
+	});
+}
+
+void cwin::ui::visible_surface::get_current_background_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_current_background_color_());
+	});
+}
+
 cwin::hook::io &cwin::ui::visible_surface::get_io_hook() const{
 	return *execute_task([&]{
 		if (io_hook_ == nullptr)
@@ -83,13 +116,50 @@ void cwin::ui::visible_surface::added_hook_(hook::object &value){
 			};
 		}
 	}
+	else if (auto background_value = dynamic_cast<hook::background *>(&value); background_value != nullptr)
+		background_hook_ = background_value;
 }
 
 void cwin::ui::visible_surface::removed_hook_(hook::object &value){
 	if (&value == io_hook_)
 		io_hook_ = nullptr;
+	else if (&value == background_hook_)
+		background_hook_ = nullptr;
 
 	surface::removed_hook_(value);
+}
+
+void cwin::ui::visible_surface::set_background_color_(const D2D1_COLOR_F &value){
+	if (auto color_background_hook = dynamic_cast<hook::color_background *>(background_hook_); color_background_hook)
+		color_background_hook->set_color_(value);
+	else
+		throw exception::not_supported();
+}
+
+void cwin::ui::visible_surface::set_background_color_(const D2D1_COLOR_F &value, bool should_animate){
+	if (auto color_background_hook = dynamic_cast<hook::color_background *>(background_hook_); color_background_hook)
+		color_background_hook->set_color_(value, should_animate);
+	else
+		throw exception::not_supported();
+}
+
+void cwin::ui::visible_surface::set_background_color_(const D2D1_COLOR_F &value, bool should_animate, const std::function<void(const D2D1_COLOR_F &, const D2D1_COLOR_F &)> &callback){
+	if (auto color_background_hook = dynamic_cast<hook::color_background *>(background_hook_); color_background_hook)
+		color_background_hook->set_color_(value, should_animate, callback);
+	else
+		throw exception::not_supported();
+}
+
+const D2D1_COLOR_F &cwin::ui::visible_surface::get_background_color_() const{
+	if (auto color_background_hook = dynamic_cast<hook::color_background *>(background_hook_); color_background_hook)
+		return color_background_hook->get_color_();
+	throw exception::not_supported();
+}
+
+const D2D1_COLOR_F &cwin::ui::visible_surface::get_current_background_color_() const{
+	if (auto color_background_hook = dynamic_cast<hook::color_background *>(background_hook_); color_background_hook)
+		return color_background_hook->get_current_color_();
+	throw exception::not_supported();
 }
 
 void cwin::ui::visible_surface::redraw_(HRGN region){
