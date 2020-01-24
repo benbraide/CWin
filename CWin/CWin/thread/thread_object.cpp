@@ -420,6 +420,7 @@ void cwin::thread::object::initialize_dpi_scale_() const{
 }
 
 void CALLBACK cwin::thread::object::timer_entry_(HWND handle, UINT message, UINT_PTR id, DWORD time){
-	if (auto it = app::object::thread.timers_.find(static_cast<unsigned __int64>(id)); it != app::object::thread.timers_.end())
+	auto &thread = app::object::get_thread();
+	if (auto it = thread.timers_.find(static_cast<unsigned __int64>(id)); it != thread.timers_.end())
 		it->second(static_cast<unsigned __int64>(id));//Call handler
 }

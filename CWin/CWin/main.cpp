@@ -2,6 +2,7 @@
 #include "window/top_level_window.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
+	cwin::app::object::init();
 	cwin::window::top_level window;
 
 	window.set_size(SIZE{ 900, 500 });
@@ -11,5 +12,5 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 	window.create();
 	window.show();
 
-	return cwin::app::object::thread.run();
+	return cwin::app::object::get_thread().run();
 }

@@ -322,7 +322,7 @@ void cwin::ui::window_surface_manager::mouse_wheel_(window_surface &target, cons
 }
 
 LRESULT CALLBACK cwin::ui::window_surface_manager::entry_(HWND handle, UINT message, WPARAM wparam, LPARAM lparam){
-	auto &manager = app::object::thread.get_window_manager();
+	auto &manager = app::object::get_thread().get_window_manager();
 	if (auto target = manager.find_(handle, true); target != nullptr)
 		return manager.dispatch_(*target, message, wparam, lparam);
 
@@ -330,7 +330,7 @@ LRESULT CALLBACK cwin::ui::window_surface_manager::entry_(HWND handle, UINT mess
 }
 
 LRESULT CALLBACK cwin::ui::window_surface_manager::hook_entry_(int code, WPARAM wparam, LPARAM lparam){
-	auto &manager = app::object::thread.get_window_manager();
+	auto &manager = app::object::get_thread().get_window_manager();
 	switch (code){
 	case HCBT_DESTROYWND:
 		if (manager.find_(reinterpret_cast<HWND>(wparam), true) != nullptr)
@@ -362,7 +362,7 @@ LRESULT CALLBACK cwin::ui::window_surface_manager::hook_entry_(int code, WPARAM 
 }
 
 HDC WINAPI cwin::ui::window_surface_manager::begin_paint_entry_(HWND handle, PAINTSTRUCT *info){
-	auto &manager = app::object::thread.get_window_manager();
+	auto &manager = app::object::get_thread().get_window_manager();
 	if (manager.paint_target_ != nullptr && handle == manager.paint_target_->handle_ && manager.paint_info_.hdc != nullptr)
 		return (*info = manager.paint_info_).hdc;
 
@@ -377,7 +377,7 @@ HDC WINAPI cwin::ui::window_surface_manager::begin_paint_entry_(HWND handle, PAI
 }
 
 BOOL WINAPI cwin::ui::window_surface_manager::end_paint_entry_(HWND handle, const PAINTSTRUCT *info){
-	auto &manager = app::object::thread.get_window_manager();
+	auto &manager = app::object::get_thread().get_window_manager();
 	if (manager.paint_target_ != nullptr && handle == manager.paint_target_->handle_)
 		return TRUE;
 

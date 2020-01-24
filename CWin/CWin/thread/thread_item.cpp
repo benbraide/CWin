@@ -1,7 +1,7 @@
 #include "../app/app_object.h"
 
 cwin::thread::item::item()
-	: managed_target(app::object::thread){
+	: managed_target(app::object::get_thread()){
 	thread_.add_item_(*this);
 }
 
