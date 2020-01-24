@@ -40,6 +40,22 @@ namespace cwin::ui{
 		}
 		
 		template <typename callback_type>
+		void reverse_traverse_children(const callback_type &callback) const{
+			post_or_execute_task([=]{
+				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
+				tree_call_forwarder<return_type>::template call_reverse_traverse_children(*this, utility::object_to_function_traits::get(callback));
+			});
+		}
+		
+		template <typename target_type, typename callback_type>
+		void reverse_traverse_matching_children(const callback_type &callback) const{
+			post_or_execute_task([=]{
+				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
+				tree_call_forwarder<return_type>::template call_reverse_traverse_matching_children<target_type>(*this, utility::object_to_function_traits::get(callback));
+			});
+		}
+		
+		template <typename callback_type>
 		void traverse_offspring(const callback_type &callback) const{
 			post_or_execute_task([=]{
 				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
@@ -52,6 +68,22 @@ namespace cwin::ui{
 			post_or_execute_task([=]{
 				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
 				tree_call_forwarder<return_type>::template call_traverse_matching_offspring<target_type>(*this, utility::object_to_function_traits::get(callback));
+			});
+		}
+		
+		template <typename callback_type>
+		void reverse_traverse_offspring(const callback_type &callback) const{
+			post_or_execute_task([=]{
+				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
+				tree_call_forwarder<return_type>::template call_reverse_traverse_offspring(*this, utility::object_to_function_traits::get(callback));
+			});
+		}
+		
+		template <typename target_type, typename callback_type>
+		void reverse_traverse_matching_offspring(const callback_type &callback) const{
+			post_or_execute_task([=]{
+				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
+				tree_call_forwarder<return_type>::template call_reverse_traverse_matching_offspring<target_type>(*this, utility::object_to_function_traits::get(callback));
 			});
 		}
 
@@ -79,6 +111,24 @@ namespace cwin::ui{
 			template <typename target_type>
 			static void call_traverse_matching_offspring(const tree &target, const std::function<bool(target_type &)> &callback){
 				target.traverse_matching_offspring_(callback);
+			}
+
+			static void call_reverse_traverse_children(const tree &target, const std::function<bool(object &)> &callback){
+				target.reverse_traverse_children_(callback);
+			}
+
+			template <typename target_type>
+			static void call_reverse_traverse_matching_children(const tree &target, const std::function<bool(target_type &)> &callback){
+				target.reverse_traverse_matching_children_(callback);
+			}
+
+			static void call_reverse_traverse_offspring(const tree &target, const std::function<bool(object &)> &callback){
+				target.reverse_traverse_offspring_(callback);
+			}
+
+			template <typename target_type>
+			static void call_reverse_traverse_matching_offspring(const tree &target, const std::function<bool(target_type &)> &callback){
+				target.reverse_traverse_matching_offspring_(callback);
 			}
 		};
 
@@ -109,6 +159,36 @@ namespace cwin::ui{
 			template <typename target_type>
 			static void call_traverse_matching_offspring(const tree &target, const std::function<void(target_type &)> &callback){
 				tree_call_forwarder<bool>::call_traverse_matching_offspring<target_type>(target, [&](target_type &value){
+					callback(value);
+					return true;
+				});
+			}
+
+			static void call_reverse_traverse_children(const tree &target, bool is_similar, const std::function<void(object &)> &callback){
+				tree_call_forwarder<bool>::call_reverse_traverse_children(target, [&](object &value){
+					callback(value);
+					return true;
+				});
+			}
+
+			template <typename target_type>
+			static void call_reverse_traverse_matching_children(const tree &target, const std::function<void(target_type &)> &callback){
+				tree_call_forwarder<bool>::call_reverse_traverse_matching_children<target_type>(target, [&](target_type &value){
+					callback(value);
+					return true;
+				});
+			}
+
+			static void call_reverse_traverse_offspring(const tree &target, bool is_similar, const std::function<void(object &)> &callback){
+				tree_call_forwarder<bool>::call_reverse_traverse_offspring(target, [&](object &value){
+					callback(value);
+					return true;
+				});
+			}
+
+			template <typename target_type>
+			static void call_reverse_traverse_matching_offspring(const tree &target, const std::function<void(target_type &)> &callback){
+				tree_call_forwarder<bool>::call_reverse_traverse_matching_offspring<target_type>(target, [&](target_type &value){
 					callback(value);
 					return true;
 				});
@@ -151,12 +231,34 @@ namespace cwin::ui{
 				return true;
 			});
 		}
+		
+		virtual void reverse_traverse_children_(const std::function<bool(object &)> &callback) const;
+		
+		template <typename target_type>
+		void reverse_traverse_matching_children_(const std::function<bool(target_type &)> &callback) const{
+			reverse_traverse_children_([&](object &value){
+				if (auto target_value = dynamic_cast<target_type *>(&value); target_value != nullptr)
+					return callback(*target_value);
+				return true;
+			});
+		}
 
 		virtual bool traverse_offspring_(const std::function<bool(object &)> &callback) const;
 
 		template <typename target_type>
 		void traverse_matching_offspring_(const std::function<bool(target_type &)> &callback) const{
 			traverse_offspring_([&](object &value){
+				if (auto target_value = dynamic_cast<target_type *>(&value); target_value != nullptr)
+					return callback(*target_value);
+				return true;
+			});
+		}
+		
+		virtual bool reverse_traverse_offspring_(const std::function<bool(object &)> &callback) const;
+
+		template <typename target_type>
+		void reverse_traverse_matching_offspring_(const std::function<bool(target_type &)> &callback) const{
+			reverse_traverse_offspring_([&](object &value){
 				if (auto target_value = dynamic_cast<target_type *>(&value); target_value != nullptr)
 					return callback(*target_value);
 				return true;

@@ -219,6 +219,17 @@ void cwin::ui::object::traverse_ancestors_(const std::function<bool(tree &)> &ca
 	}
 }
 
+void cwin::ui::object::reverse_traverse_ancestors_(const std::function<bool(tree &)> &callback) const{
+	std::list<tree *> ancestors;
+	for (auto ancestor = parent_; ancestor != nullptr; ancestor = ancestor->parent_)
+		ancestors.push_front(ancestor);
+
+	for (auto ancestor : ancestors){
+		if (!callback(*ancestor))
+			break;
+	}
+}
+
 bool cwin::ui::object::is_ancestor_(const tree &target) const{
 	for (auto ancestor = parent_; ancestor != nullptr; ancestor = ancestor->parent_){
 		if (ancestor == &target)
@@ -271,6 +282,19 @@ void cwin::ui::object::traverse_siblings_(const std::function<bool(object &, boo
 		if (sibling == this)
 			is_before = false;
 		else if (!callback(*sibling, is_before))
+			break;
+	}
+}
+
+void cwin::ui::object::reverse_traverse_siblings_(const std::function<bool(object &, bool)> &callback) const{
+	if (parent_ == nullptr || parent_->children_.empty())
+		return;//No siblings
+
+	auto is_before = false;
+	for (auto sibling = parent_->children_.rbegin(); sibling != parent_->children_.rend(); ++sibling){
+		if (*sibling == this)
+			is_before = true;
+		else if (!callback(**sibling, is_before))
 			break;
 	}
 }

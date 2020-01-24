@@ -208,6 +208,16 @@ void cwin::ui::tree::traverse_children_(const std::function<bool(object &)> &cal
 	}
 }
 
+void cwin::ui::tree::reverse_traverse_children_(const std::function<bool(object &)> &callback) const{
+	if (children_.empty())
+		return;
+
+	for (auto child = children_.rbegin(); child != children_.rend(); ++child){
+		if (!callback(**child))
+			break;
+	}
+}
+
 bool cwin::ui::tree::traverse_offspring_(const std::function<bool(object &)> &callback) const{
 	if (children_.empty())
 		return true;
@@ -217,6 +227,21 @@ bool cwin::ui::tree::traverse_offspring_(const std::function<bool(object &)> &ca
 			return false;
 
 		if (auto tree_child = dynamic_cast<tree *>(child); tree_child != nullptr && !tree_child->traverse_offspring_(callback))
+			return false;
+	}
+
+	return true;
+}
+
+bool cwin::ui::tree::reverse_traverse_offspring_(const std::function<bool(object &)> &callback) const{
+	if (children_.empty())
+		return true;
+
+	for (auto child = children_.rbegin(); child != children_.rend(); ++child){
+		if (auto tree_child = dynamic_cast<tree *>(*child); tree_child != nullptr && !tree_child->traverse_offspring_(callback))
+			return false;
+
+		if (!callback(**child))
 			return false;
 	}
 
