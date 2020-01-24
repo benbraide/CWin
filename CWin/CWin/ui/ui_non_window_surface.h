@@ -22,10 +22,6 @@ namespace cwin::ui{
 
 		virtual void get_client_handle(const std::function<void(HRGN)> &callback) const;
 
-		virtual HRGN compute_bounded_region(const POINT &offset) const;
-
-		virtual void compute_bounded_region(const POINT &offset, const std::function<void(HRGN)> &callback) const;
-
 	protected:
 		friend class window_surface_manager;
 
@@ -37,13 +33,23 @@ namespace cwin::ui{
 
 		virtual void destroy_() override;
 
+		virtual bool is_created_() const override;
+
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) override;
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value) override;
 
+		virtual void offset_point_to_window_(POINT &value) const override;
+
+		virtual void offset_point_from_window_(POINT &value) const override;
+
 		virtual UINT hit_test_(const POINT &value) const override;
 
 		virtual UINT current_hit_test_(const POINT &value) const override;
+
+		virtual void update_bounds_() override;
+
+		virtual const handle_bound_info &get_client_bound_() const override;
 
 		using visible_surface::redraw_;
 
@@ -57,15 +63,19 @@ namespace cwin::ui{
 
 		virtual void redraw_at_(HRGN region, POINT position);
 
-		virtual HRGN compute_bounded_region_(HRGN target, bool is_client, const POINT &offset) const;
+		virtual UINT non_client_hit_test_(const POINT &value) const;
 
 		HRGN handle_ = nullptr;
 		HRGN client_handle_ = nullptr;
+
+		handle_bound_info handle_bound_{};
+		handle_bound_info client_handle_bound_{};
 
 		hook::non_window::handle *handle_hook_ = nullptr;
 		hook::non_window::client_handle *client_handle_hook_ = nullptr;
 
 		bool visible_ = true;
+		RECT client_handle_margin_{};
 	};
 
 	class fixed_non_window_surface : public non_window_surface{

@@ -19,6 +19,8 @@ namespace cwin::utility{
 
 		static bool copy(HRGN destination, HRGN target);
 
+		static bool is_equal(HRGN first, HRGN second);
+
 		static bool hit_test(HRGN handle, const POINT &value);
 	};
 }

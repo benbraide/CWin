@@ -8,6 +8,12 @@
 namespace cwin::ui{
 	class surface : public tree{
 	public:
+		struct handle_bound_info{
+			HRGN rect_handle;
+			HRGN handle;
+			POINT offset;
+		};
+
 		using tree::tree;
 
 		virtual ~surface();
@@ -64,20 +70,6 @@ namespace cwin::ui{
 
 		virtual void compute_current_client_size(const std::function<void(const SIZE &)> &callback) const;
 
-		virtual void set_client_margin(const RECT &value);
-
-		virtual const RECT &get_client_margin() const;
-
-		virtual void get_client_margin(const std::function<void(const RECT &)> &callback) const;
-
-		virtual RECT compute_client_dimension() const;
-
-		virtual void compute_client_dimension(const std::function<void(const RECT &)> &callback) const;
-
-		virtual RECT compute_current_client_dimension() const;
-
-		virtual void compute_current_client_dimension(const std::function<void(const RECT &)> &callback) const;
-
 		virtual RECT compute_dimension() const;
 
 		virtual void compute_dimension(const std::function<void(const RECT &)> &callback) const;
@@ -94,6 +86,10 @@ namespace cwin::ui{
 
 		virtual void compute_current_absolute_dimension(const std::function<void(const RECT &)> &callback) const;
 
+		virtual void offset_point_to_window(POINT &value) const;
+
+		virtual void offset_point_from_window(POINT &value) const;
+
 		virtual UINT hit_test(const POINT &value) const;
 
 		virtual void hit_test(const POINT &value, const std::function<void(UINT)> &callback) const;
@@ -102,16 +98,16 @@ namespace cwin::ui{
 
 		virtual void current_hit_test(const POINT &value, const std::function<void(UINT)> &callback) const;
 
+		virtual void update_bounds();
+
+		virtual const handle_bound_info &get_client_bound() const;
+
+		virtual void get_client_bound(const std::function<void(const handle_bound_info &)> &callback) const;
+
 	protected:
 		virtual void added_hook_(hook::object &value) override;
 
 		virtual void removed_hook_(hook::object &value) override;
-
-		virtual bool is_created_() const override;
-
-		virtual void update_bounding_region_();
-
-		virtual void destroy_bounding_region_();
 
 		virtual void set_size_(const SIZE &value);
 
@@ -139,12 +135,6 @@ namespace cwin::ui{
 
 		virtual POINT compute_current_absolute_position_() const;
 
-		virtual void set_client_margin_(const RECT &value);
-
-		virtual RECT compute_client_dimension_() const;
-
-		virtual RECT compute_current_client_dimension_() const;
-
 		virtual RECT compute_dimension_() const;
 
 		virtual RECT compute_current_dimension_() const;
@@ -152,6 +142,10 @@ namespace cwin::ui{
 		virtual RECT compute_absolute_dimension_() const;
 
 		virtual RECT compute_current_absolute_dimension_() const;
+
+		virtual SIZE compute_client_size_() const;
+
+		virtual SIZE compute_current_client_size_() const;
 
 		virtual void compute_relative_to_absolute_(POINT &value) const;
 
@@ -161,35 +155,31 @@ namespace cwin::ui{
 
 		virtual void compute_absolute_to_relative_(RECT &value) const;
 
+		virtual void offset_point_to_window_(POINT &value) const;
+
+		virtual void offset_point_from_window_(POINT &value) const;
+
 		virtual UINT hit_test_(const POINT &value) const;
 
 		virtual UINT current_hit_test_(const POINT &value) const;
 
 		template <typename surface_type>
-		POINT compute_matching_surface_relative_offset_(bool include_client_margin) const{
+		POINT compute_matching_surface_relative_offset_() const{
 			POINT offset{};
-			return ((find_matching_surface_ancestor_<surface_type>(&offset, include_client_margin) == nullptr) ? POINT{} : offset);
+			return ((find_matching_surface_ancestor_<surface_type>(&offset) == nullptr) ? POINT{} : offset);
 		}
 
 		template <typename surface_type>
-		surface_type *find_matching_surface_ancestor_(POINT *offset, bool include_client_margin) const{
+		surface_type *find_matching_surface_ancestor_(POINT *offset) const{
 			surface_type *value = nullptr;
 			traverse_matching_ancestors_<surface>([&](surface &ancestor){
-				if (offset != nullptr && include_client_margin){
-					offset->x += ancestor.client_margin_.left;
-					offset->y += ancestor.client_margin_.top;
-				}
-
 				if ((value = dynamic_cast<surface_type *>(&ancestor)) != nullptr)
-					return false;//Ancestor is a window
+					return false;//Ancestor is a match
 
 				if (offset != nullptr){
-					if (!include_client_margin){
-						offset->x += ancestor.client_margin_.left;
-						offset->y += ancestor.client_margin_.top;
-					}
-
+					ancestor.offset_point_to_window_(*offset);
 					auto &current_position = ancestor.get_current_position_();
+
 					offset->x += current_position.x;
 					offset->y += current_position.y;
 				}
@@ -200,12 +190,16 @@ namespace cwin::ui{
 			return value;
 		}
 
+		virtual void update_region_bound_(HRGN target, const SIZE &size) const;
+
+		virtual void update_bounds_() = 0;
+
+		virtual const handle_bound_info &get_client_bound_() const = 0;
+
 		SIZE size_{};
 		POINT position_{};
-		RECT client_margin_{};
 
 		hook::animated_size *size_hook_ = nullptr;
 		hook::animated_position *position_hook_ = nullptr;
-		HRGN bounding_handle_ = nullptr;
 	};
 }

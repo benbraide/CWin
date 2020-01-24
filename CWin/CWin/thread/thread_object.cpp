@@ -2,8 +2,9 @@
 
 cwin::thread::object::object()
 	: queue_(*this), window_manager_(*this), id_(GetCurrentThreadId()){
-	source_rgn_ = CreateRectRgn(0, 0, 0, 0);
-	destination_rgn_ = CreateRectRgn(0, 0, 0, 0);
+	rgns_[0] = CreateRectRgn(0, 0, 0, 0);
+	rgns_[1] = CreateRectRgn(0, 0, 0, 0);
+	rgns_[2] = CreateRectRgn(0, 0, 0, 0);
 
 	std::lock_guard<std::mutex> guard(app::object::lock_);
 	app::object::threads_[GetCurrentThreadId()] = this;
@@ -29,14 +30,19 @@ cwin::thread::object::object()
 }
 
 cwin::thread::object::~object(){
-	if (source_rgn_ != nullptr){
-		DeleteObject(source_rgn_);
-		source_rgn_ = nullptr;
+	if (rgns_[0] != nullptr){
+		DeleteObject(rgns_[0]);
+		rgns_[0] = nullptr;
 	}
 
-	if (destination_rgn_ != nullptr){
-		DeleteObject(destination_rgn_);
-		destination_rgn_ = nullptr;
+	if (rgns_[1] != nullptr){
+		DeleteObject(rgns_[1]);
+		rgns_[1] = nullptr;
+	}
+
+	if (rgns_[2] != nullptr){
+		DeleteObject(rgns_[2]);
+		rgns_[2] = nullptr;
 	}
 
 	std::lock_guard<std::mutex> guard(app::object::lock_);
@@ -142,16 +148,20 @@ bool cwin::thread::object::post_message(UINT message, WPARAM wparam, LPARAM lpar
 	return (PostThreadMessageW(id_, message, wparam, lparam) != FALSE);
 }
 
-HRGN cwin::thread::object::get_source_rgn() const{
+HRGN cwin::thread::object::get_rgn(HRGN blacklist, HRGN other_blacklist) const{
 	if (!is_context())
 		throw exception::outside_context();
-	return source_rgn_;
-}
 
-HRGN cwin::thread::object::get_destination_rgn() const{
-	if (!is_context())
-		throw exception::outside_context();
-	return destination_rgn_;
+	if (rgns_[0] != blacklist && rgns_[0] != other_blacklist)
+		return rgns_[0];
+
+	if (rgns_[1] != blacklist && rgns_[1] != other_blacklist)
+		return rgns_[1];
+
+	if (rgns_[2] != blacklist && rgns_[2] != other_blacklist)
+		return rgns_[2];
+
+	return nullptr;
 }
 
 float cwin::thread::object::convert_pixel_to_dip_x(int value) const{

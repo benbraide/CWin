@@ -138,69 +138,25 @@ void cwin::ui::surface::compute_current_absolute_position(const std::function<vo
 
 SIZE cwin::ui::surface::compute_client_size() const{
 	return execute_task([&]{
-		auto dimension = compute_client_dimension_();
-		return SIZE{ (dimension.right - dimension.left), (dimension.bottom - dimension.top) };
+		return compute_client_size_();
 	});
 }
 
 void cwin::ui::surface::compute_client_size(const std::function<void(const SIZE &)> &callback) const{
 	post_or_execute_task([=]{
-		callback(compute_client_size());
+		callback(compute_client_size_());
 	});
 }
 
 SIZE cwin::ui::surface::compute_current_client_size() const{
 	return execute_task([&]{
-		auto dimension = compute_current_client_dimension_();
-		return SIZE{ (dimension.right - dimension.left), (dimension.bottom - dimension.top) };
+		return compute_current_client_size_();
 	});
 }
 
 void cwin::ui::surface::compute_current_client_size(const std::function<void(const SIZE &)> &callback) const{
 	post_or_execute_task([=]{
-		callback(compute_current_client_size());
-	});
-}
-
-void cwin::ui::surface::set_client_margin(const RECT &value){
-	post_or_execute_task([=]{
-		set_client_margin_(value);
-	});
-}
-
-const RECT &cwin::ui::surface::get_client_margin() const{
-	return *execute_task([&]{
-		return &client_margin_;
-	});
-}
-
-void cwin::ui::surface::get_client_margin(const std::function<void(const RECT &)> &callback) const{
-	post_or_execute_task([=]{
-		callback(client_margin_);
-	});
-}
-
-RECT cwin::ui::surface::compute_client_dimension() const{
-	return execute_task([&]{
-		return compute_client_dimension_();
-	});
-}
-
-void cwin::ui::surface::compute_client_dimension(const std::function<void(const RECT &)> &callback) const{
-	post_or_execute_task([=]{
-		callback(compute_client_dimension_());
-	});
-}
-
-RECT cwin::ui::surface::compute_current_client_dimension() const{
-	return execute_task([&]{
-		return compute_current_client_dimension_();
-	});
-}
-
-void cwin::ui::surface::compute_current_client_dimension(const std::function<void(const RECT &)> &callback) const{
-	post_or_execute_task([=]{
-		callback(compute_current_client_dimension_());
+		callback(compute_current_client_size_());
 	});
 }
 
@@ -252,6 +208,18 @@ void cwin::ui::surface::compute_current_absolute_dimension(const std::function<v
 	});
 }
 
+void cwin::ui::surface::offset_point_to_window(POINT &value) const{
+	execute_task([&]{
+		offset_point_to_window_(value);
+	});
+}
+
+void cwin::ui::surface::offset_point_from_window(POINT &value) const{
+	execute_task([&]{
+		offset_point_from_window_(value);
+	});
+}
+
 UINT cwin::ui::surface::hit_test(const POINT &value) const{
 	return execute_task([&]{
 		return hit_test_(value);
@@ -273,6 +241,24 @@ UINT cwin::ui::surface::current_hit_test(const POINT &value) const{
 void cwin::ui::surface::current_hit_test(const POINT &value, const std::function<void(UINT)> &callback) const{
 	post_or_execute_task([=]{
 		callback(current_hit_test_(value));
+	});
+}
+
+void cwin::ui::surface::update_bounds(){
+	execute_task([&]{
+		update_bounds_();
+	});
+}
+
+const cwin::ui::surface::handle_bound_info &cwin::ui::surface::get_client_bound() const{
+	return *execute_task([&]{
+		return &get_client_bound_();
+	});
+}
+
+void cwin::ui::surface::get_client_bound(const std::function<void(const handle_bound_info &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_client_bound_());
 	});
 }
 
@@ -301,23 +287,6 @@ void cwin::ui::surface::removed_hook_(hook::object &value){
 	}
 
 	tree::removed_hook_(value);
-}
-
-bool cwin::ui::surface::is_created_() const{
-	return (bounding_handle_ != nullptr);
-}
-
-void cwin::ui::surface::update_bounding_region_(){
-	auto &current_size = get_current_size_();
-	if (bounding_handle_ == nullptr)
-		bounding_handle_ = CreateRectRgn(0, 0, current_size.cx, current_size.cy);
-	else//Resize
-		utility::rgn::resize(bounding_handle_, current_size);
-}
-
-void cwin::ui::surface::destroy_bounding_region_(){
-	DeleteObject(bounding_handle_);
-	bounding_handle_ = nullptr;
 }
 
 void cwin::ui::surface::set_size_(const SIZE &value){
@@ -416,50 +385,6 @@ POINT cwin::ui::surface::compute_current_absolute_position_() const{
 	return value;
 }
 
-void cwin::ui::surface::set_client_margin_(const RECT &value){
-	if (EqualRect(&value, &client_margin_) != FALSE)
-		return;
-
-	traverse_matching_children_<visible_surface>([&](visible_surface &child){
-		try{
-			child.redraw();
-		}
-		catch (const exception::not_supported &){}
-
-		return true;
-	});
-
-	client_margin_ = value;
-
-	traverse_matching_children_<surface>([&](surface &child){
-		try{
-			child.update_window_relative_position_();
-		}
-		catch (const exception::not_supported &){}
-
-		return true;
-	});
-}
-
-RECT cwin::ui::surface::compute_client_dimension_() const{
-	return RECT{
-		client_margin_.left,
-		client_margin_.top,
-		(size_.cx - client_margin_.right),
-		(size_.cy - client_margin_.bottom)
-	};
-}
-
-RECT cwin::ui::surface::compute_current_client_dimension_() const{
-	auto &current_size = get_current_size_();
-	return RECT{
-		client_margin_.left,
-		client_margin_.top,
-		(current_size.cx - client_margin_.right),
-		(current_size.cy - client_margin_.bottom)
-	};
-}
-
 RECT cwin::ui::surface::compute_dimension_() const{
 	return RECT{ position_.x, position_.y, (position_.x + size_.cx), (position_.y + size_.cy) };
 }
@@ -485,13 +410,23 @@ RECT cwin::ui::surface::compute_current_absolute_dimension_() const{
 	return dimension;
 }
 
+SIZE cwin::ui::surface::compute_client_size_() const{
+	return size_;
+}
+
+SIZE cwin::ui::surface::compute_current_client_size_() const{
+	return get_current_size_();
+}
+
 void cwin::ui::surface::compute_relative_to_absolute_(POINT &value) const{
-	auto &position = get_current_position_();
 	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
 		surface_ancestor->compute_relative_to_absolute_(value);
 
-	value.x += (position.x + client_margin_.left);
-	value.y += (position.y + client_margin_.top);
+	auto &position = get_current_position_();
+	value.x += position.x;
+	value.y += position.y;
+
+	offset_point_to_window_(value);
 }
 
 void cwin::ui::surface::compute_relative_to_absolute_(RECT &value) const{
@@ -499,16 +434,21 @@ void cwin::ui::surface::compute_relative_to_absolute_(RECT &value) const{
 	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
 		surface_ancestor->compute_relative_to_absolute_(value);
 
-	OffsetRect(&value, (position.x + client_margin_.left), (position.y + client_margin_.top));
+	POINT offset{};
+	offset_point_to_window_(offset);
+
+	OffsetRect(&value, (position.x + offset.x), (position.y + offset.y));
 }
 
 void cwin::ui::surface::compute_absolute_to_relative_(POINT &value) const{
-	auto &position = get_current_position_();
 	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
 		surface_ancestor->compute_absolute_to_relative_(value);
 
-	value.x -= (position.x + client_margin_.left);
-	value.y -= (position.y + client_margin_.top);
+	auto &position = get_current_position_();
+	value.x -= position.x;
+	value.y -= position.y;
+
+	offset_point_from_window_(value);
 }
 
 void cwin::ui::surface::compute_absolute_to_relative_(RECT &value) const{
@@ -516,33 +456,29 @@ void cwin::ui::surface::compute_absolute_to_relative_(RECT &value) const{
 	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
 		surface_ancestor->compute_absolute_to_relative_(value);
 
-	OffsetRect(&value, -(position.x + client_margin_.left), -(position.y + client_margin_.top));
+	POINT offset{};
+	offset_point_to_window_(offset);
+
+	OffsetRect(&value, -(position.x + offset.x), -(position.y + offset.y));
 }
+
+void cwin::ui::surface::offset_point_to_window_(POINT &value) const{}
+
+void cwin::ui::surface::offset_point_from_window_(POINT &value) const{}
 
 UINT cwin::ui::surface::hit_test_(const POINT &value) const{
 	auto dimension = compute_absolute_dimension_();
-	if (PtInRect(&dimension, value) == FALSE)
-		return HTNOWHERE;
-
-	dimension.left += client_margin_.left;
-	dimension.top += client_margin_.top;
-
-	dimension.right -= client_margin_.right;
-	dimension.bottom -= client_margin_.bottom;
-
-	return ((PtInRect(&dimension, value) == FALSE) ? HTBORDER : HTCLIENT);
+	return ((PtInRect(&dimension, value) == FALSE) ? HTNOWHERE : HTCLIENT);
 }
 
 UINT cwin::ui::surface::current_hit_test_(const POINT &value) const{
 	auto dimension = compute_current_absolute_dimension_();
-	if (PtInRect(&dimension, value) == FALSE)
-		return HTNOWHERE;
+	return ((PtInRect(&dimension, value) == FALSE) ? HTNOWHERE : HTCLIENT);
+}
 
-	dimension.left += client_margin_.left;
-	dimension.top += client_margin_.top;
-
-	dimension.right -= client_margin_.right;
-	dimension.bottom -= client_margin_.bottom;
-
-	return ((PtInRect(&dimension, value) == FALSE) ? HTBORDER : HTCLIENT);
+void cwin::ui::surface::update_region_bound_(HRGN target, const SIZE &size) const{
+	if (target == nullptr)
+		target = CreateRectRgn(0, 0, size.cx, size.cy);
+	else
+		utility::rgn::resize(target, size);
 }

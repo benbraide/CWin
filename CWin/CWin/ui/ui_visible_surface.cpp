@@ -163,8 +163,8 @@ const D2D1_COLOR_F &cwin::ui::visible_surface::get_current_background_color_() c
 }
 
 void cwin::ui::visible_surface::redraw_(HRGN region){
-	if (region == nullptr)
-		return redraw_(compute_client_dimension_());
+	/*if (region == nullptr)
+		return redraw_(compute_client_dimension_());*/
 
 
 }

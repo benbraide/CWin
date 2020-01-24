@@ -141,8 +141,9 @@ void cwin::ui::window_surface::create_(){
 	if (handle_ == nullptr)
 		throw ui::exception::action_failed();
 
-	update_bounding_region_();
-	activate_bounding_region_();
+	handle_bound_.handle = CreateRectRgn(0, 0, 0, 0);
+	update_region_bound_(handle_bound_.rect_handle, get_current_size_());
+	update_bounds_();
 }
 
 void cwin::ui::window_surface::destroy_(){
@@ -150,9 +151,17 @@ void cwin::ui::window_surface::destroy_(){
 		if (DestroyWindow(handle_) == FALSE)
 			throw exception::action_failed();
 
+		DeleteObject(handle_bound_.rect_handle);
+		DeleteObject(handle_bound_.handle);
+
 		handle_ = nullptr;
-		destroy_bounding_region_();
+		handle_bound_.handle = nullptr;
+		handle_bound_.rect_handle = nullptr;
 	}
+}
+
+bool cwin::ui::window_surface::is_created_() const{
+	return (handle_ != nullptr);
 }
 
 bool cwin::ui::window_surface::should_call_after_destroy_() const{
@@ -169,55 +178,49 @@ void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &c
 		return;
 
 	SetWindowPos(handle_, nullptr, 0, 0, current_value.cx, current_value.cy, (SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE));
-	update_bounding_region_();
-	activate_bounding_region_();
+	update_region_bound_(handle_bound_.rect_handle, get_current_size_());
+	update_bounds_();
 }
 
 void cwin::ui::window_surface::position_update_(const POINT &old_value, const POINT &current_value){
 	if (handle_ == nullptr)
 		return;
 
-	auto window_relative_offset = compute_matching_surface_relative_offset_<window_surface>(true);
+	POINT window_relative_offset{};
+	auto window_ancestor = find_matching_surface_ancestor_<window_surface>(&window_relative_offset);
+	if (window_ancestor != nullptr)
+		window_ancestor->offset_point_to_window(window_relative_offset);
+
 	SetWindowPos(handle_, nullptr, (current_value.x + window_relative_offset.x), (current_value.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
-	activate_bounding_region_();
+	update_bounds_();
 }
 
 void cwin::ui::window_surface::compute_relative_to_absolute_(POINT &value) const{
-	if (handle_ != nullptr){
-		ClientToScreen(handle_, &value);
-		value.x += client_margin_.left;
-		value.y += client_margin_.top;
-	}
-	else
+	if (handle_ == nullptr)
 		surface::compute_relative_to_absolute_(value);
+	else
+		ClientToScreen(handle_, &value);
 }
 
 void cwin::ui::window_surface::compute_relative_to_absolute_(RECT &value) const{
-	if (handle_ != nullptr){
-		MapWindowPoints(handle_, HWND_DESKTOP, reinterpret_cast<POINT *>(&value), 2u);
-		OffsetRect(&value, client_margin_.left, client_margin_.top);
-	}
-	else
+	if (handle_ == nullptr)
 		surface::compute_relative_to_absolute_(value);
+	else
+		MapWindowPoints(handle_, HWND_DESKTOP, reinterpret_cast<POINT *>(&value), 2u);
 }
 
 void cwin::ui::window_surface::compute_absolute_to_relative_(POINT &value) const{
-	if (handle_ != nullptr){
-		ScreenToClient(handle_, &value);
-		value.x += client_margin_.left;
-		value.y += client_margin_.top;
-	}
-	else
+	if (handle_ == nullptr)
 		surface::compute_absolute_to_relative_(value);
+	else
+		ScreenToClient(handle_, &value);
 }
 
 void cwin::ui::window_surface::compute_absolute_to_relative_(RECT &value) const{
-	if (handle_ != nullptr){
-		MapWindowPoints(HWND_DESKTOP, handle_, reinterpret_cast<POINT *>(&value), 2u);
-		OffsetRect(&value, -client_margin_.left, -client_margin_.top);
-	}
-	else
+	if (handle_ == nullptr)
 		surface::compute_absolute_to_relative_(value);
+	else
+		MapWindowPoints(HWND_DESKTOP, handle_, reinterpret_cast<POINT *>(&value), 2u);
 }
 
 UINT cwin::ui::window_surface::hit_test_(const POINT &value) const{
@@ -230,12 +233,62 @@ UINT cwin::ui::window_surface::current_hit_test_(const POINT &value) const{
 	return static_cast<UINT>(SendMessageW(handle_, WM_NCHITTEST, 0, MAKELONG(value.x, value.y)));
 }
 
+void cwin::ui::window_surface::update_bounds_(){
+	if (handle_ == nullptr)
+		return;
+
+	POINT offset{};
+	utility::rgn::move(handle_bound_.rect_handle, offset);
+
+	if (auto surface_ancestor = get_matching_ancestor_<surface>(nullptr); surface_ancestor != nullptr && dynamic_cast<window_surface *>(surface_ancestor) == nullptr){
+		if (auto &client_bound = surface_ancestor->get_client_bound(); client_bound.handle != nullptr){
+			surface_ancestor->offset_point_to_window(offset);
+			utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
+
+			auto &current_position = get_current_position_();
+			offset.x += current_position.x;
+			offset.y += current_position.y;
+
+			utility::rgn::offset(handle_bound_.rect_handle, offset);
+			utility::rgn::intersect(handle_bound_.handle, client_bound.handle, handle_bound_.rect_handle);
+		}
+		else{//Remove bound, if any
+			SetWindowRgn(handle_, nullptr, TRUE);
+			return;
+		}
+	}
+	else{//Remove bound, if any
+		SetWindowRgn(handle_, nullptr, TRUE);
+		return;
+	}
+
+	auto handle_bound_copy = CreateRectRgn(0, 0, 0, 0);
+	utility::rgn::copy(handle_bound_copy, handle_bound_.handle);
+
+	utility::rgn::offset(handle_bound_copy, POINT{ -offset.x, -offset.y });
+	utility::rgn::offset(handle_bound_.rect_handle, POINT{ -offset.x, -offset.y });
+
+	if (utility::rgn::is_equal(handle_bound_copy, handle_bound_.rect_handle)){//Remove bound, if any
+		SetWindowRgn(handle_, nullptr, TRUE);
+		DeleteObject(handle_bound_copy);
+	}
+	else
+		SetWindowRgn(handle_, handle_bound_copy, TRUE);
+}
+
+const cwin::ui::surface::handle_bound_info &cwin::ui::window_surface::get_client_bound_() const{
+	return handle_bound_;
+}
+
 void cwin::ui::window_surface::redraw_(HRGN region){
 	if (handle_ == nullptr)
 		return;
 
-	if (region != nullptr)
-		utility::rgn::offset(region, POINT{ client_margin_.left, client_margin_.top });
+	if (region != nullptr){
+		POINT offset{};
+		offset_point_to_window_(offset);
+		utility::rgn::offset(region, offset);
+	}
 
 	InvalidateRgn(handle_, region, TRUE);
 }
@@ -243,7 +296,11 @@ void cwin::ui::window_surface::redraw_(HRGN region){
 void cwin::ui::window_surface::redraw_(const RECT &region){
 	if (handle_ != nullptr){
 		auto region_copy = region;
-		OffsetRect(&region_copy, client_margin_.left, client_margin_.top);
+
+		POINT offset{};
+		offset_point_to_window_(offset);
+
+		OffsetRect(&region_copy, offset.x, offset.y);
 		InvalidateRect(handle_, &region_copy, TRUE);
 	}
 }
@@ -268,48 +325,6 @@ bool cwin::ui::window_surface::is_visible_() const{
 
 bool cwin::ui::window_surface::is_dialog_message_(MSG &msg) const{
 	return (IsDialogMessageW(handle_, &msg) != FALSE);
-}
-
-void cwin::ui::window_surface::activate_bounding_region_(){
-	if (bounding_handle_ == nullptr)
-		return;
-
-	auto offset = get_current_position_();
-	non_window_surface *non_window_ancestor = nullptr;
-
-	traverse_matching_ancestors_<surface>([&](surface &ancestor){
-		if (dynamic_cast<window_surface *>(&ancestor) != nullptr)
-			return false;
-
-		auto &client_margin = ancestor.get_client_margin();
-		offset.x += client_margin.left;
-		offset.y += client_margin.top;
-
-		if ((non_window_ancestor = dynamic_cast<non_window_surface *>(&ancestor)); non_window_ancestor == nullptr)
-			return true;
-
-		auto &current_position = ancestor.get_current_position();
-		offset.x += current_position.x;
-		offset.y += current_position.y;
-
-		return true;
-	});
-
-	if (non_window_ancestor == nullptr){//Remove previous bounding region if any
-		SetWindowRgn(handle_, nullptr, TRUE);
-		return;
-	}
-
-	auto bounding_handle_copy = CreateRectRgn(0, 0, 0, 0);
-	utility::rgn::copy(bounding_handle_copy, bounding_handle_);
-	utility::rgn::move(bounding_handle_copy, POINT{});
-
-	auto source_region = thread_.get_source_rgn();
-	auto destination_region = non_window_ancestor->compute_bounded_region(POINT{ -offset.x, -offset.y });
-
-	utility::rgn::copy(source_region, bounding_handle_copy);
-	utility::rgn::intersect(bounding_handle_copy, destination_region, source_region);
-	SetWindowRgn(handle_, bounding_handle_copy, TRUE);
 }
 
 void cwin::ui::window_surface::set_styles_(DWORD value){

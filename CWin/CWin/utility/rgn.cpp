@@ -34,6 +34,11 @@ bool cwin::utility::rgn::copy(HRGN destination, HRGN target){
 	return (CombineRgn(destination, target, nullptr, RGN_COPY) != ERROR);
 }
 
+bool cwin::utility::rgn::is_equal(HRGN first, HRGN second){
+	auto result = EqualRgn(first, second);
+	return (result != FALSE != result != ERROR);
+}
+
 bool cwin::utility::rgn::hit_test(HRGN handle, const POINT &value){
 	return (PtInRegion(handle, value.x, value.y) != FALSE);
 }

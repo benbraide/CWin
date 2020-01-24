@@ -56,6 +56,8 @@ namespace cwin::ui{
 
 		virtual void destroy_() override;
 
+		virtual bool is_created_() const override;
+
 		virtual bool should_call_after_destroy_() const override;
 
 		virtual void after_destroy_() override;
@@ -76,6 +78,10 @@ namespace cwin::ui{
 
 		virtual UINT current_hit_test_(const POINT &value) const override;
 
+		virtual void update_bounds_() override;
+
+		virtual const handle_bound_info &get_client_bound_() const override;
+
 		virtual void redraw_(HRGN region) override;
 
 		virtual void redraw_(const RECT &region) override;
@@ -87,8 +93,6 @@ namespace cwin::ui{
 		virtual bool is_visible_() const override;
 
 		virtual bool is_dialog_message_(MSG &msg) const;
-
-		virtual void activate_bounding_region_();
 
 		virtual void set_styles_(DWORD value);
 
@@ -113,6 +117,8 @@ namespace cwin::ui{
 		virtual const wchar_t *get_caption_() const = 0;
 
 		HWND handle_ = nullptr;
+		handle_bound_info handle_bound_{};
+
 		DWORD styles_ = (WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		DWORD extended_styles_ = 0u;
 	};

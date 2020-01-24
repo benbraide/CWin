@@ -69,10 +69,7 @@ HWND cwin::ui::window_surface_manager::create(window_surface &owner, const wchar
 		if (!ancestor.is_created())
 			throw ui::exception::not_supported();
 
-		auto &client_margin = ancestor.get_client_margin();
-		position.x += client_margin.left;
-		position.y += client_margin.top;
-
+		ancestor.offset_point_to_window(position);
 		if (auto window_ancestor = dynamic_cast<window_surface *>(&ancestor); window_ancestor != nullptr){
 			ancestor_handle_value = window_ancestor->get_handle();
 			return false;
