@@ -13,7 +13,12 @@ cwin::hook::object::resolution_type cwin::hook::background::resolve_conflict_(re
 }
 
 cwin::hook::color_background::color_background(ui::visible_surface &target)
-	: background(target), color_hook_(*this){}
+	: color_background(target, D2D1::ColorF(D2D1::ColorF::White)){}
+
+cwin::hook::color_background::color_background(ui::visible_surface &target, const D2D1_COLOR_F &value)
+	: background(target), color_hook_(*this), color_(value){
+	color_hook_.current_value_ = value;
+}
 
 cwin::hook::color_background::~color_background() = default;
 
@@ -71,8 +76,8 @@ void cwin::hook::color_background::get_current_color(const std::function<void(co
 	});
 }
 
-void cwin::hook::color_background::draw_(ID2D1RenderTarget *render) const{
-	render->Clear(color_hook_.current_value_);
+void cwin::hook::color_background::draw_(ID2D1RenderTarget &render) const{
+	render.Clear(color_hook_.current_value_);
 }
 
 void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value){

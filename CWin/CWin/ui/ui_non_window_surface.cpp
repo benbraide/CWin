@@ -321,6 +321,10 @@ void cwin::ui::non_window_surface::update_bounds_(){
 	});
 }
 
+const cwin::ui::surface::handle_bound_info &cwin::ui::non_window_surface::get_bound_() const{
+	return handle_bound_;
+}
+
 const cwin::ui::surface::handle_bound_info &cwin::ui::non_window_surface::get_client_bound_() const{
 	return ((client_handle_bound_.handle == nullptr) ? handle_bound_ : client_handle_bound_);
 }

@@ -1,4 +1,5 @@
 #include "../hook/io_hook.h"
+#include "../hook/background_hooks.h"
 #include "../thread/thread_object.h"
 #include "../events/general_events.h"
 
@@ -7,6 +8,14 @@
 
 cwin::ui::window_surface::window_surface(){
 	insert_hook_<hook::io>();
+
+	auto window_color = GetSysColor(COLOR_WINDOW);
+	insert_hook_<hook::color_background>(D2D1::ColorF(
+		(GetRValue(window_color) / 255.0f),	//Red
+		(GetGValue(window_color) / 255.0f),	//Green
+		(GetBValue(window_color) / 255.0f),	//Blue
+		1.0f								//Alpha
+	));
 }
 
 cwin::ui::window_surface::window_surface(tree &parent)
@@ -15,6 +24,14 @@ cwin::ui::window_surface::window_surface(tree &parent)
 cwin::ui::window_surface::window_surface(tree &parent, std::size_t index)
 	: visible_surface(parent, index){
 	insert_hook_<hook::io>();
+
+	auto window_color = GetSysColor(COLOR_WINDOW);
+	insert_hook_<hook::color_background>(D2D1::ColorF(
+		(GetRValue(window_color) / 255.0f),	//Red
+		(GetGValue(window_color) / 255.0f),	//Green
+		(GetBValue(window_color) / 255.0f),	//Blue
+		1.0f								//Alpha
+	));
 }
 
 cwin::ui::window_surface::~window_surface() = default;
@@ -274,6 +291,10 @@ void cwin::ui::window_surface::update_bounds_(){
 	}
 	else
 		SetWindowRgn(handle_, handle_bound_copy, TRUE);
+}
+
+const cwin::ui::surface::handle_bound_info &cwin::ui::window_surface::get_bound_() const{
+	return handle_bound_;
 }
 
 const cwin::ui::surface::handle_bound_info &cwin::ui::window_surface::get_client_bound_() const{

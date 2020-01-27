@@ -190,12 +190,18 @@ bool cwin::events::manager::default_exists_(key_type key, unsigned __int64 id) c
 }
 
 void cwin::events::manager::trigger_(object &e, unsigned __int64 id) const{
-	if (handlers_.empty())
+	if (handlers_.empty()){
+		if (id == 0u)
+			e.do_default();
 		return;
+	}
 
 	auto it = handlers_.find(get_key(e));
-	if (it == handlers_.end())
+	if (it == handlers_.end()){
+		if (id == 0u)
+			e.do_default();
 		return;
+	}
 
 	if (it->second.options.is_set(handler_list_option_type::triggering_disabled))
 		return;//Triggering disabled

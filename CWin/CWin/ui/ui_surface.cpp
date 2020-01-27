@@ -250,6 +250,18 @@ void cwin::ui::surface::update_bounds(){
 	});
 }
 
+const cwin::ui::surface::handle_bound_info &cwin::ui::surface::get_bound() const{
+	return *execute_task([&]{
+		return &get_bound_();
+	});
+}
+
+void cwin::ui::surface::get_bound(const std::function<void(const handle_bound_info &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_bound_());
+	});
+}
+
 const cwin::ui::surface::handle_bound_info &cwin::ui::surface::get_client_bound() const{
 	return *execute_task([&]{
 		return &get_client_bound_();

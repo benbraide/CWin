@@ -100,6 +100,10 @@ namespace cwin::ui{
 
 		virtual void update_bounds();
 
+		virtual const handle_bound_info &get_bound() const;
+
+		virtual void get_bound(const std::function<void(const handle_bound_info &)> &callback) const;
+
 		virtual const handle_bound_info &get_client_bound() const;
 
 		virtual void get_client_bound(const std::function<void(const handle_bound_info &)> &callback) const;
@@ -193,6 +197,8 @@ namespace cwin::ui{
 		virtual void update_region_bound_(HRGN target, const SIZE &size) const;
 
 		virtual void update_bounds_() = 0;
+
+		virtual const handle_bound_info &get_bound_() const = 0;
 
 		virtual const handle_bound_info &get_client_bound_() const = 0;
 

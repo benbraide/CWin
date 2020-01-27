@@ -80,6 +80,8 @@ namespace cwin::ui{
 
 		virtual void update_bounds_() override;
 
+		virtual const handle_bound_info &get_bound_() const override;
+
 		virtual const handle_bound_info &get_client_bound_() const override;
 
 		virtual void redraw_(HRGN region) override;

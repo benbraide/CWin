@@ -40,6 +40,14 @@ namespace cwin::ui{
 
 		virtual void get_current_background_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const;
 
+		virtual hook::background &get_background_hook() const;
+
+		virtual void get_background_hook(const std::function<void(hook::background &)> &callback) const;
+
+		virtual bool has_background_hook() const;
+
+		virtual void has_background_hook(const std::function<void(bool)> &callback) const;
+
 		virtual hook::io &get_io_hook() const;
 
 		virtual void get_io_hook(const std::function<void(hook::io &)> &callback) const;

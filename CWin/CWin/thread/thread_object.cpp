@@ -27,9 +27,12 @@ cwin::thread::object::object()
 
 		app::object::class_id_ = RegisterClassExW(&class_info);
 	}
+
+	initialize_drawing_();
 }
 
 cwin::thread::object::~object(){
+	uninitialize_drawing_();
 	if (rgns_[0] != nullptr){
 		DeleteObject(rgns_[0]);
 		rgns_[0] = nullptr;
@@ -146,6 +149,36 @@ void cwin::thread::object::request_animation_frame(const animation_request_callb
 
 bool cwin::thread::object::post_message(UINT message, WPARAM wparam, LPARAM lparam) const{
 	return (PostThreadMessageW(id_, message, wparam, lparam) != FALSE);
+}
+
+ID2D1Factory *cwin::thread::object::get_draw_factory() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return draw_factory_;
+}
+
+IDWriteFactory *cwin::thread::object::get_write_factory() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return write_factory_;
+}
+
+IDWriteGdiInterop *cwin::thread::object::get_write_interop() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return write_interop_;
+}
+
+ID2D1DCRenderTarget *cwin::thread::object::get_device_render_target() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return device_render_target_;
+}
+
+ID2D1SolidColorBrush *cwin::thread::object::get_color_brush() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return color_brush_;
 }
 
 HRGN cwin::thread::object::get_rgn(HRGN blacklist, HRGN other_blacklist) const{
@@ -395,28 +428,86 @@ void cwin::thread::object::animate_(const time_point_type &start, const std::fun
 	}, talk_id);
 }
 
-void cwin::thread::object::begin_draw_(){
-
+void cwin::thread::object::begin_draw_(HDC device, const RECT &bound){
+	device_render_target_->SetTransform(D2D1::IdentityMatrix());
+	device_render_target_->BindDC(device, &bound);
+	device_render_target_->BeginDraw();
 }
 
-void cwin::thread::object::end_draw_(){
+bool cwin::thread::object::end_draw_(){
+	if (device_render_target_->EndDraw() == D2DERR_RECREATE_TARGET){
+		uninitialize_drawing_();
+		initialize_drawing_();
+		return false;
+	}
 
+	return true;
+}
+
+void cwin::thread::object::initialize_drawing_(){
+	if (draw_factory_ == nullptr)
+		D2D1CreateFactory(D2D1_FACTORY_TYPE::D2D1_FACTORY_TYPE_SINGLE_THREADED, &draw_factory_);
+
+	if (write_factory_ == nullptr)
+		DWriteCreateFactory(DWRITE_FACTORY_TYPE::DWRITE_FACTORY_TYPE_ISOLATED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown **>(&write_factory_));
+
+	if (write_interop_ == nullptr)
+		write_factory_->GetGdiInterop(&write_interop_);
+
+	if (device_render_target_ == nullptr){
+		auto props = D2D1::RenderTargetProperties(
+			D2D1_RENDER_TARGET_TYPE_DEFAULT,
+			D2D1::PixelFormat(
+				DXGI_FORMAT_B8G8R8A8_UNORM,
+				D2D1_ALPHA_MODE_PREMULTIPLIED
+			),
+			0,
+			0,
+			D2D1_RENDER_TARGET_USAGE_NONE,
+			D2D1_FEATURE_LEVEL_DEFAULT
+		);
+
+		draw_factory_->CreateDCRenderTarget(&props, &device_render_target_);
+	}
+
+	if (color_brush_ == nullptr){
+		device_render_target_->CreateSolidColorBrush(
+			D2D1::ColorF(D2D1::ColorF::Black, 1.0f),
+			D2D1::BrushProperties(),
+			&color_brush_
+		);
+	}
+
+	//float dpi_x, dpi_y;
+	//draw_factory_->GetDesktopDpi(&dpi_x, &dpi_y);
+
+	//dpi_scale_.x = (dpi_x / 96.0f);
+	//dpi_scale_.y = (dpi_y / 96.0f);
+}
+
+void cwin::thread::object::uninitialize_drawing_(){
+	if (color_brush_ != nullptr){
+		color_brush_->Release();
+		color_brush_ = nullptr;
+	}
+
+	if (device_render_target_ != nullptr){
+		device_render_target_->Release();
+		device_render_target_ = nullptr;
+	}
+
+	if (write_interop_ != nullptr){
+		write_interop_->Release();
+		write_interop_ = nullptr;
+	}
 }
 
 float cwin::thread::object::convert_pixel_to_dip_x_(int value) const{
-	if (dpi_scale_.x == 0.0f)
-		initialize_dpi_scale_();
 	return ((dpi_scale_.x == 0.0f) ? static_cast<float>(value) : (value / dpi_scale_.x));
 }
 
 float cwin::thread::object::convert_pixel_to_dip_y_(int value) const{
-	if (dpi_scale_.y == 0.0f)
-		initialize_dpi_scale_();
 	return ((dpi_scale_.y == 0.0f) ? static_cast<float>(value) : (value / dpi_scale_.y));
-}
-
-void cwin::thread::object::initialize_dpi_scale_() const{
-
 }
 
 void CALLBACK cwin::thread::object::timer_entry_(HWND handle, UINT message, UINT_PTR id, DWORD time){

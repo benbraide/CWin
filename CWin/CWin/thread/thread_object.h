@@ -34,25 +34,25 @@ namespace cwin::thread{
 			std::list<unsigned __int64> owned_timers;
 		};
 
-		virtual ~object();
+		~object();
 
-		virtual queue &get_queue();
+		queue &get_queue();
 
-		virtual const queue &get_queue() const;
+		const queue &get_queue() const;
 
-		virtual ui::window_surface_manager &get_window_manager();
+		ui::window_surface_manager &get_window_manager();
 
-		virtual const ui::window_surface_manager &get_window_manager() const;
+		const ui::window_surface_manager &get_window_manager() const;
 
-		virtual DWORD get_id() const;
+		DWORD get_id() const;
 
-		virtual bool is_context() const;
+		bool is_context() const;
 
-		virtual int run();
+		int run();
 
-		virtual void stop(int exit_code);
+		void stop(int exit_code);
 
-		virtual void request_animation_frame(const animation_request_callback_type &callback, unsigned __int64 talk_id = 0u);
+		void request_animation_frame(const animation_request_callback_type &callback, unsigned __int64 talk_id = 0u);
 
 		template <typename callback_type>
 		void animate(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const callback_type &callback, unsigned __int64 talk_id = 0u){
@@ -63,17 +63,27 @@ namespace cwin::thread{
 			call_animate<return_type>::call(*this, timing, duration, utility::object_to_function_traits::get(callback), talk_id);
 		}
 
-		virtual bool post_message(UINT message, WPARAM wparam, LPARAM lparam) const;
+		bool post_message(UINT message, WPARAM wparam, LPARAM lparam) const;
 
-		virtual HRGN get_rgn(HRGN blacklist = nullptr, HRGN other_blacklist = nullptr) const;
+		ID2D1Factory *get_draw_factory() const;
 
-		virtual float convert_pixel_to_dip_x(int value) const;
+		IDWriteFactory *get_write_factory() const;
 
-		virtual float convert_pixel_to_dip_y(int value) const;
+		IDWriteGdiInterop *get_write_interop() const;
 
-		virtual void init_control(const std::wstring &class_name, DWORD control_id);
+		ID2D1DCRenderTarget *get_device_render_target() const;
 
-		virtual WNDPROC get_class_entry(const std::wstring &class_name) const;
+		ID2D1SolidColorBrush *get_color_brush() const;
+
+		HRGN get_rgn(HRGN blacklist = nullptr, HRGN other_blacklist = nullptr) const;
+
+		float convert_pixel_to_dip_x(int value) const;
+
+		float convert_pixel_to_dip_y(int value) const;
+
+		void init_control(const std::wstring &class_name, DWORD control_id);
+
+		WNDPROC get_class_entry(const std::wstring &class_name) const;
 
 		static WNDPROC get_message_entry();
 
@@ -83,6 +93,7 @@ namespace cwin::thread{
 
 		friend class events::target;
 		friend class app::object;
+		friend class ui::window_surface_manager;
 
 		template <class return_type>
 		struct call_animate;
@@ -127,31 +138,33 @@ namespace cwin::thread{
 
 		void unbound_events_(unsigned __int64 id);
 
-		virtual void add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner);
+		void add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner);
 
-		virtual void remove_timer_(unsigned __int64 id, const item *owner);
+		void remove_timer_(unsigned __int64 id, const item *owner);
 
-		virtual WNDPROC get_class_entry_(const std::wstring &class_name) const;
+		WNDPROC get_class_entry_(const std::wstring &class_name) const;
 
-		virtual void run_animation_loop_();
+		void run_animation_loop_();
 
-		virtual void request_animation_frame_(const animation_request_callback_type &callback, unsigned __int64 talk_id);
+		void request_animation_frame_(const animation_request_callback_type &callback, unsigned __int64 talk_id);
 
-		virtual void animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback, unsigned __int64 talk_id);
+		void animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float)> &callback, unsigned __int64 talk_id);
 
-		virtual void animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback, unsigned __int64 talk_id);
+		void animate_(const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback, unsigned __int64 talk_id);
 
-		virtual void animate_(const time_point_type &start, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback, unsigned __int64 talk_id);
+		void animate_(const time_point_type &start, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback, unsigned __int64 talk_id);
 
-		virtual void begin_draw_();
+		void begin_draw_(HDC device, const RECT &bound);
 
-		virtual void end_draw_();
+		bool end_draw_();
 
-		virtual float convert_pixel_to_dip_x_(int value) const;
+		void initialize_drawing_();
 
-		virtual float convert_pixel_to_dip_y_(int value) const;
+		void uninitialize_drawing_();
 
-		virtual void initialize_dpi_scale_() const;
+		float convert_pixel_to_dip_x_(int value) const;
+
+		float convert_pixel_to_dip_y_(int value) const;
 
 		static void CALLBACK timer_entry_(HWND handle, UINT message, UINT_PTR id, DWORD time);
 
@@ -174,6 +187,13 @@ namespace cwin::thread{
 
 		std::unordered_map<unsigned __int64, std::function<void(unsigned __int64)>> timers_;
 		utility::random_integral_number_generator random_generator_;
+
+		ID2D1Factory *draw_factory_ = nullptr;
+		IDWriteFactory *write_factory_ = nullptr;
+		IDWriteGdiInterop *write_interop_ = nullptr;
+
+		ID2D1DCRenderTarget *device_render_target_ = nullptr;
+		ID2D1SolidColorBrush *color_brush_ = nullptr;
 
 		HRGN rgns_[3];
 	};

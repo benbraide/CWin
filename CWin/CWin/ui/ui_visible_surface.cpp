@@ -78,6 +78,33 @@ void cwin::ui::visible_surface::get_current_background_color(const std::function
 	});
 }
 
+cwin::hook::background &cwin::ui::visible_surface::get_background_hook() const{
+	return *execute_task([&]{
+		if (background_hook_ == nullptr)
+			throw exception::not_supported();
+		return background_hook_;
+	});
+}
+
+void cwin::ui::visible_surface::get_background_hook(const std::function<void(hook::background &)> &callback) const{
+	post_or_execute_task([=]{
+		if (background_hook_ != nullptr)
+			callback(*background_hook_);
+	});
+}
+
+bool cwin::ui::visible_surface::has_background_hook() const{
+	return execute_task([&]{
+		return (background_hook_ != nullptr);
+	});
+}
+
+void cwin::ui::visible_surface::has_background_hook(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(background_hook_ != nullptr);
+	});
+}
+
 cwin::hook::io &cwin::ui::visible_surface::get_io_hook() const{
 	return *execute_task([&]{
 		if (io_hook_ == nullptr)
