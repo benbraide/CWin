@@ -23,6 +23,7 @@ namespace cwin::hook{
 		static UINT get_mouse_up_message(events::io::mouse_button::button_type button);
 
 	protected:
+		friend class ui::visible_surface;
 		friend class ui::window_surface_manager;
 
 		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
@@ -47,9 +48,7 @@ namespace cwin::hook{
 
 		virtual void mouse_drag_(ui::visible_surface *&target, const SIZE &delta);
 
-		virtual void mouse_drag_end_();
-
-		virtual void mouse_drag_end_(ui::visible_surface *&target);
+		virtual void mouse_drag_non_client_(const SIZE &delta, UINT hit_target);
 
 		virtual void mouse_down_(mouse_button_type button);
 
@@ -74,8 +73,15 @@ namespace cwin::hook{
 		ui::visible_surface *mouse_over_ = nullptr;
 		ui::visible_surface *mouse_press_ = nullptr;
 
+		ui::visible_surface *non_client_mouse_press_ = nullptr;
+		UINT non_client_target_ = HTNOWHERE;
+
 		mouse_button_type pressed_button_ = mouse_button_type::nil;
 		bool is_dragging_ = false;
+		bool is_dragging_non_client_ = false;
+
+		std::function<void(const SIZE &)> size_callback_;
+		std::function<void(const SIZE &)> position_callback_;
 	};
 
 	class client_drag : public io{
@@ -85,11 +91,7 @@ namespace cwin::hook{
 		virtual ~client_drag();
 
 	protected:
-		friend class ui::visible_surface;
-
 		virtual void after_mouse_drag_(const SIZE &delta) override;
-
-		std::function<void(const SIZE &)> callback_;
 	};
 
 	template <>

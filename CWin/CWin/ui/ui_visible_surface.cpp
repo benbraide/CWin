@@ -135,13 +135,15 @@ void cwin::ui::visible_surface::has_io_hook(const std::function<void(bool)> &cal
 void cwin::ui::visible_surface::added_hook_(hook::object &value){
 	surface::added_hook_(value);
 	if (auto io_value = dynamic_cast<hook::io *>(&value); io_value != nullptr){
-		io_hook_ = io_value;
-		if (auto client_drag_hook = dynamic_cast<hook::client_drag *>(io_value); client_drag_hook != nullptr){
-			client_drag_hook->callback_ = [=](const SIZE &delta){
-				auto &current_position = get_current_position_();
-				set_position_(POINT{ (current_position.x + delta.cx), (current_position.y + delta.cy) }, false);
-			};
-		}
+		(io_hook_ = io_value)->size_callback_ = [=](const SIZE &delta){
+			auto &current_size = get_current_size_();
+			set_size_(SIZE{ (current_size.cx + delta.cx), (current_size.cy + delta.cy) }, false);
+		};
+
+		io_hook_->position_callback_ = [=](const SIZE &delta){
+			auto &current_position = get_current_position_();
+			set_position_(POINT{ (current_position.x + delta.cx), (current_position.y + delta.cy) }, false);
+		};
 	}
 	else if (auto background_value = dynamic_cast<hook::background *>(&value); background_value != nullptr)
 		background_hook_ = background_value;

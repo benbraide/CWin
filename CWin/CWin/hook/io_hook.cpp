@@ -212,11 +212,16 @@ void cwin::hook::io::mouse_move_(ui::visible_surface *&target){
 		auto &mouse_info = thread_.get_window_manager().get_mouse_info();
 		if (!check_drag_state_()){//Check for drag
 			SIZE delta{
-				std::abs(position.x - mouse_info.pressed_position.x),
-				std::abs(position.y - mouse_info.pressed_position.y)
+				(position.x - mouse_info.pressed_position.x),
+				(position.y - mouse_info.pressed_position.y)
 			};
 
-			if ((mouse_info.drag_threshold.cx <= delta.cx || mouse_info.drag_threshold.cy <= delta.cy) && mouse_drag_begin_())
+			SIZE abs_delta{
+				std::abs(delta.cx),
+				std::abs(delta.cy)
+			};
+
+			if ((mouse_info.drag_threshold.cx <= abs_delta.cx || mouse_info.drag_threshold.cy <= abs_delta.cy) && mouse_drag_begin_())
 				mouse_drag_(delta);
 		}
 		else//Continue drag
@@ -236,6 +241,11 @@ bool cwin::hook::io::mouse_drag_begin_(ui::visible_surface *&target){
 		return false;
 
 	is_dragging_ = false;
+	if (non_client_mouse_press_ != nullptr){
+		is_dragging_non_client_ = true;
+		return true;
+	}
+
 	try{
 		if (mouse_press_ != nullptr && mouse_press_->get_io_hook().mouse_drag_begin_(target))
 			return true;
@@ -259,7 +269,15 @@ void cwin::hook::io::mouse_drag_(ui::visible_surface *&target, const SIZE &delta
 	if ((target = dynamic_cast<ui::visible_surface *>(&target_)) == nullptr)
 		return;
 
-	if (mouse_press_ != nullptr){
+	if (non_client_mouse_press_ != nullptr){//Dragging non-client area
+		try{
+			non_client_mouse_press_->get_io_hook().mouse_drag_non_client_(delta, non_client_target_);
+		}
+		catch (const ui::exception::not_supported &){
+			non_client_mouse_press_ = nullptr;
+		}
+	}
+	else if (mouse_press_ != nullptr){
 		try{
 			mouse_press_->get_io_hook().mouse_drag_(target, delta);
 		}
@@ -279,31 +297,57 @@ void cwin::hook::io::mouse_drag_(ui::visible_surface *&target, const SIZE &delta
 		is_dragging_ = false;
 }
 
-void cwin::hook::io::mouse_drag_end_(){
-	ui::visible_surface *target = nullptr;
-	mouse_drag_end_(target);
-}
-
-void cwin::hook::io::mouse_drag_end_(ui::visible_surface *&target){
-	if ((target = dynamic_cast<ui::visible_surface *>(&target_)) == nullptr)
-		return;
-
-	if (mouse_press_ != nullptr){
-		try{
-			mouse_press_->get_io_hook().mouse_drag_end_(target);
+void cwin::hook::io::mouse_drag_non_client_(const SIZE &delta, UINT hit_target){
+	switch (hit_target){
+	case HTCAPTION:
+		if (position_callback_ != nullptr)
+			position_callback_(delta);
+		break;
+	case HTLEFT:
+		if (size_callback_ != nullptr && position_callback_ != nullptr){
+			size_callback_(SIZE{ -delta.cx, 0 });
+			position_callback_(SIZE{ delta.cx, 0 });
 		}
-		catch (const ui::exception::not_supported &){
-			mouse_press_ = nullptr;
+		break;
+	case HTTOPLEFT:
+		if (size_callback_ != nullptr && position_callback_ != nullptr){
+			size_callback_(SIZE{ -delta.cx, -delta.cy });
+			position_callback_(delta);
 		}
+		break;
+	case HTTOP:
+		if (size_callback_ != nullptr && position_callback_ != nullptr){
+			size_callback_(SIZE{ 0, -delta.cy });
+			position_callback_(SIZE{ 0, delta.cy });
+		}
+		break;
+	case HTTOPRIGHT:
+		if (size_callback_ != nullptr && position_callback_ != nullptr){
+			size_callback_(SIZE{ delta.cx, -delta.cy });
+			position_callback_(SIZE{ 0, delta.cy });
+		}
+		break;
+	case HTRIGHT:
+		if (size_callback_ != nullptr)
+			size_callback_(SIZE{ delta.cx, 0 });
+		break;
+	case HTBOTTOMRIGHT:
+		if (size_callback_ != nullptr)
+			size_callback_(delta);
+		break;
+	case HTBOTTOM:
+		if (size_callback_ != nullptr)
+			size_callback_(SIZE{ 0, delta.cy });
+		break;
+	case HTBOTTOMLEFT:
+		if (size_callback_ != nullptr && position_callback_ != nullptr){
+			size_callback_(SIZE{ -delta.cx, delta.cy });
+			position_callback_(SIZE{ delta.cx, 0 });
+		}
+		break;
+	default:
+		break;
 	}
-
-	if (is_dragging_ && pressed_button_ != mouse_button_type::nil){
-		auto pos = GetMessagePos();
-		POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
-		trigger_<events::io::mouse_drag_end>(nullptr, 0u, *target, position, pressed_button_);
-	}
-	
-	is_dragging_ = false;
 }
 
 void cwin::hook::io::mouse_down_(mouse_button_type button){
@@ -320,16 +364,17 @@ void cwin::hook::io::mouse_down_(ui::visible_surface *&target, mouse_button_type
 
 	mouse_up_(pressed_button_);
 	if (mouse_over_ != nullptr){
-		if (auto hit_target = mouse_over_->current_hit_test(position); hit_target != HTNOWHERE && hit_target != HTCLIENT){//Non-client
-
-		}
-		else if (hit_target == HTCLIENT){//Client
+		if (auto hit_target = mouse_over_->current_hit_test(position); hit_target == HTCLIENT){//Client
 			try{
 				(mouse_press_ = mouse_over_)->get_io_hook().mouse_down_(target, button);
 			}
 			catch (const ui::exception::not_supported &){
 				mouse_press_ = mouse_over_ = nullptr;
 			}
+		}
+		else if (hit_target != HTNOWHERE && button == mouse_button_type::left){//Non-client
+			non_client_mouse_press_ = mouse_over_;
+			non_client_target_ = hit_target;
 		}
 	}
 
@@ -366,6 +411,7 @@ void cwin::hook::io::mouse_up_(ui::visible_surface *&target, mouse_button_type b
 		is_dragging_ = false;
 	}
 
+	is_dragging_non_client_ = false;
 	trigger_<events::io::mouse_up>(nullptr, 0u, *target, position, pressed_button_);
 	pressed_button_ = events::io::mouse_button::button_type::nil;
 }
@@ -419,7 +465,7 @@ void cwin::hook::io::mouse_wheel_(ui::visible_surface *&target, const SIZE &delt
 }
 
 bool cwin::hook::io::check_drag_state_() const{
-	if (is_dragging_)
+	if (is_dragging_ || is_dragging_non_client_)
 		return true;
 
 	if (mouse_press_ != nullptr){
@@ -437,13 +483,13 @@ void cwin::hook::io::after_mouse_drag_(const SIZE &delta){}
 cwin::hook::client_drag::client_drag(ui::visible_surface &target)
 	: io(target){
 	target.get_events().bind([this](events::io::mouse_drag_begin &e){
-		return true;
+		return (e.get_button() == mouse_button_type::left);
 	});
 }
 
 cwin::hook::client_drag::~client_drag() = default;
 
 void cwin::hook::client_drag::after_mouse_drag_(const SIZE &delta){
-	if (callback_ != nullptr)
-		callback_(delta);
+	if (position_callback_ != nullptr)
+		position_callback_(delta);
 }
