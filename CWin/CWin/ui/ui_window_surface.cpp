@@ -170,10 +170,12 @@ void cwin::ui::window_surface::destroy_(){
 
 		DeleteObject(handle_bound_.rect_handle);
 		DeleteObject(handle_bound_.handle);
+		DeleteObject(client_handle_bound_.handle);
 
 		handle_ = nullptr;
 		handle_bound_.handle = nullptr;
 		handle_bound_.rect_handle = nullptr;
+		client_handle_bound_.handle = nullptr;
 	}
 }
 
@@ -271,11 +273,13 @@ void cwin::ui::window_surface::update_bounds_(){
 		}
 		else{//Remove bound, if any
 			SetWindowRgn(handle_, nullptr, TRUE);
+			update_client_bound_();
 			return;
 		}
 	}
 	else{//Remove bound, if any
 		SetWindowRgn(handle_, nullptr, TRUE);
+		update_client_bound_();
 		return;
 	}
 
@@ -291,6 +295,8 @@ void cwin::ui::window_surface::update_bounds_(){
 	}
 	else
 		SetWindowRgn(handle_, handle_bound_copy, TRUE);
+
+	update_client_bound_();
 }
 
 const cwin::ui::surface::handle_bound_info &cwin::ui::window_surface::get_bound_() const{
@@ -298,7 +304,7 @@ const cwin::ui::surface::handle_bound_info &cwin::ui::window_surface::get_bound_
 }
 
 const cwin::ui::surface::handle_bound_info &cwin::ui::window_surface::get_client_bound_() const{
-	return handle_bound_;
+	return client_handle_bound_;
 }
 
 void cwin::ui::window_surface::redraw_(HRGN region){
@@ -386,4 +392,14 @@ DWORD cwin::ui::window_surface::get_blacklisted_extended_styles_() const{
 
 DWORD cwin::ui::window_surface::get_persistent_extended_styles_() const{
 	return 0u;
+}
+
+void cwin::ui::window_surface::update_client_bound_(){
+	RECT client_dimension{};
+	GetClientRect(handle_, &client_dimension);
+
+	POINT offset{};
+	offset_point_to_window_(offset);
+
+	update_region_bound_(client_handle_bound_.handle, SIZE{ (client_dimension.right - (client_dimension.left + offset.x)), (client_dimension.bottom - (client_dimension.top + offset.y)) });
 }

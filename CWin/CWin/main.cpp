@@ -5,6 +5,7 @@
 #include "non_window/round_rectangle_non_window.h"
 
 #include "hook/io_hook.h"
+#include "events/drawing_events.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
@@ -19,6 +20,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	cwin::non_window::rectangle rnw(window);
 	cwin::non_window::round_rectangle rrnw(window, SIZE{ 20, 20 });
+
+	rnw.get_events().bind([](cwin::events::get_caption &){
+		return std::wstring_view(L"Non Window Title");
+	});
 
 	rnw.insert_hook<cwin::hook::client_drag>();
 	rnw.set_size(SIZE{ 360, 225 });

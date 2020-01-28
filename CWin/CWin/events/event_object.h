@@ -93,6 +93,10 @@ namespace cwin::events{
 
 		virtual void call_handler_();
 
+		virtual void trigger_(object &e, unsigned __int64 id) const;
+
+		virtual void trigger_(const target &context, object &e, unsigned __int64 id) const;
+
 		thread::object &thread_;
 		events::target &context_;
 		events::target &target_;

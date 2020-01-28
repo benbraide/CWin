@@ -134,3 +134,11 @@ void cwin::events::object::do_default_(){
 }
 
 void cwin::events::object::call_handler_(){}
+
+void cwin::events::object::trigger_(object &e, unsigned __int64 id) const{
+	trigger_(context_, e, id);
+}
+
+void cwin::events::object::trigger_(const target &context, object &e, unsigned __int64 id) const{
+	context.get_events().trigger_(e, id);
+}

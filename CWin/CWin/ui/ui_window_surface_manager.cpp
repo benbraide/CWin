@@ -270,11 +270,9 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		render->SetTransform(D2D1::IdentityMatrix());
 		render->BindDC(paint_info_.hdc, &paint_info_.rcPaint);
 
-		render->BeginDraw();
 		target.trigger_<events::erase_background>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
-		render->EndDraw();
-
 		RestoreDC(paint_info_.hdc, -1);
+
 		return;
 	}
 
@@ -340,23 +338,15 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		render->SetTransform(D2D1::IdentityMatrix());
 		render->BindDC(paint_info_.hdc, &paint_info.rcPaint);
 
-		render->BeginDraw();
 		target.trigger_<events::erase_background>(nullptr, 0u, paint_info);
-		render->EndDraw();
-
-		render->BeginDraw();
 		target.trigger_<events::paint>(nullptr, 0u, paint_info);
-		render->EndDraw();
 
 		RestoreDC(paint_info_.hdc, -1);
 	}
 	else if (auto window_target = dynamic_cast<window_surface *>(&target); window_target != nullptr){
 		render->SetTransform(D2D1::IdentityMatrix());
 		render->BindDC(paint_info_.hdc, &paint_info_.rcPaint);
-
-		render->BeginDraw();
 		target.trigger_<events::paint>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
-		render->EndDraw();
 	}
 }
 

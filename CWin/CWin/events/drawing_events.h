@@ -46,4 +46,18 @@ namespace cwin::events{
 	protected:
 		virtual void do_default_() override;
 	};
+
+	class get_caption : public object{
+	public:
+		using object::object;
+
+		virtual ~get_caption();
+
+		virtual const std::wstring &get_value() const;
+
+	protected:
+		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
+
+		std::wstring value_;
+	};
 }

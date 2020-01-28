@@ -3,6 +3,7 @@
 #include "../hook/background_hooks.h"
 #include "../thread/thread_object.h"
 
+#include "managed_event_target.h"
 #include "drawing_events.h"
 
 cwin::events::draw::draw(events::target &target, const PAINTSTRUCT &info)
@@ -43,10 +44,14 @@ void cwin::events::erase_background::do_default_(){
 				static_cast<float>(info_.rcPaint.bottom)
 			};
 
+			render_->BeginDraw();
 			visible_context->get_background_hook().draw_(*render_, area);
+			render_->EndDraw();
 		}
 	}
-	catch (const ui::exception::not_supported &){}
+	catch (const ui::exception::not_supported &){
+		render_->EndDraw();
+	}
 }
 
 cwin::events::paint::~paint() = default;
@@ -81,13 +86,49 @@ void cwin::events::non_client_paint::do_default_(){
 	area = RECT{ (size.cx - client_margin.right), client_margin.top, size.cx, (size.cy - client_margin.bottom) };
 	DrawThemeBackground(theme, info_.hdc, WP_SMALLFRAMERIGHT, 0, &area, nullptr);
 
-	//DrawThemeBackground(theme, info_.hdc, part_id, state_id, &region, nullptr);
-	//DrawThemeText(theme, info_.hdc, part_id, state_id, text.data(), static_cast<int>(text.size()), format_flags, 0u, &region);
+	get_caption e(context_);
+	trigger_(e, 0u);
 
-	/*
-	draw_themed_background(WP_SMALLFRAMEBOTTOM, 0, RECT{ 0, (size.cy - hk->padding_.bottom), size.cx, size.cy });
+	if (e.prevented_default())
+		return;
 
-	draw_themed_background(WP_SMALLFRAMELEFT, 0, RECT{ 0, hk->padding_.top, hk->padding_.left, (size.cy - hk->padding_.bottom) });
-	draw_themed_background(WP_SMALLFRAMERIGHT, 0, RECT{ (size.cx - hk->padding_.right), hk->padding_.top, size.cx, (size.cy - hk->padding_.bottom) });
-	*/
+	auto &caption = e.get_value();
+	if (caption.empty())
+		return;
+
+	NONCLIENTMETRICSW metrics_info{ sizeof(NONCLIENTMETRICSW) };
+	SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, 0u, &metrics_info, 0u);
+
+	auto font = CreateFontIndirectW(&metrics_info.lfSmCaptionFont);
+	auto old_font = SelectObject(info_.hdc, font);
+
+	SIZE theme_size{};
+	GetThemePartSize(theme, info_.hdc, WP_SMALLCAPTION, 0, nullptr, THEMESIZE::TS_TRUE, &theme_size);
+
+	area = RECT{ theme_size.cx, 0, (size.cx - theme_size.cx), client_margin.top };
+	DrawThemeText(theme, info_.hdc, WP_CAPTION, CS_INACTIVE, caption.data(), static_cast<int>(caption.size()), (DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS), 0u, &area);
+
+	SelectObject(info_.hdc, old_font);
+	DeleteObject(font);
+}
+
+cwin::events::get_caption::~get_caption() = default;
+
+const std::wstring &cwin::events::get_caption::get_value() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return value_;
+}
+
+bool cwin::events::get_caption::handle_set_result_(const void *value, const std::type_info &type){
+	if (type == typeid(std::wstring))
+		value_ = *static_cast<const std::wstring *>(value);
+	else if (type == typeid(std::wstring_view))
+		value_ = *static_cast<const std::wstring_view *>(value);
+	else if (type == typeid(const wchar_t *) || type == typeid(wchar_t *))
+		value_ = static_cast<const wchar_t *>(value);
+	else
+		throw exception::bad_value();
+
+	return true;
 }

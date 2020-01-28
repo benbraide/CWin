@@ -299,7 +299,7 @@ void cwin::ui::non_window_surface::update_bounds_(){
 	utility::rgn::move(handle_bound_.rect_handle, offset);
 	
 	auto destination_rgn = thread_.get_rgn();
-	if (auto surface_ancestor = get_matching_ancestor_<surface>(nullptr); surface_ancestor != nullptr && dynamic_cast<window_surface *>(surface_ancestor) == nullptr){
+	if (auto surface_ancestor = get_matching_ancestor_<surface>(nullptr); surface_ancestor != nullptr){
 		if (auto &client_bound = surface_ancestor->get_client_bound(); client_bound.handle != nullptr){
 			surface_ancestor->offset_point_to_window(offset);
 			utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
@@ -321,8 +321,8 @@ void cwin::ui::non_window_surface::update_bounds_(){
 	utility::rgn::intersect(handle_bound_.handle, destination_rgn, handle_);
 
 	auto intersect_rect = utility::rgn::get_dimension(handle_bound_.handle);
-	handle_bound_.offset.x = (offset.x - intersect_rect.left);
-	handle_bound_.offset.y = (offset.y - intersect_rect.top);
+	handle_bound_.offset.x = (intersect_rect.left - offset.x);
+	handle_bound_.offset.y = (intersect_rect.top - offset.y);
 
 	if (client_handle_ != nullptr){//Update client
 		offset_point_to_window_(offset);
@@ -333,8 +333,8 @@ void cwin::ui::non_window_surface::update_bounds_(){
 		utility::rgn::intersect(client_handle_bound_.handle, destination_rgn, client_handle_);
 
 		intersect_rect = utility::rgn::get_dimension(client_handle_bound_.handle);
-		client_handle_bound_.offset.x = (offset.x - intersect_rect.left);
-		client_handle_bound_.offset.y = (offset.y - intersect_rect.top);
+		client_handle_bound_.offset.x = (intersect_rect.left - offset.x);
+		client_handle_bound_.offset.y = (intersect_rect.top - offset.y);
 	}
 
 	traverse_matching_children_<surface>([&](surface &child){

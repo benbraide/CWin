@@ -112,6 +112,8 @@ namespace cwin::ui{
 
 		virtual DWORD get_persistent_extended_styles_() const;
 
+		virtual void update_client_bound_();
+
 		virtual HINSTANCE get_instance_() const = 0;
 
 		virtual const wchar_t *get_class_name_() const = 0;
@@ -120,6 +122,7 @@ namespace cwin::ui{
 
 		HWND handle_ = nullptr;
 		handle_bound_info handle_bound_{};
+		handle_bound_info client_handle_bound_{};
 
 		DWORD styles_ = (WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		DWORD extended_styles_ = 0u;
