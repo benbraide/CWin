@@ -28,11 +28,36 @@ cwin::thread::object::object()
 		app::object::class_id_ = RegisterClassExW(&class_info);
 	}
 
+	SIZE size{};
+	auto device_info = GetDC(HWND_DESKTOP);
+
+	if (device_info != nullptr && (theme_ = OpenThemeData(HWND_DESKTOP, L"Window")) != nullptr){
+		GetThemePartSize(theme_, device_info, WP_SMALLFRAMELEFT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		client_margin_.left = size.cx;
+
+		GetThemePartSize(theme_, device_info, WP_SMALLFRAMEBOTTOM, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		client_margin_.bottom = size.cy;
+
+		GetThemePartSize(theme_, device_info, WP_SMALLCAPTION, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		client_margin_.top = (size.cy + client_margin_.bottom);
+
+		GetThemePartSize(theme_, device_info, WP_SMALLFRAMERIGHT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		client_margin_.right = size.cx;
+	}
+
+	if (device_info != nullptr)
+		ReleaseDC(HWND_DESKTOP, device_info);
+
 	initialize_drawing_();
 }
 
 cwin::thread::object::~object(){
 	uninitialize_drawing_();
+	if (theme_ != nullptr){
+		CloseThemeData(theme_);
+		theme_ = nullptr;
+	}
+
 	if (rgns_[0] != nullptr){
 		DeleteObject(rgns_[0]);
 		rgns_[0] = nullptr;
@@ -195,6 +220,18 @@ HRGN cwin::thread::object::get_rgn(HRGN blacklist, HRGN other_blacklist) const{
 		return rgns_[2];
 
 	return nullptr;
+}
+
+HTHEME cwin::thread::object::get_theme() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return theme_;
+}
+
+const RECT &cwin::thread::object::get_client_margin() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return client_margin_;
 }
 
 float cwin::thread::object::convert_pixel_to_dip_x(int value) const{

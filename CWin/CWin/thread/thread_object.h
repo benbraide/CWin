@@ -77,6 +77,10 @@ namespace cwin::thread{
 
 		HRGN get_rgn(HRGN blacklist = nullptr, HRGN other_blacklist = nullptr) const;
 
+		HTHEME get_theme() const;
+
+		const RECT &get_client_margin() const;
+
 		float convert_pixel_to_dip_x(int value) const;
 
 		float convert_pixel_to_dip_y(int value) const;
@@ -196,5 +200,7 @@ namespace cwin::thread{
 		ID2D1SolidColorBrush *color_brush_ = nullptr;
 
 		HRGN rgns_[3];
+		HTHEME theme_ = nullptr;
+		RECT client_margin_{};
 	};
 }

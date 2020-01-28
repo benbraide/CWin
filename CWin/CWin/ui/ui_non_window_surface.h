@@ -12,7 +12,7 @@ namespace cwin::ui{
 	public:
 		using visible_surface::visible_surface;
 
-		virtual ~non_window_surface() = default;
+		virtual ~non_window_surface();
 
 		virtual HRGN get_handle() const;
 
@@ -21,6 +21,10 @@ namespace cwin::ui{
 		virtual HRGN get_client_handle() const;
 
 		virtual void get_client_handle(const std::function<void(HRGN)> &callback) const;
+
+		const RECT &get_client_margin() const;
+
+		virtual void get_client_margin(const std::function<void(const RECT &)> &callback) const;
 
 	protected:
 		friend class window_surface_manager;
@@ -67,6 +71,8 @@ namespace cwin::ui{
 
 		virtual UINT non_client_hit_test_(const POINT &value) const;
 
+		const RECT &get_client_margin_() const;
+
 		HRGN handle_ = nullptr;
 		HRGN client_handle_ = nullptr;
 
@@ -77,6 +83,5 @@ namespace cwin::ui{
 		hook::non_window::client_handle *client_handle_hook_ = nullptr;
 
 		bool visible_ = true;
-		RECT client_handle_margin_{};
 	};
 }

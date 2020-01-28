@@ -57,4 +57,37 @@ void cwin::events::non_client_paint::do_default_(){
 	draw::do_default_();
 	if (options_.any_is_set(option_type::prevented_default, option_type::called_handler))
 		return;
+
+	auto non_window_context = dynamic_cast<ui::non_window_surface *>(&context_);
+	if (non_window_context == nullptr || !non_window_context->is_created() || !non_window_context->is_visible())
+		return;
+
+	auto theme = thread_.get_theme();
+	if (theme == nullptr)
+		return;
+
+	auto &size = non_window_context->get_current_size();
+	auto &client_margin = non_window_context->get_client_margin();
+
+	RECT area{ 0, 0, size.cx, client_margin.top };
+	DrawThemeBackground(theme, info_.hdc, WP_SMALLCAPTION, CS_ACTIVE, &area, nullptr);
+
+	area = RECT{ 0, (size.cy - client_margin.bottom), size.cx, size.cy };
+	DrawThemeBackground(theme, info_.hdc, WP_SMALLFRAMEBOTTOM, 0, &area, nullptr);
+
+	area = RECT{ 0, client_margin.top, client_margin.left, (size.cy - client_margin.bottom) };
+	DrawThemeBackground(theme, info_.hdc, WP_SMALLFRAMELEFT, 0, &area, nullptr);
+
+	area = RECT{ (size.cx - client_margin.right), client_margin.top, size.cx, (size.cy - client_margin.bottom) };
+	DrawThemeBackground(theme, info_.hdc, WP_SMALLFRAMERIGHT, 0, &area, nullptr);
+
+	//DrawThemeBackground(theme, info_.hdc, part_id, state_id, &region, nullptr);
+	//DrawThemeText(theme, info_.hdc, part_id, state_id, text.data(), static_cast<int>(text.size()), format_flags, 0u, &region);
+
+	/*
+	draw_themed_background(WP_SMALLFRAMEBOTTOM, 0, RECT{ 0, (size.cy - hk->padding_.bottom), size.cx, size.cy });
+
+	draw_themed_background(WP_SMALLFRAMELEFT, 0, RECT{ 0, hk->padding_.top, hk->padding_.left, (size.cy - hk->padding_.bottom) });
+	draw_themed_background(WP_SMALLFRAMERIGHT, 0, RECT{ (size.cx - hk->padding_.right), hk->padding_.top, size.cx, (size.cy - hk->padding_.bottom) });
+	*/
 }

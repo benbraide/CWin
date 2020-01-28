@@ -317,10 +317,7 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 			render->SetTransform(D2D1::IdentityMatrix());
 			render->BindDC(paint_info_.hdc, &paint_info.rcPaint);
 			
-			render->BeginDraw();
 			target.trigger_<events::non_client_paint>(nullptr, 0u, paint_info);
-			render->EndDraw();
-
 			RestoreDC(paint_info_.hdc, -1);
 		}
 

@@ -24,6 +24,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 	rnw.set_size(SIZE{ 360, 225 });
 	rnw.set_position(POINT{ 10, 10 });
 	rnw.set_background_color(D2D1::ColorF(D2D1::ColorF::Red));
+	rnw.insert_hook<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::client_handle>>();
 	rnw.create();
 
 	rrnw.insert_hook<cwin::hook::client_drag>();

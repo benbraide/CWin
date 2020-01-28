@@ -4,6 +4,8 @@
 #include "ui_window_surface.h"
 #include "ui_non_window_surface.h"
 
+cwin::ui::non_window_surface::~non_window_surface() = default;
+
 HRGN cwin::ui::non_window_surface::get_handle() const{
 	return execute_task([&]{
 		return handle_;
@@ -28,6 +30,18 @@ void cwin::ui::non_window_surface::get_client_handle(const std::function<void(HR
 	});
 }
 
+const RECT &cwin::ui::non_window_surface::get_client_margin() const{
+	return *execute_task([&]{
+		return &get_client_margin_();
+	});
+}
+
+void cwin::ui::non_window_surface::get_client_margin(const std::function<void(const RECT &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_client_margin_());
+	});
+}
+
 void cwin::ui::non_window_surface::added_hook_(hook::object &value){
 	visible_surface::added_hook_(value);
 	if (auto client_handle_value = dynamic_cast<hook::non_window::client_handle *>(&value); client_handle_value != nullptr){
@@ -38,9 +52,11 @@ void cwin::ui::non_window_surface::added_hook_(hook::object &value){
 
 		if (handle_ != nullptr){//Create client handle
 			auto &current_size = get_current_size_();
+			auto &client_handle_margin = get_client_margin_();
+
 			SIZE client_size{
-				(current_size.cx - (client_handle_margin_.left + client_handle_margin_.right)),
-				(current_size.cy - (client_handle_margin_.top + client_handle_margin_.bottom))
+				(current_size.cx - (client_handle_margin.left + client_handle_margin.right)),
+				(current_size.cy - (client_handle_margin.top + client_handle_margin.bottom))
 			};
 
 			if ((client_handle_ = client_handle_hook_->resize_value_(handle_, client_size)) != nullptr){
@@ -104,12 +120,13 @@ void cwin::ui::non_window_surface::create_(){
 		throw exception::action_failed();
 
 	if (client_handle_hook_ != nullptr){//Create client handle
+		auto &client_handle_margin = get_client_margin_();
 		SIZE client_size{
-			(current_size.cx - (client_handle_margin_.left + client_handle_margin_.right)),
-			(current_size.cy - (client_handle_margin_.top + client_handle_margin_.bottom))
+			(current_size.cx - (client_handle_margin.left + client_handle_margin.right)),
+			(current_size.cy - (client_handle_margin.top + client_handle_margin.bottom))
 		};
 
-		if ((client_handle_ = client_handle_hook_->resize_value_(handle_, client_size)) == nullptr){
+		if ((client_handle_ = client_handle_hook_->resize_value_(client_handle_, client_size)) == nullptr){
 			handle_hook_->destroy_value_(handle_);
 			handle_ = nullptr;
 			throw exception::action_failed();
@@ -183,9 +200,10 @@ void cwin::ui::non_window_surface::size_update_(const SIZE &old_value, const SIZ
 			throw exception::not_supported();
 		}
 
+		auto &client_handle_margin = get_client_margin_();
 		SIZE client_size{
-			(current_value.cx - (client_handle_margin_.left + client_handle_margin_.right)),
-			(current_value.cy - (client_handle_margin_.top + client_handle_margin_.bottom))
+			(current_value.cx - (client_handle_margin.left + client_handle_margin.right)),
+			(current_value.cy - (client_handle_margin.top + client_handle_margin.bottom))
 		};
 
 		auto client_handle_value = client_handle_hook_->resize_value_(client_handle_, client_size);
@@ -231,16 +249,18 @@ void cwin::ui::non_window_surface::position_update_(const POINT &old_value, cons
 void cwin::ui::non_window_surface::offset_point_to_window_(POINT &value) const{
 	visible_surface::offset_point_to_window_(value);
 	if (client_handle_hook_ != nullptr){
-		value.x += client_handle_margin_.left;
-		value.y += client_handle_margin_.top;
+		auto &client_handle_margin = get_client_margin_();
+		value.x += client_handle_margin.left;
+		value.y += client_handle_margin.top;
 	}
 }
 
 void cwin::ui::non_window_surface::offset_point_from_window_(POINT &value) const{
 	visible_surface::offset_point_from_window_(value);
 	if (client_handle_hook_ != nullptr){
-		value.x -= client_handle_margin_.left;
-		value.y -= client_handle_margin_.top;
+		auto &client_handle_margin = get_client_margin_();
+		value.x -= client_handle_margin.left;
+		value.y -= client_handle_margin.top;
 	}
 }
 
@@ -381,44 +401,46 @@ void cwin::ui::non_window_surface::redraw_at_(HRGN region, POINT position){
 }
 
 UINT cwin::ui::non_window_surface::non_client_hit_test_(const POINT &value) const{
-	RECT dimension{ 0, 0, client_handle_margin_.left, client_handle_margin_.bottom };
+	auto &client_handle_margin = get_client_margin_();
+	RECT dimension{ 0, 0, client_handle_margin.left, client_handle_margin.bottom };
+
 	if (PtInRect(&dimension, value) != FALSE)
 		return HTTOPLEFT;
 
 	auto &size = get_current_size_();
 	dimension = RECT{
-		client_handle_margin_.left,
+		client_handle_margin.left,
 		0,
-		(size.cx - (client_handle_margin_.left + client_handle_margin_.right)),
-		client_handle_margin_.bottom
+		(size.cx - (client_handle_margin.left + client_handle_margin.right)),
+		client_handle_margin.bottom
 	};
 
 	if (PtInRect(&dimension, value) != FALSE)
 		return HTTOP;
 
 	dimension = RECT{
-		(size.cx - (client_handle_margin_.left + client_handle_margin_.right)),
+		(size.cx - (client_handle_margin.left + client_handle_margin.right)),
 		0,
 		size.cx,
-		client_handle_margin_.bottom
+		client_handle_margin.bottom
 	};
 
 	if (PtInRect(&dimension, value) != FALSE)
 		return HTTOPRIGHT;
 
 	dimension = RECT{
-		(size.cx - (client_handle_margin_.left + client_handle_margin_.right)),
-		client_handle_margin_.bottom,
+		(size.cx - (client_handle_margin.left + client_handle_margin.right)),
+		client_handle_margin.bottom,
 		size.cx,
-		(size.cy - (client_handle_margin_.bottom + client_handle_margin_.bottom))
+		(size.cy - (client_handle_margin.bottom + client_handle_margin.bottom))
 	};
 
 	if (PtInRect(&dimension, value) != FALSE)
 		return HTRIGHT;
 
 	dimension = RECT{
-		(size.cx - (client_handle_margin_.left + client_handle_margin_.right)),
-		(size.cy - (client_handle_margin_.bottom + client_handle_margin_.bottom)),
+		(size.cx - (client_handle_margin.left + client_handle_margin.right)),
+		(size.cy - (client_handle_margin.bottom + client_handle_margin.bottom)),
 		size.cx,
 		size.cy
 	};
@@ -427,9 +449,9 @@ UINT cwin::ui::non_window_surface::non_client_hit_test_(const POINT &value) cons
 		return HTBOTTOMRIGHT;
 
 	dimension = RECT{
-		client_handle_margin_.left,
-		(size.cy - (client_handle_margin_.bottom + client_handle_margin_.bottom)),
-		(size.cx - (client_handle_margin_.left + client_handle_margin_.right)),
+		client_handle_margin.left,
+		(size.cy - (client_handle_margin.bottom + client_handle_margin.bottom)),
+		(size.cx - (client_handle_margin.left + client_handle_margin.right)),
 		size.cy
 	};
 
@@ -438,8 +460,8 @@ UINT cwin::ui::non_window_surface::non_client_hit_test_(const POINT &value) cons
 
 	dimension = RECT{
 		0,
-		(size.cy - (client_handle_margin_.bottom + client_handle_margin_.bottom)),
-		client_handle_margin_.left,
+		(size.cy - (client_handle_margin.bottom + client_handle_margin.bottom)),
+		client_handle_margin.left,
 		size.cy
 	};
 
@@ -448,23 +470,27 @@ UINT cwin::ui::non_window_surface::non_client_hit_test_(const POINT &value) cons
 
 	dimension = RECT{
 		0,
-		client_handle_margin_.bottom,
-		client_handle_margin_.left,
-		(size.cy - (client_handle_margin_.bottom + client_handle_margin_.bottom))
+		client_handle_margin.bottom,
+		client_handle_margin.left,
+		(size.cy - (client_handle_margin.bottom + client_handle_margin.bottom))
 	};
 
 	if (PtInRect(&dimension, value) != FALSE)
 		return HTLEFT;
 
 	dimension = RECT{
-		client_handle_margin_.left,
-		client_handle_margin_.bottom,
-		(size.cx - (client_handle_margin_.left + client_handle_margin_.right)),
-		client_handle_margin_.top
+		client_handle_margin.left,
+		client_handle_margin.bottom,
+		(size.cx - (client_handle_margin.left + client_handle_margin.right)),
+		client_handle_margin.top
 	};
 
 	if (PtInRect(&dimension, value) != FALSE)
 		return HTCAPTION;
 
 	return HTNOWHERE;
+}
+
+const RECT &cwin::ui::non_window_surface::get_client_margin_() const{
+	return thread_.get_client_margin();
 }
