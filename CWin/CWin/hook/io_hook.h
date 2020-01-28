@@ -80,7 +80,7 @@ namespace cwin::hook{
 
 	class client_drag : public io{
 	public:
-		using io::io;
+		explicit client_drag(ui::visible_surface &target);
 
 		virtual ~client_drag();
 

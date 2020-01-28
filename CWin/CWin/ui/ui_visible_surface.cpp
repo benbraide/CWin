@@ -138,7 +138,7 @@ void cwin::ui::visible_surface::added_hook_(hook::object &value){
 		io_hook_ = io_value;
 		if (auto client_drag_hook = dynamic_cast<hook::client_drag *>(io_value); client_drag_hook != nullptr){
 			client_drag_hook->callback_ = [=](const SIZE &delta){
-				auto current_position = get_current_position_();
+				auto &current_position = get_current_position_();
 				set_position_(POINT{ (current_position.x + delta.cx), (current_position.y + delta.cy) }, false);
 			};
 		}

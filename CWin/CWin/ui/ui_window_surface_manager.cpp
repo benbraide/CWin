@@ -150,17 +150,6 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		target.destroy();
 		return 0;
 	case WM_ERASEBKGND:
-		try{
-			before_paint_(target, message, wparam, lparam);
-			target.trigger_<events::erase_background>(nullptr, 0u, MSG{ target.handle_, message, wparam, lparam }, thread_.get_class_entry(target.get_class_name_()), paint_info_);
-			after_paint_(target, message, wparam, lparam);
-		}
-		catch (...){
-			after_paint_(target, message, wparam, lparam);
-			throw;
-		}
-		
-		return 0;
 	case WM_PAINT:
 		try{
 			before_paint_(target, message, wparam, lparam);
@@ -235,68 +224,61 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 }
 
 void cwin::ui::window_surface_manager::before_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
-	RECT window_client_rect{};
-	GetClientRect(target.handle_, &window_client_rect);
-
 	if (message == WM_PAINT){
 		BeginPaint(target.handle_, &paint_info_);
 		paint_target_ = &target;
 	}
 	else if (message == WM_ERASEBKGND){
 		paint_info_.hdc = reinterpret_cast<HDC>(wparam);
+		GetClipBox(paint_info_.hdc, &paint_info_.rcPaint);
 	}
-
-	thread_.begin_draw_(paint_info_.hdc, window_client_rect);
 }
 
 void cwin::ui::window_surface_manager::after_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
-	auto state = thread_.end_draw_();
 	if (message == WM_PAINT){
 		paint_target_ = nullptr;
 		EndPaint(target.handle_, &paint_info_);
-
-		if (!state)//Repaint area
-			InvalidateRect(target.handle_, &paint_info_.rcPaint, TRUE);
 	}
 
 	paint_info_.hdc = nullptr;
 }
 
 void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT message, WPARAM wparam, LPARAM lparam, POINT offset){
-	if (auto non_window_target = dynamic_cast<non_window_surface *>(&target); non_window_target != nullptr){
-		if (non_window_target->client_handle_hook_ != nullptr){//Paint non-client area
-			SaveDC(paint_info_.hdc);
-
-			auto &bound = non_window_target->get_bound_();
-			utility::rgn::move(bound.handle, POINT{ (offset.x + bound.offset.x), (offset.y + bound.offset.y) });
-
-			ExtSelectClipRgn(paint_info_.hdc, bound.handle, RGN_AND);//Intercept clip
-			SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
-
-			target.trigger_<events::non_client_paint>(nullptr, 0u, paint_info_);
-			RestoreDC(paint_info_.hdc, -1);
-		}
+	auto render = thread_.get_device_render_target();
+	if (message == WM_ERASEBKGND){//Erase background
+		auto window_target = dynamic_cast<window_surface *>(&target);
+		if (window_target == nullptr)
+			return;
 
 		SaveDC(paint_info_.hdc);
 		target.offset_point_to_window_(offset);
 
-		auto &client_bound = non_window_target->get_client_bound_();
-		utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
+		target.reverse_traverse_matching_children_<non_window_surface>([&](non_window_surface &child){//Exclude children
+			if (!child.is_created() || !child.is_visible_())
+				return true;
 
-		ExtSelectClipRgn(paint_info_.hdc, client_bound.handle, RGN_AND);//Intercept clip
-		SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
+			auto &child_position = child.get_current_position();
+			POINT window_position{ (child_position.x + offset.x), (child_position.y + offset.y) };
+			auto &child_bound = child.get_bound();
 
-		target.trigger_<events::erase_background>(nullptr, 0u, paint_info_);
-		target.trigger_<events::paint>(nullptr, 0u, paint_info_);
+			utility::rgn::move(child_bound.handle, POINT{ (window_position.x + child_bound.offset.x), (window_position.y + child_bound.offset.y) });
+			ExtSelectClipRgn(paint_info_.hdc, child_bound.handle, RGN_DIFF);//Exclude clip
+
+			return true;
+		});
+
+		render->SetTransform(D2D1::IdentityMatrix());
+		render->BindDC(paint_info_.hdc, &paint_info_.rcPaint);
+
+		render->BeginDraw();
+		target.trigger_<events::erase_background>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
+		render->EndDraw();
 
 		RestoreDC(paint_info_.hdc, -1);
-	}
-	else if (auto window_target = dynamic_cast<window_surface *>(&target); window_target != nullptr){
-		target.trigger_<events::paint>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
-		target.offset_point_to_window_(offset);
+		return;
 	}
 
-	SaveDC(paint_info_.hdc);
+	target.offset_point_to_window_(offset);
 	target.reverse_traverse_matching_children_<non_window_surface>([&](non_window_surface &child){
 		if (!child.is_created() || !child.is_visible_())
 			return true;
@@ -313,7 +295,72 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		return true;
 	});
 
-	RestoreDC(paint_info_.hdc, -1);
+	if (auto non_window_target = dynamic_cast<non_window_surface *>(&target); non_window_target != nullptr){
+		auto paint_info = paint_info_;
+		if (non_window_target->client_handle_hook_ != nullptr){//Paint non-client area
+			auto non_client_offset = offset;
+			target.offset_point_from_window_(non_client_offset);
+
+			auto &bound = non_window_target->get_bound_();
+			utility::rgn::move(bound.handle, POINT{ (non_client_offset.x + bound.offset.x), (non_client_offset.y + bound.offset.y) });
+
+			SaveDC(paint_info_.hdc);
+			if (ExtSelectClipRgn(paint_info_.hdc, bound.handle, RGN_AND) == NULLREGION){//Target is outside update region
+				RestoreDC(paint_info_.hdc, -1);
+				return;
+			}
+
+			GetClipBox(paint_info_.hdc, &paint_info.rcPaint);
+			SetViewportOrgEx(paint_info_.hdc, non_client_offset.x, non_client_offset.y, nullptr);
+			OffsetRect(&paint_info.rcPaint, -non_client_offset.x, -non_client_offset.y);
+
+			render->SetTransform(D2D1::IdentityMatrix());
+			render->BindDC(paint_info_.hdc, &paint_info.rcPaint);
+			
+			render->BeginDraw();
+			target.trigger_<events::non_client_paint>(nullptr, 0u, paint_info);
+			render->EndDraw();
+
+			RestoreDC(paint_info_.hdc, -1);
+		}
+
+		auto &client_bound = non_window_target->get_client_bound_();
+		utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
+
+		auto rgd = utility::rgn::get_dimension(client_bound.handle);
+		GetClipBox(paint_info_.hdc, &paint_info.rcPaint);
+
+		SaveDC(paint_info_.hdc);
+		if (ExtSelectClipRgn(paint_info_.hdc, client_bound.handle, RGN_AND) == NULLREGION){//Client is outside update region
+			RestoreDC(paint_info_.hdc, -1);
+			return;
+		}
+
+		GetClipBox(paint_info_.hdc, &paint_info.rcPaint);
+		SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
+		OffsetRect(&paint_info.rcPaint, -offset.x, -offset.y);
+
+		render->SetTransform(D2D1::IdentityMatrix());
+		render->BindDC(paint_info_.hdc, &paint_info.rcPaint);
+
+		render->BeginDraw();
+		target.trigger_<events::erase_background>(nullptr, 0u, paint_info);
+		render->EndDraw();
+
+		render->BeginDraw();
+		target.trigger_<events::paint>(nullptr, 0u, paint_info);
+		render->EndDraw();
+
+		RestoreDC(paint_info_.hdc, -1);
+	}
+	else if (auto window_target = dynamic_cast<window_surface *>(&target); window_target != nullptr){
+		render->SetTransform(D2D1::IdentityMatrix());
+		render->BindDC(paint_info_.hdc, &paint_info_.rcPaint);
+
+		render->BeginDraw();
+		target.trigger_<events::paint>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
+		render->EndDraw();
+	}
 }
 
 void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){

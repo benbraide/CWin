@@ -1,5 +1,6 @@
 #include "../ui/ui_visible_surface.h"
 #include "../events/general_events.h"
+#include "../thread/thread_object.h"
 
 #include "background_hooks.h"
 
@@ -17,6 +18,7 @@ cwin::hook::color_background::color_background(ui::visible_surface &target)
 
 cwin::hook::color_background::color_background(ui::visible_surface &target, const D2D1_COLOR_F &value)
 	: background(target), color_hook_(*this), color_(value){
+	color_hook_.disable();
 	color_hook_.current_value_ = value;
 }
 
@@ -76,8 +78,11 @@ void cwin::hook::color_background::get_current_color(const std::function<void(co
 	});
 }
 
-void cwin::hook::color_background::draw_(ID2D1RenderTarget &render) const{
+void cwin::hook::color_background::draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const{
 	render.Clear(color_hook_.current_value_);
+	/*auto brush = background::thread_.get_color_brush();
+	brush->SetColor(color_hook_.current_value_);
+	render.FillRectangle(area, brush);*/
 }
 
 void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value){

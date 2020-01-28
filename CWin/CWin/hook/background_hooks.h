@@ -23,7 +23,7 @@ namespace cwin::hook{
 
 		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
 
-		virtual void draw_(ID2D1RenderTarget &render) const = 0;
+		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const = 0;
 	};
 
 	class color_background : public background, public target{
@@ -55,7 +55,7 @@ namespace cwin::hook{
 	protected:
 		friend class ui::visible_surface;
 
-		virtual void draw_(ID2D1RenderTarget &render) const override;
+		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const override;
 
 		virtual void set_color_(const D2D1_COLOR_F &value);
 

@@ -323,9 +323,9 @@ void cwin::ui::surface::set_size_(const SIZE &value, bool should_animate, const 
 	size_ = value;
 	trigger_<events::after_size_change>(nullptr, 0u, old_value, value);
 
-	if (size_hook_ == nullptr)
-		trigger_<events::after_size_update>(nullptr, 0u, old_value, size_);
-	else//Use hook
+	if (size_hook_ == nullptr && callback != nullptr)
+		callback(old_value, value);
+	else if (position_hook_ != nullptr)//Use hook
 		size_hook_->set_value_(old_value, size_, should_animate, callback);
 }
 
@@ -355,9 +355,9 @@ void cwin::ui::surface::set_position_(const POINT &value, bool should_animate, c
 	position_ = value;
 	trigger_<events::after_position_change>(nullptr, 0u, old_value, value);
 
-	if (position_hook_ == nullptr)
-		trigger_<events::after_position_update>(nullptr, 0u, old_value, position_);
-	else//Use hook
+	if (position_hook_ == nullptr && callback != nullptr)
+		callback(old_value, value);
+	else if (position_hook_ != nullptr)//Use hook
 		position_hook_->set_value_(old_value, position_, should_animate, callback);
 }
 
@@ -488,7 +488,7 @@ UINT cwin::ui::surface::current_hit_test_(const POINT &value) const{
 	return ((PtInRect(&dimension, value) == FALSE) ? HTNOWHERE : HTCLIENT);
 }
 
-void cwin::ui::surface::update_region_bound_(HRGN target, const SIZE &size) const{
+void cwin::ui::surface::update_region_bound_(HRGN &target, const SIZE &size) const{
 	if (target == nullptr)
 		target = CreateRectRgn(0, 0, size.cx, size.cy);
 	else

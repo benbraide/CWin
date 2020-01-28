@@ -153,7 +153,7 @@ namespace cwin::hook{
 				}
 			}
 
-			auto active_id = active_id_++;
+			auto active_id = ++active_id_;
 			m_value_type value_delta{}, start_value = current_value_;
 
 			compute_delta_(start_value, value, value_delta);

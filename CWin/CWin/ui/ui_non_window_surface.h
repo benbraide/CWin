@@ -79,14 +79,4 @@ namespace cwin::ui{
 		bool visible_ = true;
 		RECT client_handle_margin_{};
 	};
-
-	class fixed_non_window_surface : public non_window_surface{
-	public:
-		using non_window_surface::non_window_surface;
-
-		virtual ~fixed_non_window_surface();
-
-	protected:
-		virtual bool removing_hook_(hook::object &value) override;
-	};
 }

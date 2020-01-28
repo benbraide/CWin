@@ -30,9 +30,21 @@ ID2D1RenderTarget *cwin::events::draw::get_render() const{
 cwin::events::erase_background::~erase_background() = default;
 
 void cwin::events::erase_background::do_default_(){
+	draw::do_default_();
+	if (options_.any_is_set(option_type::prevented_default, option_type::called_handler))
+		return;
+
 	try{
-		if (auto visible_context = dynamic_cast<ui::visible_surface *>(&context_); visible_context != nullptr && visible_context->is_created() && visible_context->is_visible())
-			visible_context->get_background_hook().draw_(*render_);
+		if (auto visible_context = dynamic_cast<ui::visible_surface *>(&context_); visible_context != nullptr && visible_context->is_created() && visible_context->is_visible()){
+			D2D1_RECT_F area{
+				static_cast<float>(info_.rcPaint.left),
+				static_cast<float>(info_.rcPaint.top),
+				static_cast<float>(info_.rcPaint.right),
+				static_cast<float>(info_.rcPaint.bottom)
+			};
+
+			visible_context->get_background_hook().draw_(*render_, area);
+		}
 	}
 	catch (const ui::exception::not_supported &){}
 }
@@ -42,5 +54,7 @@ cwin::events::paint::~paint() = default;
 cwin::events::non_client_paint::~non_client_paint() = default;
 
 void cwin::events::non_client_paint::do_default_(){
-
+	draw::do_default_();
+	if (options_.any_is_set(option_type::prevented_default, option_type::called_handler))
+		return;
 }

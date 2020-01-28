@@ -194,7 +194,7 @@ namespace cwin::ui{
 			return value;
 		}
 
-		virtual void update_region_bound_(HRGN target, const SIZE &size) const;
+		virtual void update_region_bound_(HRGN &target, const SIZE &size) const;
 
 		virtual void update_bounds_() = 0;
 

@@ -217,11 +217,13 @@ void cwin::ui::non_window_surface::size_update_(const SIZE &old_value, const SIZ
 }
 
 void cwin::ui::non_window_surface::position_update_(const POINT &old_value, const POINT &current_value){
-	update_bounds_();
 	if (handle_ != nullptr && is_visible_()){
 		redraw_at_(nullptr, old_value);
+		update_bounds_();
 		redraw_at_(nullptr, current_value);
 	}
+	else//Not visible
+		update_bounds_();
 
 	visible_surface::position_update_(old_value, current_value);
 }
@@ -465,10 +467,4 @@ UINT cwin::ui::non_window_surface::non_client_hit_test_(const POINT &value) cons
 		return HTCAPTION;
 
 	return HTNOWHERE;
-}
-
-cwin::ui::fixed_non_window_surface::~fixed_non_window_surface() = default;
-
-bool cwin::ui::fixed_non_window_surface::removing_hook_(hook::object & value){
-	return (non_window_surface::removing_hook_(value) && dynamic_cast<hook::non_window::handle *>(&value) == nullptr);
 }
