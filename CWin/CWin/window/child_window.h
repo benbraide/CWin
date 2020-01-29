@@ -17,3 +17,10 @@ namespace cwin::window{
 		virtual bool is_dialog_message_(MSG &msg) const override;
 	};
 }
+
+namespace cwin::ui{
+	template <>
+	struct parent_type<window::child>{
+		using value = surface;
+	};
+}

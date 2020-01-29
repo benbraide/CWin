@@ -66,7 +66,8 @@ bool cwin::hook::io::mouse_cursor_(ui::visible_surface *&target, UINT hit_target
 	auto pos = GetMessagePos();
 	POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
 
-	if (mouse_over_ != nullptr && hit_target == HTCLIENT){
+	auto is_dragging_non_client = (is_dragging_non_client_ && non_client_target_ != HTNOWHERE);
+	if (!is_dragging_non_client && mouse_over_ != nullptr && hit_target == HTCLIENT){
 		try{
 			if (mouse_over_->get_io_hook().mouse_cursor_(target, mouse_over_->current_hit_test(position)))
 				return true;
@@ -76,15 +77,15 @@ bool cwin::hook::io::mouse_cursor_(ui::visible_surface *&target, UINT hit_target
 		}
 	}
 
-	auto value = reinterpret_cast<HCURSOR>(trigger_then_report_result_<events::io::mouse_cursor>(0u, position, hit_target));
+	auto value = ((hit_target == HTCLIENT) ? nullptr : reinterpret_cast<HCURSOR>(trigger_then_report_result_<events::io::mouse_cursor>(0u, position, hit_target)));
 	auto window_target = dynamic_cast<ui::window_surface *>(&target_);
 
-	if (value == nullptr && (window_target != nullptr || hit_target != HTCLIENT)){//Use default
-		switch (hit_target){
+	if (value == nullptr){//Use default
+		switch (is_dragging_non_client ? non_client_target_ : hit_target){
 		case HTERROR:
 			break;
 		case HTCLIENT:
-			if ((value = reinterpret_cast<HCURSOR>(GetClassLongPtrW(window_target->get_handle(), GCLP_HCURSOR))) == nullptr)
+			if (window_target == nullptr || (value = reinterpret_cast<HCURSOR>(GetClassLongPtrW(window_target->get_handle(), GCLP_HCURSOR))) == nullptr)
 				value = LoadCursorW(nullptr, IDC_ARROW);
 			break;
 		case HTLEFT:
@@ -411,7 +412,9 @@ void cwin::hook::io::mouse_up_(ui::visible_surface *&target, mouse_button_type b
 		is_dragging_ = false;
 	}
 
+	non_client_mouse_press_ = nullptr;
 	is_dragging_non_client_ = false;
+
 	trigger_<events::io::mouse_up>(nullptr, 0u, *target, position, pressed_button_);
 	pressed_button_ = events::io::mouse_button::button_type::nil;
 }

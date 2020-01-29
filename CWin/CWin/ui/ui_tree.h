@@ -9,6 +9,14 @@ namespace cwin::ui{
 
 		virtual ~tree();
 
+		template <typename callback_type, typename... args_types>
+		void insert_object(const callback_type &callback, args_types &&... args){
+			post_or_execute_task([=]{
+				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
+				tree_call_forwarder<return_type>::template call_insert_object(*this, utility::object_to_function_traits::get(callback), args...);
+			});
+		}
+
 		virtual void insert_child(object &child);
 
 		virtual void remove_child(object &child);
@@ -95,6 +103,11 @@ namespace cwin::ui{
 
 		template <>
 		struct tree_call_forwarder<bool>{
+			template <typename object_type, typename... args_types>
+			static void call_insert_object(tree &target, const std::function<bool(object_type &)> &callback, args_types &&... args){
+				target.insert_object_(callback, args...);
+			}
+
 			static void call_traverse_children(const tree &target, const std::function<bool(object &)> &callback){
 				target.traverse_children_(callback);
 			}
@@ -134,6 +147,14 @@ namespace cwin::ui{
 
 		template <>
 		struct tree_call_forwarder<void>{
+			template <typename object_type, typename... args_types>
+			static void call_insert_object(tree &target, const std::function<void(object_type &)> &callback, args_types &&... args){
+				tree_call_forwarder<bool>::call_insert_object<object_type>(target, [&](object_type &value){
+					callback(value);
+					return true;
+				}, args...);
+			}
+
 			static void call_traverse_children(const tree &target, bool is_similar, const std::function<void(object &)> &callback){
 				tree_call_forwarder<bool>::call_traverse_children(target, [&](object &value){
 					callback(value);
@@ -195,7 +216,38 @@ namespace cwin::ui{
 			}
 		};
 
+		virtual void after_create_() override;
+
 		virtual void after_destroy_() override;
+
+		template <typename object_type, typename... args_types>
+		void insert_object_(const std::function<bool(object_type &)> &callback, args_types &&... args){
+			auto compatible_self = dynamic_cast<typename parent_type<object_type>::value *>(this);
+			if (compatible_self == nullptr)
+				throw exception::not_supported();
+
+			auto value = std::make_shared<object_type>(*compatible_self, std::forward<args_types>(args)...);
+			if (value == nullptr)
+				throw exception::action_failed();
+
+			if (!callback(*value))
+				return;
+
+			objects_[value.get()] = value;
+			if (value->is_created())
+				return;
+
+			if (is_created_()){
+				try{
+					value->create();
+				}
+				catch (const exception::not_supported &){}
+				catch (const exception::action_canceled &){}
+				catch (const exception::action_failed &){}
+			}
+			else
+				auto_create_objects_.push_back(value.get());
+		}
 
 		virtual void insert_child_(object &child);
 
@@ -267,5 +319,6 @@ namespace cwin::ui{
 
 		std::list<object *> children_;
 		std::unordered_map<object *, std::shared_ptr<object>> objects_;
+		std::list<object *> auto_create_objects_;
 	};
 }

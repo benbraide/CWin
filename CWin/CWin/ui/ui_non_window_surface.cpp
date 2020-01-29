@@ -115,6 +115,16 @@ void cwin::ui::non_window_surface::create_(){
 	if (handle_hook_ == nullptr)
 		throw exception::not_supported();
 
+	traverse_matching_ancestors_<surface>([](surface &ancestor){
+		if (!ancestor.is_created())
+			throw ui::exception::not_supported();
+
+		if (dynamic_cast<window_surface *>(&ancestor) != nullptr)
+			return false;
+
+		return true;
+	});
+
 	auto &current_size = get_current_size_();
 	if ((handle_ = handle_hook_->resize_value_(handle_, current_size)) == nullptr)
 		throw exception::action_failed();

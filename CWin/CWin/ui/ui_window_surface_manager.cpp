@@ -163,8 +163,12 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 
 		return 0;
 	case WM_SETCURSOR:
+		if (reinterpret_cast<HWND>(wparam) != target.handle_)
+			return FALSE;
+
 		if (target.io_hook_ != nullptr && target.io_hook_->mouse_cursor_(static_cast<UINT>(LOWORD(lparam))))
 			return 0;
+
 		break;
 	case WM_NCMOUSELEAVE:
 	case WM_MOUSELEAVE:
@@ -366,7 +370,10 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 				window_ancestor->io_hook_->mouse_leave_();
 		}
 	}
-	else{//Inside window
+	else if (target.io_hook_ != nullptr){//Inside window
+		if (mouse_info_.target != &target)
+			return;
+
 		TRACKMOUSEEVENT info{ sizeof(TRACKMOUSEEVENT), TME_LEAVE, target.handle_, 0 };
 		if (hit_target != HTCLIENT)
 			info.dwFlags |= TME_NONCLIENT;

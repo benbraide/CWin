@@ -64,6 +64,20 @@ void cwin::ui::tree::get_child_at(std::size_t index, const std::function<void(ob
 	});
 }
 
+void cwin::ui::tree::after_create_(){
+	object::after_create_();
+	for (auto item : auto_create_objects_){
+		try{
+			item->create();
+		}
+		catch (const exception::not_supported &){}
+		catch (const exception::action_canceled &){}
+		catch (const exception::action_failed &){}
+	}
+
+	auto_create_objects_.clear();
+}
+
 void cwin::ui::tree::after_destroy_(){
 	auto children = children_;
 	for (auto child : children){
@@ -71,6 +85,8 @@ void cwin::ui::tree::after_destroy_(){
 			child->destroy();
 		}
 		catch (const exception::not_supported &){}
+		catch (const exception::action_canceled &){}
+		catch (const exception::action_failed &){}
 	}
 
 	object::after_destroy_();
@@ -118,16 +134,27 @@ void cwin::ui::tree::remove_child_(object &child){
 	if (!removing_child_(child))
 		throw exception::action_canceled();
 
-	auto it = std::find_if(children_.begin(), children_.end(), [&](object *ch){
-		return (ch == &child);
-	});
+	if (!children_.empty()){
+		auto it = std::find_if(children_.begin(), children_.end(), [&](object *ch){
+			return (ch == &child);
+		});
 
-	if (it != children_.end())
-		children_.erase(it);
+		if (it != children_.end())
+			children_.erase(it);
+	}
 
 	removed_child_(child);
 	if (!objects_.empty())
 		objects_.erase(&child);
+
+	if (!auto_create_objects_.empty()){
+		auto it = std::find_if(auto_create_objects_.begin(), auto_create_objects_.end(), [&](object *ch){
+			return (ch == &child);
+		});
+
+		if (it != auto_create_objects_.end())
+			auto_create_objects_.erase(it);
+	}
 }
 
 bool cwin::ui::tree::removing_child_(object &child){

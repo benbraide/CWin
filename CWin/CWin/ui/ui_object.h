@@ -411,4 +411,9 @@ namespace cwin::ui{
 		tree *parent_ = nullptr;
 		std::size_t index_ = static_cast<std::size_t>(-1);
 	};
+
+	template <class object_type>
+	struct parent_type{
+		using value = tree;
+	};
 }
