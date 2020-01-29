@@ -54,6 +54,8 @@ namespace cwin::ui{
 
 		LRESULT dispatch_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);
 
+		void position_changed_(window_surface &target, WINDOWPOS &info);
+
 		void before_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);
 
 		void after_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);

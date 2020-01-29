@@ -196,7 +196,12 @@ void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &c
 	if (handle_ == nullptr)
 		return;
 
-	SetWindowPos(handle_, nullptr, 0, 0, current_value.cx, current_value.cy, (SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE));
+	if (!is_updating_){
+		is_updating_ = true;
+		SetWindowPos(handle_, nullptr, 0, 0, current_value.cx, current_value.cy, (SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE));
+		is_updating_ = false;
+	}
+
 	update_region_bound_(handle_bound_.rect_handle, get_current_size_());
 	update_bounds_();
 }
@@ -205,13 +210,44 @@ void cwin::ui::window_surface::position_update_(const POINT &old_value, const PO
 	if (handle_ == nullptr)
 		return;
 
-	POINT window_relative_offset{};
-	auto window_ancestor = find_matching_surface_ancestor_<window_surface>(&window_relative_offset);
-	if (window_ancestor != nullptr)
-		window_ancestor->offset_point_to_window(window_relative_offset);
+	if (!is_updating_){
+		POINT window_relative_offset{};
+		if (auto window_ancestor = find_matching_surface_ancestor_<window_surface>(&window_relative_offset); window_ancestor != nullptr)
+			window_ancestor->offset_point_to_window(window_relative_offset);
 
-	SetWindowPos(handle_, nullptr, (current_value.x + window_relative_offset.x), (current_value.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
+		is_updating_ = true;
+		SetWindowPos(handle_, nullptr, (current_value.x + window_relative_offset.x), (current_value.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
+		is_updating_ = false;
+	}
+	
 	update_bounds_();
+}
+
+SIZE cwin::ui::window_surface::compute_client_size_() const{
+	RECT rect{ 0, 0, size_.cx, size_.cy };
+	AdjustWindowRectEx(&rect, get_computed_styles_(), FALSE, get_computed_extended_styles_());
+
+	SIZE size{ (rect.right - rect.left), (rect.bottom - rect.top) };
+	SIZE size_delta{ (size.cx - size_.cx), (size.cy - size_.cy) };
+
+	return SIZE{ (size_.cx - (size_delta.cx + size_delta.cx)), (size_.cy - (size_delta.cy + size_delta.cy)) };
+}
+
+SIZE cwin::ui::window_surface::compute_current_client_size_() const{
+	if (handle_ != nullptr){
+		RECT client_rect{};
+		GetClientRect(handle_, &client_rect);
+		return SIZE{ (client_rect.right - client_rect.left), (client_rect.bottom - client_rect.top) };
+	}
+
+	auto &current_size = get_current_size_();
+	RECT rect{ 0, 0, current_size.cx, current_size.cy };
+	AdjustWindowRectEx(&rect, get_computed_styles_(), FALSE, get_computed_extended_styles_());
+
+	SIZE size{ (rect.right - rect.left), (rect.bottom - rect.top) };
+	SIZE size_delta{ (size.cx - current_size.cx), (size.cy - current_size.cy) };
+
+	return SIZE{ (current_size.cx - (size_delta.cx + size_delta.cx)), (current_size.cy - (size_delta.cy + size_delta.cy)) };
 }
 
 void cwin::ui::window_surface::compute_relative_to_absolute_(POINT &value) const{

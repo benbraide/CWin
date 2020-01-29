@@ -149,6 +149,10 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 	case WM_CLOSE:
 		target.destroy();
 		return 0;
+	case WM_WINDOWPOSCHANGED:
+		if (!target.is_updating_)
+			position_changed_(target, *reinterpret_cast<WINDOWPOS *>(lparam));
+		break;
 	case WM_ERASEBKGND:
 	case WM_PAINT:
 		try{
@@ -225,6 +229,22 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 	}
 	
 	return CallWindowProcW(thread_.get_class_entry(target.get_class_name_()), target.handle_, message, wparam, lparam);
+}
+
+void cwin::ui::window_surface_manager::position_changed_(window_surface &target, WINDOWPOS &info){
+	target.is_updating_ = true;
+	if ((info.flags & SWP_NOMOVE) == 0u){
+		POINT offset{};
+		if (auto window_ancestor = target.find_matching_surface_ancestor_<window_surface>(&offset); window_ancestor != nullptr)
+			window_ancestor->offset_point_to_window_(offset);
+
+		target.set_position_(POINT{ (info.x - offset.x), (info.y - offset.y) }, false);
+	}
+
+	if ((info.flags & SWP_NOSIZE) == 0u)
+		target.set_size_(SIZE{ info.cx, info.cy }, false);
+
+	target.is_updating_ = false;
 }
 
 void cwin::ui::window_surface_manager::before_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
@@ -326,9 +346,6 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		auto &client_bound = non_window_target->get_client_bound_();
 		utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
 
-		auto rgd = utility::rgn::get_dimension(client_bound.handle);
-		GetClipBox(paint_info_.hdc, &paint_info.rcPaint);
-
 		SaveDC(paint_info_.hdc);
 		if (ExtSelectClipRgn(paint_info_.hdc, client_bound.handle, RGN_AND) == NULLREGION){//Client is outside update region
 			RestoreDC(paint_info_.hdc, -1);
@@ -366,25 +383,38 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 			mouse_info_.target = nullptr;
 
 		for (auto window_ancestor = target.get_matching_ancestor<window_surface>(); window_ancestor != nullptr; window_ancestor = window_ancestor->get_matching_ancestor<window_surface>()){
-			if (window_ancestor->io_hook_ != nullptr && window_ancestor->current_hit_test(position) == HTNOWHERE)//Outside ancestor
+			if (window_ancestor->current_hit_test(position) != HTNOWHERE)
+				break;
+			else if (window_ancestor->io_hook_ != nullptr)//Outside ancestor
 				window_ancestor->io_hook_->mouse_leave_();
 		}
 	}
 	else if (target.io_hook_ != nullptr){//Inside window
-		if (mouse_info_.target != &target)
-			return;
+		auto is_inside_offspring = false;
+		if (hit_target == HTCLIENT){//Check if mouse is inside a window offspring
+			target.traverse_matching_offspring_<window_surface>([&](window_surface &offspring){
+				if (target.current_hit_test(position) != HTNOWHERE){
+					is_inside_offspring = true;
+					return false;
+				}
 
-		TRACKMOUSEEVENT info{ sizeof(TRACKMOUSEEVENT), TME_LEAVE, target.handle_, 0 };
-		if (hit_target != HTCLIENT)
-			info.dwFlags |= TME_NONCLIENT;
+				return true;
+			});
+		}
 
-		TrackMouseEvent(&info);
+		if (!is_inside_offspring){//Moved between client and non-client
+			TRACKMOUSEEVENT info{ sizeof(TRACKMOUSEEVENT), TME_LEAVE, target.handle_, 0 };
+			if (hit_target != HTCLIENT)
+				info.dwFlags |= TME_NONCLIENT;
+
+			TrackMouseEvent(&info);
+		}
 	}
 }
 
 void cwin::ui::window_surface_manager::mouse_move_(window_surface &target, UINT message){
 	if (mouse_info_.target != &target){//Mouse entry
-		if (target.io_hook_ != nullptr)
+		if (target.io_hook_ != nullptr && (mouse_info_.target == nullptr || !mouse_info_.target->is_ancestor_(target)))
 			target.io_hook_->mouse_enter_();
 
 		TRACKMOUSEEVENT info{ sizeof(TRACKMOUSEEVENT), TME_LEAVE, target.handle_, 0 };
@@ -392,7 +422,6 @@ void cwin::ui::window_surface_manager::mouse_move_(window_surface &target, UINT 
 			info.dwFlags |= TME_NONCLIENT;
 
 		TrackMouseEvent(&info);
-		mouse_info_.target = &target;
 	}
 
 	if (message == WM_MOUSEMOVE && target.io_hook_ != nullptr)

@@ -43,6 +43,10 @@ namespace cwin::ui{
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value) override;
 
+		virtual SIZE compute_client_size_() const override;
+
+		virtual SIZE compute_current_client_size_() const override;
+
 		virtual void offset_point_to_window_(POINT &value) const override;
 
 		virtual void offset_point_from_window_(POINT &value) const override;

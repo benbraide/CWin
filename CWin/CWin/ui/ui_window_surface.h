@@ -66,6 +66,10 @@ namespace cwin::ui{
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value) override;
 
+		virtual SIZE compute_client_size_() const override;
+
+		virtual SIZE compute_current_client_size_() const override;
+
 		virtual void compute_relative_to_absolute_(POINT &value) const override;
 
 		virtual void compute_relative_to_absolute_(RECT &value) const override;
@@ -126,5 +130,6 @@ namespace cwin::ui{
 
 		DWORD styles_ = (WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		DWORD extended_styles_ = 0u;
+		bool is_updating_ = false;
 	};
 }

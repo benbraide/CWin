@@ -256,6 +256,28 @@ void cwin::ui::non_window_surface::position_update_(const POINT &old_value, cons
 	visible_surface::position_update_(old_value, current_value);
 }
 
+SIZE cwin::ui::non_window_surface::compute_client_size_() const{
+	auto size = size_;
+	if (client_handle_hook_ != nullptr){
+		auto &client_handle_margin = get_client_margin_();
+		size.cx -= (client_handle_margin.left + client_handle_margin.right);
+		size.cy -= (client_handle_margin.top + client_handle_margin.bottom);
+	}
+
+	return size;
+}
+
+SIZE cwin::ui::non_window_surface::compute_current_client_size_() const{
+	auto size = get_current_size_();
+	if (client_handle_hook_ != nullptr){
+		auto &client_handle_margin = get_client_margin_();
+		size.cx -= (client_handle_margin.left + client_handle_margin.right);
+		size.cy -= (client_handle_margin.top + client_handle_margin.bottom);
+	}
+
+	return size;
+}
+
 void cwin::ui::non_window_surface::offset_point_to_window_(POINT &value) const{
 	visible_surface::offset_point_to_window_(value);
 	if (client_handle_hook_ != nullptr){
