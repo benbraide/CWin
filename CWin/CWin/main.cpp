@@ -6,6 +6,8 @@
 #include "non_window/round_rectangle_non_window.h"
 
 #include "hook/io_hook.h"
+#include "hook/responsive_hooks.h"
+
 #include "events/drawing_events.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
@@ -19,30 +21,39 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 	window.create();
 	window.show();
 
-	window.insert_object([](cwin::non_window::rectangle &rnw){
+	cwin::non_window::rectangle *rnwp = nullptr;
+	window.insert_object([&rnwp](cwin::non_window::rectangle &rnw){
+		rnwp = &rnw;
 		rnw.get_events().bind([](cwin::events::get_caption &){
 			return std::wstring_view(L"Non Window Title");
 		});
 
 		rnw.insert_hook<cwin::hook::client_drag>();
 		rnw.set_size(SIZE{ 360, 225 });
-		rnw.set_position(POINT{ 10, 10 });
+		rnw.set_position(POINT{ 100, 100 });
 		rnw.set_background_color(D2D1::ColorF(D2D1::ColorF::Red));
 		rnw.insert_hook<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::client_handle>>();
 
-		rnw.insert_object([](cwin::window::child &cw){
+		/*rnw.insert_object([](cwin::window::child &cw){
 			cw.insert_hook<cwin::hook::client_drag>();
 			cw.set_size(SIZE{ 200, 160 });
 			cw.set_position(POINT{ 10, 10 });
 			cw.set_background_color(D2D1::ColorF(D2D1::ColorF::Green));
 			cw.show();
-		});
+		});*/
 	});
 
-	window.insert_object([](cwin::non_window::round_rectangle &rrnw){
+	window.insert_object([rnwp](cwin::non_window::round_rectangle &rrnw){
 		rrnw.insert_hook<cwin::hook::client_drag>();
+		rrnw.insert_hook<cwin::hook::relative_placement>(
+			*rnwp,																//Source
+			cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
+			cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
+			POINT{ 5, 0 }
+		);
+
 		rrnw.set_size(SIZE{ 200, 150 });
-		rrnw.set_position(POINT{ 390, 10 });
+		//rrnw.set_position(POINT{ 390, 10 });
 		rrnw.set_background_color(D2D1::ColorF(D2D1::ColorF::Blue));
 	}, SIZE{ 20, 20 });
 

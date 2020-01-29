@@ -81,13 +81,18 @@ void cwin::events::manager::unbind_(key_type key, unsigned __int64 id){
 	if (handler_list_it == handlers_.end())//Key not found
 		return;
 
+	if (handler_list_it->second.list.empty())
+		return;
+
 	for (auto it = handler_list_it->second.list.begin(); it != handler_list_it->second.list.end(); ++it){
 		if (it->id != id)
 			continue;
 
 		--count_;
+		auto handler = it->handler;
+
 		handler_list_it->second.list.erase(it);
-		target_.removed_event_handler_(it->handler->get_type_info(), id, handler_list_it->second.list.size());
+		target_.removed_event_handler_(handler->get_type_info(), id, handler_list_it->second.list.size());
 
 		break;
 	}

@@ -75,7 +75,7 @@ HWND cwin::ui::window_surface_manager::create(window_surface &owner, const wchar
 			return false;
 		}
 
-		auto &current_position = owner.get_current_position();
+		auto &current_position = ancestor.get_current_position();
 		position.x += current_position.x;
 		position.y += current_position.y;
 
