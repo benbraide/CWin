@@ -140,7 +140,7 @@ namespace cwin::thread{
 
 		void remove_inbound_event_references_(events::target &target);
 
-		void unbound_events_(unsigned __int64 id);
+		void unbound_events_(unsigned __int64 id, events::target *target);
 
 		void add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner);
 

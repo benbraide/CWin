@@ -2,6 +2,10 @@
 
 #include "thread_queue.h"
 
+namespace cwin::events{
+	class target;
+}
+
 namespace cwin::thread{
 	class object;
 
@@ -28,6 +32,8 @@ namespace cwin::thread{
 
 	protected:
 		virtual queue &get_queue_() const;
+
+		virtual void unbound_events_(events::target *target);
 
 		object &thread_;
 	};

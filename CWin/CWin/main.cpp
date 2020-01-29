@@ -46,10 +46,5 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 		rrnw.set_background_color(D2D1::ColorF(D2D1::ColorF::Blue));
 	}, SIZE{ 20, 20 });
 
-	std::thread([&window]{
-		std::this_thread::sleep_for(std::chrono::seconds(3));
-		window.set_width(910);
-	}).detach();
-
 	return cwin::app::object::get_thread().run();
 }

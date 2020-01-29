@@ -313,7 +313,6 @@ void cwin::thread::object::remove_inbound_event_references_(events::target &targ
 		return;
 
 	for (auto &bound : bound_events_){//Erase all inbound events references
-		std::list<std::list<bound_event_info>::iterator> marked_its;
 		for (auto it = bound.second.begin(); it != bound.second.end();){
 			if (it->target == &target)
 				bound.second.erase(it++);
@@ -323,7 +322,7 @@ void cwin::thread::object::remove_inbound_event_references_(events::target &targ
 	}
 }
 
-void cwin::thread::object::unbound_events_(unsigned __int64 id){
+void cwin::thread::object::unbound_events_(unsigned __int64 id, events::target *target){
 	if (bound_events_.empty())
 		return;
 
@@ -331,8 +330,13 @@ void cwin::thread::object::unbound_events_(unsigned __int64 id){
 	if (it == bound_events_.end())
 		return;
 
-	for (auto &info : it->second)
-		info.target->get_events().unbind_(info.key, info.id);
+	for (auto &info : it->second){
+		if (target == nullptr || target == info.target){
+			info.target->get_events().unbind_(info.key, info.id);
+			if (target == info.target)
+				break;
+		}
+	}
 
 	bound_events_.erase(it);
 }
