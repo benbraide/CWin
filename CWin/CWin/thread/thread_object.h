@@ -4,6 +4,8 @@
 
 #include "../utility/windows.h"
 #include "../utility/random_number_generator.h"
+
+#include "../ui/ui_surface.h"
 #include "../ui/ui_window_surface_manager.h"
 
 #include "thread_item.h"
@@ -80,6 +82,8 @@ namespace cwin::thread{
 		HTHEME get_theme() const;
 
 		const RECT &get_client_margin() const;
+
+		ui::surface::handle_bound_info &get_handle_bound();
 
 		float convert_pixel_to_dip_x(int value) const;
 
@@ -201,6 +205,8 @@ namespace cwin::thread{
 
 		HRGN rgns_[3];
 		HTHEME theme_ = nullptr;
+
 		RECT client_margin_{};
+		ui::surface::handle_bound_info handle_bound_{};
 	};
 }

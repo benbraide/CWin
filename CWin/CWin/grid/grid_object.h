@@ -13,7 +13,11 @@ namespace cwin::grid{
 			int fixed_height;
 		};
 
-		using non_window_surface::non_window_surface;
+		object();
+
+		explicit object(tree &parent);
+
+		object(tree &parent, std::size_t index);
 
 		virtual ~object();
 

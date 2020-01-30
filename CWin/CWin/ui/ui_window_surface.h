@@ -96,6 +96,8 @@ namespace cwin::ui{
 
 		virtual void hide_() override;
 
+		virtual void set_windows_visibility_(bool is_visible) override;
+
 		virtual bool is_visible_() const override;
 
 		virtual bool is_dialog_message_(MSG &msg) const;

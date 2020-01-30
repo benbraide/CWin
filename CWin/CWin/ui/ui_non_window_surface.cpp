@@ -332,7 +332,7 @@ void cwin::ui::non_window_surface::update_bounds_(){
 	
 	auto destination_rgn = thread_.get_rgn();
 	try{
-		auto &client_bound = get_valid_ancestor_client_bound_(*this, offset);
+		auto &client_bound = get_ancestor_client_bound_(offset);
 		auto &current_position = get_current_position_();
 
 		offset.x += current_position.x;
@@ -377,55 +377,6 @@ const cwin::ui::surface::handle_bound_info &cwin::ui::non_window_surface::get_bo
 
 const cwin::ui::surface::handle_bound_info &cwin::ui::non_window_surface::get_client_bound_() const{
 	return ((client_handle_bound_.handle == nullptr) ? handle_bound_ : client_handle_bound_);
-}
-
-void cwin::ui::non_window_surface::redraw_(HRGN region){
-	redraw_at_(region, get_current_position());
-}
-
-void cwin::ui::non_window_surface::show_(){
-	if (!visible_){
-		visible_ = true;
-		redraw_(nullptr);
-	}
-}
-
-void cwin::ui::non_window_surface::hide_(){
-	if (visible_){
-		visible_ = false;
-		redraw_(nullptr);
-	}
-}
-
-bool cwin::ui::non_window_surface::is_visible_() const{
-	return visible_;
-}
-
-void cwin::ui::non_window_surface::redraw_at_(HRGN region, POINT position){
-	if (handle_ == nullptr)
-		return;
-
-	auto visible_ancestor = find_matching_surface_ancestor_<visible_surface>(&position);
-	if (visible_ancestor == nullptr)
-		return;
-
-	auto &client_bound = get_client_bound_();
-	auto destination_region = thread_.get_rgn(region);
-
-	if (region != nullptr){
-		POINT offset{};
-		offset_point_to_window_(offset);
-
-		utility::rgn::offset(region, offset);
-		utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
-
-		utility::rgn::intersect(destination_region, client_bound.handle, region);
-		utility::rgn::offset(destination_region, position);
-	}
-	else
-		utility::rgn::move((destination_region = handle_bound_.handle), POINT{ (position.x + handle_bound_.offset.x), (position.y + handle_bound_.offset.y) });
-
-	visible_ancestor->redraw(destination_region);
 }
 
 UINT cwin::ui::non_window_surface::non_client_hit_test_(const POINT &value) const{

@@ -123,7 +123,7 @@ namespace cwin::ui{
 
 		virtual void after_size_change_(const SIZE &old_value, const SIZE &current_value);
 
-		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) = 0;
+		virtual void size_update_(const SIZE &old_value, const SIZE &current_value);
 
 		virtual const SIZE &get_current_size_() const;
 
@@ -204,13 +204,13 @@ namespace cwin::ui{
 
 		virtual void update_region_bound_(HRGN &target, const SIZE &size) const;
 
-		virtual void update_bounds_() = 0;
+		virtual void update_bounds_();
 
-		virtual const handle_bound_info &get_bound_() const = 0;
+		virtual const handle_bound_info &get_bound_() const;
 
-		virtual const handle_bound_info &get_client_bound_() const = 0;
+		virtual const handle_bound_info &get_client_bound_() const;
 
-		virtual const handle_bound_info &get_valid_ancestor_client_bound_(const surface &target, POINT &offset) const;
+		virtual const handle_bound_info &get_ancestor_client_bound_(POINT &offset) const;
 
 		SIZE size_{};
 		POINT position_{};

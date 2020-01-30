@@ -77,12 +77,17 @@ namespace cwin::ui{
 
 		virtual void redraw_(const RECT &region);
 
-		virtual void show_() = 0;
+		virtual void redraw_at_(HRGN region, POINT position);
 
-		virtual void hide_() = 0;
+		virtual void show_();
 
-		virtual bool is_visible_() const = 0;
+		virtual void hide_();
 
+		virtual void set_windows_visibility_(bool is_visible);
+
+		virtual bool is_visible_() const;
+
+		bool visible_ = true;
 		hook::io *io_hook_ = nullptr;
 		hook::background *background_hook_ = nullptr;
 	};

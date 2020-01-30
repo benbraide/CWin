@@ -2,6 +2,12 @@
 
 cwin::thread::object::object()
 	: queue_(*this), window_manager_(*this), id_(GetCurrentThreadId()){
+	handle_bound_.handle = CreateRectRgn(0, 0, 0, 0);
+	handle_bound_.rect_handle = handle_bound_.handle;
+
+	handle_bound_.offset.x = 0;
+	handle_bound_.offset.y = 0;
+
 	rgns_[0] = CreateRectRgn(0, 0, 0, 0);
 	rgns_[1] = CreateRectRgn(0, 0, 0, 0);
 	rgns_[2] = CreateRectRgn(0, 0, 0, 0);
@@ -71,6 +77,11 @@ cwin::thread::object::~object(){
 	if (rgns_[2] != nullptr){
 		DeleteObject(rgns_[2]);
 		rgns_[2] = nullptr;
+	}
+
+	if (handle_bound_.handle != nullptr){
+		DeleteObject(handle_bound_.handle);
+		handle_bound_.handle = handle_bound_.rect_handle = nullptr;
 	}
 
 	std::lock_guard<std::mutex> guard(app::object::lock_);
@@ -232,6 +243,12 @@ const RECT &cwin::thread::object::get_client_margin() const{
 	if (!is_context())
 		throw exception::outside_context();
 	return client_margin_;
+}
+
+cwin::ui::surface::handle_bound_info &cwin::thread::object::get_handle_bound(){
+	if (!is_context())
+		throw exception::outside_context();
+	return handle_bound_;
 }
 
 float cwin::thread::object::convert_pixel_to_dip_x(int value) const{

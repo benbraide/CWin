@@ -61,18 +61,6 @@ namespace cwin::ui{
 
 		virtual const handle_bound_info &get_client_bound_() const override;
 
-		using visible_surface::redraw_;
-
-		virtual void redraw_(HRGN region) override;
-
-		virtual void show_() override;
-
-		virtual void hide_() override;
-
-		virtual bool is_visible_() const override;
-
-		virtual void redraw_at_(HRGN region, POINT position);
-
 		virtual UINT non_client_hit_test_(const POINT &value) const;
 
 		const RECT &get_client_margin_() const;
@@ -85,7 +73,5 @@ namespace cwin::ui{
 
 		hook::non_window::handle *handle_hook_ = nullptr;
 		hook::non_window::client_handle *client_handle_hook_ = nullptr;
-
-		bool visible_ = true;
 	};
 }

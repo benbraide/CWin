@@ -1,4 +1,5 @@
 #include "../events/general_events.h"
+#include "../thread/thread_object.h"
 
 #include "ui_visible_surface.h"
 
@@ -336,6 +337,8 @@ bool cwin::ui::surface::before_size_change_(const SIZE &old_value, const SIZE &c
 
 void cwin::ui::surface::after_size_change_(const SIZE &old_value, const SIZE &current_value){}
 
+void cwin::ui::surface::size_update_(const SIZE &old_value, const SIZE &current_value){}
+
 const SIZE &cwin::ui::surface::get_current_size_() const{
 	return ((size_hook_ == nullptr) ? size_ : size_hook_->current_value_);
 }
@@ -509,25 +512,42 @@ void cwin::ui::surface::update_region_bound_(HRGN &target, const SIZE &size) con
 		utility::rgn::resize(target, size);
 }
 
-const cwin::ui::surface::handle_bound_info &cwin::ui::surface::get_valid_ancestor_client_bound_(const surface &target, POINT &offset) const{
-	auto surface_ancestor = target.get_matching_ancestor_<surface>(nullptr);
+void cwin::ui::surface::update_bounds_(){}
+
+const cwin::ui::surface::handle_bound_info &cwin::ui::surface::get_bound_() const{
+	auto &handle_bound = thread_.get_handle_bound();
+	auto &size = get_current_size_();
+
+	utility::rgn::set_dimension(handle_bound.handle, RECT{ 0, 0, size.cx, size.cy });
+	handle_bound.offset = POINT{ 0, 0 };
+
+	return handle_bound;
+}
+
+const cwin::ui::surface::handle_bound_info &cwin::ui::surface::get_client_bound_() const{
+	return get_bound_();
+}
+
+const cwin::ui::surface::handle_bound_info &cwin::ui::surface::get_ancestor_client_bound_(POINT &offset) const{
+	auto surface_ancestor = get_matching_ancestor_<surface>(nullptr);
 	if (surface_ancestor == nullptr)
 		throw exception::not_supported();
 
-	POINT window_offset{};
-	surface_ancestor->offset_point_to_window(window_offset);
-
-	offset.x += window_offset.x;
-	offset.y += window_offset.y;
-
+	surface_ancestor->offset_point_to_window(offset);
 	if (auto &client_bound = surface_ancestor->get_client_bound(); client_bound.handle != nullptr){
-		utility::rgn::move(client_bound.handle, POINT{ (window_offset.x + client_bound.offset.x), (window_offset.y + client_bound.offset.y) });
+		utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
 		return client_bound;
 	}
 
-	auto &ancestor_position = surface_ancestor->get_current_position_();
-	offset.x += ancestor_position.x;
-	offset.y += ancestor_position.y;
+	auto &handle_bound = thread_.get_handle_bound();
+	auto &ancestor_size = surface_ancestor->get_current_size_();
 
-	return get_valid_ancestor_client_bound_(*surface_ancestor, offset);
+	utility::rgn::set_dimension(handle_bound.handle, RECT{
+		offset.x,
+		offset.y,
+		(offset.x + ancestor_size.cx),
+		(offset.y + ancestor_size.cy)
+	});
+
+	return handle_bound;
 }

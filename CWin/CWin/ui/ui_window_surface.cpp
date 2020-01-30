@@ -295,25 +295,17 @@ void cwin::ui::window_surface::update_bounds_(){
 	POINT offset{};
 	utility::rgn::move(handle_bound_.rect_handle, offset);
 
-	if (auto surface_ancestor = get_matching_ancestor_<surface>(nullptr); surface_ancestor != nullptr && dynamic_cast<window_surface *>(surface_ancestor) == nullptr){
-		if (auto &client_bound = surface_ancestor->get_client_bound(); client_bound.handle != nullptr){
-			surface_ancestor->offset_point_to_window(offset);
-			utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
+	try{
+		auto &client_bound = get_ancestor_client_bound_(offset);
+		auto &current_position = get_current_position_();
 
-			auto &current_position = get_current_position_();
-			offset.x += current_position.x;
-			offset.y += current_position.y;
+		offset.x += current_position.x;
+		offset.y += current_position.y;
 
-			utility::rgn::offset(handle_bound_.rect_handle, offset);
-			utility::rgn::intersect(handle_bound_.handle, client_bound.handle, handle_bound_.rect_handle);
-		}
-		else{//Remove bound, if any
-			SetWindowRgn(handle_, nullptr, TRUE);
-			update_client_bound_();
-			return;
-		}
+		utility::rgn::offset(handle_bound_.rect_handle, offset);
+		utility::rgn::intersect(handle_bound_.handle, client_bound.handle, handle_bound_.rect_handle);
 	}
-	else{//Remove bound, if any
+	catch (const exception::not_supported &){//Remove bound, if any
 		SetWindowRgn(handle_, nullptr, TRUE);
 		update_client_bound_();
 		return;
@@ -380,6 +372,13 @@ void cwin::ui::window_surface::hide_(){
 		styles_ &= ~WS_VISIBLE;
 	else
 		ShowWindow(handle_, SW_HIDE);
+}
+
+void cwin::ui::window_surface::set_windows_visibility_(bool is_visible){
+	if (is_visible)
+		show_();
+	else//Hide
+		hide_();
 }
 
 bool cwin::ui::window_surface::is_visible_() const{

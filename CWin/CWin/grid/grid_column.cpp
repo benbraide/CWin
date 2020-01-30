@@ -1,6 +1,18 @@
+#include "../hook/background_hooks.h"
+#include "../hook/non_window_handle_hooks.h"
+
 #include "grid_row.h"
 
 cwin::grid::column::column(){
+	auto window_color = GetSysColor(COLOR_WINDOW);
+	insert_hook_<hook::color_background>(D2D1::ColorF(
+		(GetRValue(window_color) / 255.0f),	//Red
+		(GetGValue(window_color) / 255.0f),	//Green
+		(GetBValue(window_color) / 255.0f),	//Blue
+		1.0f								//Alpha
+	));
+
+	insert_hook_<hook::non_window::rectangle_handle<hook::non_window::handle>>();
 	refresh_();
 }
 
@@ -14,6 +26,15 @@ cwin::grid::column::column(row &parent, std::size_t index){
 	else//Error
 		throw thread::exception::context_mismatch();
 
+	auto window_color = GetSysColor(COLOR_WINDOW);
+	insert_hook_<hook::color_background>(D2D1::ColorF(
+		(GetRValue(window_color) / 255.0f),	//Red
+		(GetGValue(window_color) / 255.0f),	//Green
+		(GetBValue(window_color) / 255.0f),	//Blue
+		1.0f								//Alpha
+	));
+
+	insert_hook_<hook::non_window::rectangle_handle<hook::non_window::handle>>();
 	refresh_();
 }
 

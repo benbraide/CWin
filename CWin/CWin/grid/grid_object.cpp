@@ -1,4 +1,42 @@
+#include "../hook/background_hooks.h"
+#include "../hook/non_window_handle_hooks.h"
+
 #include "grid_object.h"
+
+cwin::grid::object::object(){
+	auto window_color = GetSysColor(COLOR_WINDOW);
+	insert_hook_<hook::color_background>(D2D1::ColorF(
+		(GetRValue(window_color) / 255.0f),	//Red
+		(GetGValue(window_color) / 255.0f),	//Green
+		(GetBValue(window_color) / 255.0f),	//Blue
+		1.0f								//Alpha
+	));
+
+	insert_hook_<hook::non_window::rectangle_handle<hook::non_window::handle>>();
+	refresh_();
+}
+
+cwin::grid::object::object(tree &parent)
+	: object(parent, static_cast<std::size_t>(-1)){}
+
+cwin::grid::object::object(tree &parent, std::size_t index){
+	index_ = index;
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
+
+	auto window_color = GetSysColor(COLOR_WINDOW);
+	insert_hook_<hook::color_background>(D2D1::ColorF(
+		(GetRValue(window_color) / 255.0f),	//Red
+		(GetGValue(window_color) / 255.0f),	//Green
+		(GetBValue(window_color) / 255.0f),	//Blue
+		1.0f								//Alpha
+	));
+
+	insert_hook_<hook::non_window::rectangle_handle<hook::non_window::handle>>();
+	refresh_();
+}
 
 cwin::grid::object::~object() = default;
 
