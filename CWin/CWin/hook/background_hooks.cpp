@@ -91,18 +91,18 @@ void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value){
 
 void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value, bool should_animate){
 	set_color_(value, should_animate, [=](const D2D1_COLOR_F &old_value, const D2D1_COLOR_F &current_value){
-		background::trigger_<events::after_background_color_update>(nullptr, 0u, old_value, current_value);
+		trigger_<events::after_background_color_update>(nullptr, 0u, old_value, current_value);
 		color_update_(old_value, current_value);
 	});
 }
 
 void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value, bool should_animate, const std::function<void(const D2D1_COLOR_F &, const D2D1_COLOR_F &)> &callback){
 	auto old_value = color_;
-	if (background::trigger_then_report_prevented_default_<events::before_background_color_change>(0u, old_value, value))
+	if (trigger_then_report_prevented_default_<events::before_background_color_change>(0u, old_value, value))
 		throw ui::exception::action_canceled();
 
 	color_ = value;
-	background::trigger_<events::after_background_color_change>(nullptr, 0u, old_value, value);
+	trigger_<events::after_background_color_change>(nullptr, 0u, old_value, value);
 	color_hook_.set_value_(old_value, color_, should_animate, callback);
 }
 

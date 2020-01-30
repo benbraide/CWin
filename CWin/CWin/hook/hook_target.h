@@ -1,8 +1,18 @@
 #pragma once
 
-#include "hook_object.h"
+#include "../ui/ui_exception.h"
+
+#include "../thread/thread_item.h"
 
 namespace cwin::hook{
+	class object;
+	class target;
+
+	template <class object_type>
+	struct target_type{
+		using value = hook::target;
+	};
+
 	class target : public thread::item{
 	public:
 		using key_type = const std::type_info *;

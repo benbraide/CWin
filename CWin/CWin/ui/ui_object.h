@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../hook/hook_target.h"
+#include "../hook/hook_object.h"
 
 #include "ui_exception.h"
 

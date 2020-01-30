@@ -26,7 +26,7 @@ namespace cwin::hook{
 		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const = 0;
 	};
 
-	class color_background : public background, public target{
+	class color_background : public background{
 	public:
 		explicit color_background(ui::visible_surface &target);
 

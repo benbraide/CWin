@@ -3,7 +3,7 @@
 #include "../thread/thread_exception.h"
 #include "../utility/animation_timing.h"
 
-#include "hook_target.h"
+#include "hook_object.h"
 
 namespace cwin::hook{
 	class animation_helper{

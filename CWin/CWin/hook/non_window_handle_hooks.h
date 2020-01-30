@@ -2,7 +2,7 @@
 
 #include "../utility/rgn.h"
 
-#include "hook_target.h"
+#include "hook_object.h"
 
 namespace cwin::ui{
 	class non_window_surface;
