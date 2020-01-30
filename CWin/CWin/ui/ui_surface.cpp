@@ -317,17 +317,24 @@ void cwin::ui::surface::set_size_(const SIZE &value, bool should_animate, const 
 		return;//No changes
 
 	auto old_value = size_;
-	if (trigger_then_report_prevented_default_<events::before_size_change>(0u, old_value, value))
+	if (!before_size_change_(old_value, value) || trigger_then_report_prevented_default_<events::before_size_change>(0u, old_value, value))
 		throw exception::action_canceled();
 
 	size_ = value;
 	trigger_<events::after_size_change>(nullptr, 0u, old_value, value);
+	after_size_change_(old_value, value);
 
 	if (size_hook_ == nullptr && callback != nullptr)
 		callback(old_value, value);
 	else if (position_hook_ != nullptr)//Use hook
 		size_hook_->set_value_(old_value, size_, should_animate, callback);
 }
+
+bool cwin::ui::surface::before_size_change_(const SIZE &old_value, const SIZE &current_value) const{
+	return true;
+}
+
+void cwin::ui::surface::after_size_change_(const SIZE &old_value, const SIZE &current_value){}
 
 const SIZE &cwin::ui::surface::get_current_size_() const{
 	return ((size_hook_ == nullptr) ? size_ : size_hook_->current_value_);
@@ -349,17 +356,24 @@ void cwin::ui::surface::set_position_(const POINT &value, bool should_animate, c
 		return;//No changes
 
 	auto old_value = position_;
-	if (trigger_then_report_prevented_default_<events::before_position_change>(0u, old_value, value))
+	if (!before_position_change_(old_value, value) || trigger_then_report_prevented_default_<events::before_position_change>(0u, old_value, value))
 		throw exception::action_canceled();
 
 	position_ = value;
 	trigger_<events::after_position_change>(nullptr, 0u, old_value, value);
+	after_position_change_(old_value, value);
 
 	if (position_hook_ == nullptr && callback != nullptr)
 		callback(old_value, value);
 	else if (position_hook_ != nullptr)//Use hook
 		position_hook_->set_value_(old_value, position_, should_animate, callback);
 }
+
+bool cwin::ui::surface::before_position_change_(const POINT &old_value, const POINT &current_value) const{
+	return true;
+}
+
+void cwin::ui::surface::after_position_change_(const POINT &old_value, const POINT &current_value){}
 
 void cwin::ui::surface::position_update_(const POINT &old_value, const POINT &current_value){
 	traverse_matching_children_<surface>([&](surface &child){
@@ -493,4 +507,27 @@ void cwin::ui::surface::update_region_bound_(HRGN &target, const SIZE &size) con
 		target = CreateRectRgn(0, 0, size.cx, size.cy);
 	else
 		utility::rgn::resize(target, size);
+}
+
+const cwin::ui::surface::handle_bound_info &cwin::ui::surface::get_valid_ancestor_client_bound_(const surface &target, POINT &offset) const{
+	auto surface_ancestor = target.get_matching_ancestor_<surface>(nullptr);
+	if (surface_ancestor == nullptr)
+		throw exception::not_supported();
+
+	POINT window_offset{};
+	surface_ancestor->offset_point_to_window(window_offset);
+
+	offset.x += window_offset.x;
+	offset.y += window_offset.y;
+
+	if (auto &client_bound = surface_ancestor->get_client_bound(); client_bound.handle != nullptr){
+		utility::rgn::move(client_bound.handle, POINT{ (window_offset.x + client_bound.offset.x), (window_offset.y + client_bound.offset.y) });
+		return client_bound;
+	}
+
+	auto &ancestor_position = surface_ancestor->get_current_position_();
+	offset.x += ancestor_position.x;
+	offset.y += ancestor_position.y;
+
+	return get_valid_ancestor_client_bound_(*surface_ancestor, offset);
 }

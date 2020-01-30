@@ -8,7 +8,7 @@ cwin::hook::parent_size::parent_size(ui::surface &target, const std::function<vo
 	bind_size_event_(target.get_parent(), nullptr);
 	target_.get_events().bind([this](events::after_parent_change &e){
 		if (auto surface_target = dynamic_cast<ui::surface *>(&target_); surface_target	!= nullptr)
-			bind_size_event_(surface_target, e.get_old_value());
+			bind_size_event_(surface_target->get_parent(), e.get_old_value());
 
 		if (callback_ != nullptr)
 			callback_();
@@ -409,8 +409,6 @@ void cwin::hook::fill::update_(){
 		return;
 
 	SIZE parent_client_size{};
-	auto &target_size = surface_target->get_current_size();
-
 	if (auto surface_parent = dynamic_cast<ui::surface *>(surface_target->get_parent()); surface_parent == nullptr){//Use desktop window
 		RECT dimension{};
 		GetClientRect(HWND_DESKTOP, &dimension);

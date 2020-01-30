@@ -119,6 +119,10 @@ namespace cwin::ui{
 
 		virtual void set_size_(const SIZE &value, bool should_animate, const std::function<void(const SIZE &, const SIZE &)> &callback);
 
+		virtual bool before_size_change_(const SIZE &old_value, const SIZE &current_value) const;
+
+		virtual void after_size_change_(const SIZE &old_value, const SIZE &current_value);
+
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) = 0;
 
 		virtual const SIZE &get_current_size_() const;
@@ -128,6 +132,10 @@ namespace cwin::ui{
 		virtual void set_position_(const POINT &value, bool should_animate);
 
 		virtual void set_position_(const POINT &value, bool should_animate, const std::function<void(const POINT &, const POINT &)> &callback);
+
+		virtual bool before_position_change_(const POINT &old_value, const POINT &current_value) const;
+
+		virtual void after_position_change_(const POINT &old_value, const POINT &current_value);
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value);
 
@@ -201,6 +209,8 @@ namespace cwin::ui{
 		virtual const handle_bound_info &get_bound_() const = 0;
 
 		virtual const handle_bound_info &get_client_bound_() const = 0;
+
+		virtual const handle_bound_info &get_valid_ancestor_client_bound_(const surface &target, POINT &offset) const;
 
 		SIZE size_{};
 		POINT position_{};

@@ -183,7 +183,7 @@ void cwin::ui::object::remove_parent_(){
 }
 
 bool cwin::ui::object::changing_parent_(tree *value){
-	return !(is_created_() || trigger_then_report_prevented_default_<events::before_parent_change>(0u, value));
+	return !trigger_then_report_prevented_default_<events::before_parent_change>(0u, value);
 }
 
 void cwin::ui::object::changed_parent_(tree *old_value){

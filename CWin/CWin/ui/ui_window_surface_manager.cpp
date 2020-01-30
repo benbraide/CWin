@@ -278,7 +278,7 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		target.offset_point_to_window_(offset);
 
 		target.reverse_traverse_matching_children_<non_window_surface>([&](non_window_surface &child){//Exclude children
-			if (!child.is_created() || !child.is_visible_())
+			if (child.handle_ == nullptr || !child.is_created() || !child.is_visible_() || (child.client_handle_ == nullptr && !child.has_background_hook()))
 				return true;
 
 			auto &child_position = child.get_current_position();
@@ -318,8 +318,11 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 	});
 
 	if (auto non_window_target = dynamic_cast<non_window_surface *>(&target); non_window_target != nullptr){
+		if (non_window_target->handle_ == nullptr || (non_window_target->client_handle_ == nullptr && !non_window_target->has_background_hook()))
+			return;//Cannot paint target
+
 		auto paint_info = paint_info_;
-		if (non_window_target->client_handle_hook_ != nullptr){//Paint non-client area
+		if (non_window_target->client_handle_ != nullptr){//Paint non-client area
 			auto non_client_offset = offset;
 			target.offset_point_from_window_(non_client_offset);
 
@@ -342,6 +345,9 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 			target.trigger_<events::non_client_paint>(nullptr, 0u, paint_info);
 			RestoreDC(paint_info_.hdc, -1);
 		}
+
+		if (!non_window_target->has_background_hook())
+			return;//Cannot paint client
 
 		auto &client_bound = non_window_target->get_client_bound_();
 		utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });

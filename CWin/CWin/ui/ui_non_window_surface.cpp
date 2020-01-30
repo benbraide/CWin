@@ -331,23 +331,19 @@ void cwin::ui::non_window_surface::update_bounds_(){
 	utility::rgn::move(handle_bound_.rect_handle, offset);
 	
 	auto destination_rgn = thread_.get_rgn();
-	if (auto surface_ancestor = get_matching_ancestor_<surface>(nullptr); surface_ancestor != nullptr){
-		if (auto &client_bound = surface_ancestor->get_client_bound(); client_bound.handle != nullptr){
-			surface_ancestor->offset_point_to_window(offset);
-			utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
+	try{
+		auto &client_bound = get_valid_ancestor_client_bound_(*this, offset);
+		auto &current_position = get_current_position_();
 
-			auto &current_position = get_current_position_();
-			offset.x += current_position.x;
-			offset.y += current_position.y;
+		offset.x += current_position.x;
+		offset.y += current_position.y;
 
-			utility::rgn::offset(handle_bound_.rect_handle, offset);
-			utility::rgn::intersect(destination_rgn, client_bound.handle, handle_bound_.rect_handle);
-		}
-		else
-			utility::rgn::copy(destination_rgn, handle_bound_.rect_handle);
+		utility::rgn::offset(handle_bound_.rect_handle, offset);
+		utility::rgn::intersect(destination_rgn, client_bound.handle, handle_bound_.rect_handle);
 	}
-	else
+	catch (const exception::not_supported &){
 		utility::rgn::copy(destination_rgn, handle_bound_.rect_handle);
+	}
 
 	utility::rgn::move(handle_, offset);
 	utility::rgn::intersect(handle_bound_.handle, destination_rgn, handle_);
