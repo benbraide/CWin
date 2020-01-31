@@ -326,10 +326,6 @@ void cwin::ui::non_window_surface::offset_point_from_window_(POINT &value) const
 	}
 }
 
-UINT cwin::ui::non_window_surface::hit_test_(const POINT &value) const{
-	return ((handle_ == nullptr || size_hook_ != nullptr || position_hook_ != nullptr) ? visible_surface::hit_test_(value) : current_hit_test_(value));
-}
-
 UINT cwin::ui::non_window_surface::current_hit_test_(const POINT &value) const{
 	if (handle_ == nullptr)
 		return visible_surface::current_hit_test_(value);

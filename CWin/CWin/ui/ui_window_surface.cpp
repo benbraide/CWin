@@ -278,10 +278,6 @@ void cwin::ui::window_surface::compute_absolute_to_relative_(RECT &value) const{
 		MapWindowPoints(HWND_DESKTOP, handle_, reinterpret_cast<POINT *>(&value), 2u);
 }
 
-UINT cwin::ui::window_surface::hit_test_(const POINT &value) const{
-	return ((handle_ == nullptr || size_hook_ != nullptr || position_hook_ != nullptr) ? visible_surface::hit_test_(value) : current_hit_test_(value));
-}
-
 UINT cwin::ui::window_surface::current_hit_test_(const POINT &value) const{
 	if (handle_ == nullptr)
 		return visible_surface::current_hit_test_(value);

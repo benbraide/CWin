@@ -59,8 +59,6 @@ namespace cwin::ui{
 
 		virtual void offset_point_from_window_(POINT &value) const override;
 
-		virtual UINT hit_test_(const POINT &value) const override;
-
 		virtual UINT current_hit_test_(const POINT &value) const override;
 
 		virtual void update_bounds_() override;

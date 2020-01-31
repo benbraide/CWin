@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../hook/dimension_hooks.h"
 #include "../utility/rgn.h"
 
 #include "ui_tree.h"
@@ -14,7 +13,11 @@ namespace cwin::ui{
 			POINT offset;
 		};
 
-		using tree::tree;
+		surface();
+
+		explicit surface(tree &parent);
+
+		surface(tree &parent, std::size_t index);
 
 		virtual ~surface();
 
@@ -109,15 +112,11 @@ namespace cwin::ui{
 		virtual void get_client_bound(const std::function<void(const handle_bound_info &)> &callback) const;
 
 	protected:
-		virtual void added_hook_(hook::object &value) override;
-
-		virtual void removed_hook_(hook::object &value) override;
-
 		virtual void set_size_(const SIZE &value);
 
-		virtual void set_size_(const SIZE &value, bool should_animate);
+		virtual void set_size_(const SIZE &value, bool enable_interrupt);
 
-		virtual void set_size_(const SIZE &value, bool should_animate, const std::function<void(const SIZE &, const SIZE &)> &callback);
+		virtual void set_size_(const SIZE &value, bool enable_interrupt, const std::function<void(const SIZE &, const SIZE &)> &callback);
 
 		virtual bool before_size_change_(const SIZE &old_value, const SIZE &current_value) const;
 
@@ -129,9 +128,9 @@ namespace cwin::ui{
 
 		virtual void set_position_(const POINT &value);
 
-		virtual void set_position_(const POINT &value, bool should_animate);
+		virtual void set_position_(const POINT &value, bool enable_interrupt);
 
-		virtual void set_position_(const POINT &value, bool should_animate, const std::function<void(const POINT &, const POINT &)> &callback);
+		virtual void set_position_(const POINT &value, bool enable_interrupt, const std::function<void(const POINT &, const POINT &)> &callback);
 
 		virtual bool before_position_change_(const POINT &old_value, const POINT &current_value) const;
 
@@ -214,8 +213,5 @@ namespace cwin::ui{
 
 		SIZE size_{};
 		POINT position_{};
-
-		hook::animated_size *size_hook_ = nullptr;
-		hook::animated_position *position_hook_ = nullptr;
 	};
 }

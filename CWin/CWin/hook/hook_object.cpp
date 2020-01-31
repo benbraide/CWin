@@ -1,12 +1,9 @@
 #include "../thread/thread_object.h"
 
-#include "hook_object.h"
+#include "hook_target.h"
 
 cwin::hook::object::object(hook::target &target)
-	: target_(target){
-	if (&thread_ != &target.get_thread())
-		throw thread::exception::context_mismatch();
-}
+	: cross_object(target), target_(target){}
 
 cwin::hook::object::~object() = default;
 

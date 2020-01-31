@@ -2,7 +2,7 @@
 
 #include "../events/io_events.h"
 
-#include "hook_object.h"
+#include "hook_target.h"
 
 namespace cwin::ui{
 	class visible_surface;

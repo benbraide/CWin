@@ -78,8 +78,6 @@ namespace cwin::ui{
 
 		virtual void compute_absolute_to_relative_(RECT &value) const override;
 
-		virtual UINT hit_test_(const POINT &value) const override;
-
 		virtual UINT current_hit_test_(const POINT &value) const override;
 
 		virtual void update_bounds_() override;

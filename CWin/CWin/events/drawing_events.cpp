@@ -5,6 +5,7 @@
 #include "../thread/thread_object.h"
 
 #include "managed_event_target.h"
+#include "interrupt_events.h"
 #include "drawing_events.h"
 
 cwin::events::draw::draw(events::target &target, const PAINTSTRUCT &info)
@@ -46,12 +47,17 @@ void cwin::events::erase_background::do_default_(){
 			};
 
 			render_->BeginDraw();
-			visible_context->get_background_hook().draw_(*render_, area);
+			interrupt::draw_background e(context_, *render_, area);
+			trigger_(e, 0u);
 			render_->EndDraw();
 		}
 	}
 	catch (const ui::exception::not_supported &){
 		render_->EndDraw();
+	}
+	catch (const cwin::exception_base &){
+		render_->EndDraw();
+		throw;
 	}
 }
 
@@ -152,7 +158,7 @@ bool cwin::events::get_caption::handle_set_result_(const void *value, const std:
 	else if (type == typeid(std::wstring_view))
 		value_ = *static_cast<const std::wstring_view *>(value);
 	else if (type == typeid(const wchar_t *) || type == typeid(wchar_t *))
-		value_ = static_cast<const wchar_t *>(value);
+		value_ = *static_cast<wchar_t* const*>(value);
 	else
 		throw exception::bad_value();
 

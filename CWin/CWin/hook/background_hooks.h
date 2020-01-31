@@ -1,15 +1,11 @@
 #pragma once
 
-#include "animated_color_hook.h"
+#include "hook_target.h"
 
 namespace cwin::ui{
 	class visible_surface;
 	class non_window_surface;
 	class window_surface_manager;
-}
-
-namespace cwin::events{
-	class erase_background;
 }
 
 namespace cwin::hook{
@@ -20,8 +16,6 @@ namespace cwin::hook{
 		virtual ~background();
 
 	protected:
-		friend class events::erase_background;
-
 		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
 
 		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const = 0;
@@ -35,14 +29,6 @@ namespace cwin::hook{
 
 		virtual ~color_background();
 
-		virtual void enable_animation();
-
-		virtual void disable_animation();
-
-		virtual bool animation_is_enabled() const;
-
-		virtual void animation_is_enabled(const std::function<void(bool)> &callback) const;
-
 		virtual void set_color(const D2D1_COLOR_F &value);
 
 		virtual const D2D1_COLOR_F &get_color() const;
@@ -54,15 +40,13 @@ namespace cwin::hook{
 		virtual void get_current_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const;
 
 	protected:
-		friend class ui::visible_surface;
-
 		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const override;
 
 		virtual void set_color_(const D2D1_COLOR_F &value);
 
-		virtual void set_color_(const D2D1_COLOR_F &value, bool should_animate);
+		virtual void set_color_(const D2D1_COLOR_F &value, bool enable_interrupt);
 
-		virtual void set_color_(const D2D1_COLOR_F &value, bool should_animate, const std::function<void(const D2D1_COLOR_F &, const D2D1_COLOR_F &)> &callback);
+		virtual void set_color_(const D2D1_COLOR_F &value, bool enable_interrupt, const std::function<void(const D2D1_COLOR_F &, const D2D1_COLOR_F &)> &callback);
 
 		virtual void color_update_(const D2D1_COLOR_F &old_value, const D2D1_COLOR_F &current_value);
 
@@ -70,7 +54,6 @@ namespace cwin::hook{
 
 		virtual const D2D1_COLOR_F &get_current_color_() const;
 
-		animated_color<color_background> color_hook_;
 		D2D1_COLOR_F color_;
 	};
 

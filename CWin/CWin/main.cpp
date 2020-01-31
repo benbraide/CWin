@@ -27,20 +27,22 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 		grid.insert_hook<cwin::hook::io>();
 		grid.insert_hook<cwin::hook::caption>(L"Fill Grid Object @ 36%");
 		grid.insert_hook<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::big_border_client_handle>>();
-		grid.set_background_color(D2D1::ColorF(D2D1::ColorF::Red));
+		grid.find_first_similar_hook<cwin::hook::color_background>()->set_color(D2D1::ColorF(D2D1::ColorF::Red));
 		grid.get_fill().set_offset(D2D1_SIZE_F{ 0.126f, 0.126f });
 
 		grid.insert_object([](cwin::grid::proportional_row &row){
-			row.set_background_color(D2D1::ColorF(D2D1::ColorF::Green));
+			row.find_first_similar_hook<cwin::hook::color_background>()->set_color(D2D1::ColorF(D2D1::ColorF::Green));
 
 			row.insert_object([](cwin::grid::proportional_column &col){
-				col.set_background_color(D2D1::ColorF(D2D1::ColorF::Blue));
+				col.find_first_similar_hook<cwin::hook::color_background>()->set_color(D2D1::ColorF(D2D1::ColorF::Blue));
 			}, 0.36f);
 
 			row.insert_object([](cwin::grid::proportional_column &col){
-				col.insert_hook<cwin::hook::caption>(L"Proportional Column @ 27%");
+				col.get_events().bind([](cwin::events::get_caption &e){
+					return L"Proportional Column @ 27%";
+				});
 				col.insert_hook<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::client_handle>>();
-				col.set_background_color(D2D1::ColorF(D2D1::ColorF::Magenta));
+				col.find_first_similar_hook<cwin::hook::color_background>()->set_color(D2D1::ColorF(D2D1::ColorF::Magenta));
 			}, 0.27f);
 		}, 0.36f);
 	});

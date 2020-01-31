@@ -3,7 +3,7 @@
 #include "../thread/thread_exception.h"
 #include "../utility/animation_timing.h"
 
-#include "hook_object.h"
+#include "hook_target.h"
 
 namespace cwin::hook{
 	class animation_helper{
@@ -11,10 +11,13 @@ namespace cwin::hook{
 		static void animate(object &target, const std::function<float(float)> &timing, const std::chrono::nanoseconds &duration, const std::function<bool(float, bool)> &callback);
 	};
 
-	template <class value_type>
+	template <class value_type, class init_interrupt_type, class change_interrupt_type, class request_interrupt_type>
 	class animation : public object{
 	public:
 		using m_value_type = value_type;
+		using m_init_interrupt_type = init_interrupt_type;
+		using m_change_interrupt_type = change_interrupt_type;
+		using m_request_interrupt_type = request_interrupt_type;
 		using callback_type = std::function<void(const m_value_type &, const m_value_type &)>;
 
 		using easing_type = std::function<float(float)>;
@@ -30,7 +33,19 @@ namespace cwin::hook{
 			: animation(target, utility::animation_timing::linear::ease, duration){}
 
 		animation(hook::target &target, const easing_type &easing, const duration_type &duration)
-			: object(target), easing_(easing), duration_(duration){}
+			: object(target), easing_(easing), duration_(duration){
+			target.get_events().bind([=](m_change_interrupt_type &e){
+				e.prevent_default();
+				set_value_(e.get_old_value(), e.get_value(), e.get_updater());
+			}, get_talk_id());
+
+			target.get_events().bind([=](m_request_interrupt_type &e){
+				return &current_value_;
+			}, get_talk_id());
+
+			if (auto value = reinterpret_cast<value_type *>(trigger_then_report_result_<m_init_interrupt_type>(0u)); value != nullptr)
+				current_value_ = *value;
+		}
 
 		virtual ~animation() = default;
 		
@@ -118,8 +133,8 @@ namespace cwin::hook{
 			return resolution_type::replace;
 		}
 
-		virtual void set_value_(const m_value_type &old_value, const m_value_type &value, bool should_animate, const callback_type &callback){
-			if (!is_enabled_ || !should_animate || callback == nullptr){//Animation disabled
+		virtual void set_value_(const m_value_type &old_value, const m_value_type &value, const callback_type &callback){
+			if (!is_enabled_ || callback == nullptr){//Animation disabled
 				current_value_ = value;
 				if (is_enabled_)
 					++active_id_;
@@ -209,33 +224,5 @@ namespace cwin::hook{
 
 		std::size_t active_id_ = 0u;
 		bool is_updating_ = false;
-	};
-
-	template <class owner_type, class value_type>
-	class owned_animation : public animation<value_type>{
-	public:
-		using m_owner_type = owner_type;
-		using base_type = animation<value_type>;
-
-		explicit owned_animation(owner_type &target)
-			: owned_animation(target, utility::animation_timing::linear::ease, std::chrono::milliseconds(500)){}
-
-		owned_animation(owner_type &target, const typename base_type::easing_type &easing)
-			: owned_animation(target, easing, std::chrono::milliseconds(500)){}
-
-		owned_animation(owner_type &target, const typename base_type::duration_type &duration)
-			: owned_animation(target, utility::animation_timing::linear::ease, duration){}
-
-		owned_animation(owner_type &target, const typename base_type::easing_type &easing, const typename base_type::duration_type &duration)
-			: base_type(target, easing, duration){}
-
-		virtual ~owned_animation() = default;
-
-	protected:
-		friend owner_type;
-
-		virtual void set_value_(const typename base_type::m_value_type &old_value, const typename base_type::m_value_type &value, bool should_animate, const typename base_type::callback_type &callback){
-			base_type::set_value_(old_value, value, should_animate, callback);
-		}
 	};
 }

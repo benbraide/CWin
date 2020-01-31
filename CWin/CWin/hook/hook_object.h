@@ -1,9 +1,13 @@
 #pragma once
 
-#include "hook_target.h"
+#include "../ui/ui_exception.h"
+
+#include "../thread/thread_item.h"
 
 namespace cwin::hook{
-	class object : public target{
+	class target;
+
+	class object : public thread::cross_object{
 	public:
 		enum class relationship_type{
 			nil,
@@ -203,5 +207,10 @@ namespace cwin::hook{
 				throw ui::exception::not_supported();
 			return *compatible_target;
 		}
+	};
+
+	template <class object_type>
+	struct target_type{
+		using value = hook::target;
 	};
 }
