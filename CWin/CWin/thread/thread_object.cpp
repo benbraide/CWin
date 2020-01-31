@@ -49,6 +49,18 @@ cwin::thread::object::object()
 
 		GetThemePartSize(theme_, device_info, WP_SMALLFRAMERIGHT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
 		client_margin_.right = size.cx;
+
+		GetThemePartSize(theme_, device_info, WP_FRAMELEFT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		big_client_margin_.left = size.cx;
+
+		GetThemePartSize(theme_, device_info, WP_FRAMEBOTTOM, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		big_client_margin_.bottom = size.cy;
+
+		GetThemePartSize(theme_, device_info, WP_CAPTION, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		big_client_margin_.top = (size.cy + big_client_margin_.bottom);
+
+		GetThemePartSize(theme_, device_info, WP_FRAMERIGHT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		big_client_margin_.right = size.cx;
 	}
 
 	if (device_info != nullptr)
@@ -243,6 +255,12 @@ const RECT &cwin::thread::object::get_client_margin() const{
 	if (!is_context())
 		throw exception::outside_context();
 	return client_margin_;
+}
+
+const RECT &cwin::thread::object::get_big_client_margin() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return big_client_margin_;
 }
 
 cwin::ui::surface::handle_bound_info &cwin::thread::object::get_handle_bound(){

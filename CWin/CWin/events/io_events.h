@@ -146,6 +146,13 @@ namespace cwin::events::io{
 		virtual ~mouse_up() = default;
 	};
 
+	class mouse_click : public mouse_button{
+	public:
+		using mouse_button::mouse_button;
+
+		virtual ~mouse_click() = default;
+	};
+
 	class mouse_dbl_click : public mouse_button{
 	public:
 		using mouse_button::mouse_button;

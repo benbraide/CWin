@@ -4,6 +4,7 @@
 
 namespace cwin::ui{
 	class visible_surface;
+	class non_window_surface;
 	class window_surface_manager;
 }
 
@@ -73,8 +74,35 @@ namespace cwin::hook{
 		D2D1_COLOR_F color_;
 	};
 
+	class caption : public object{
+	public:
+		explicit caption(ui::non_window_surface &target);
+
+		caption(ui::non_window_surface &target, const std::wstring &value);
+
+		virtual ~caption();
+
+		virtual void set_value(const std::wstring &value);
+
+		virtual const std::wstring &get_value() const;
+
+		virtual void get_value(const std::function<void(const std::wstring &)> &callback) const;
+
+	protected:
+		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
+
+		virtual void set_value_(const std::wstring &value);
+
+		std::wstring value_;
+	};
+
 	template <>
 	struct target_type<color_background>{
 		using value = ui::visible_surface;
+	};
+
+	template <>
+	struct target_type<caption>{
+		using value = ui::non_window_surface;
 	};
 }

@@ -53,6 +53,12 @@ namespace cwin::events{
 
 		virtual ~get_caption();
 
+		virtual void set_value(const std::wstring &value);
+
+		virtual void set_value(const std::wstring_view &value);
+
+		virtual void set_value(const wchar_t *value);
+
 		virtual const std::wstring &get_value() const;
 
 	protected:

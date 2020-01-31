@@ -25,7 +25,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	window.insert_object([](cwin::grid::fill_object &grid){
 		grid.insert_hook<cwin::hook::io>();
-		grid.insert_hook<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::client_handle>>();
+		grid.insert_hook<cwin::hook::caption>(L"Fill Grid Object @ 36%");
+		grid.insert_hook<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::big_border_client_handle>>();
 		grid.set_background_color(D2D1::ColorF(D2D1::ColorF::Red));
 		grid.get_fill().set_offset(D2D1_SIZE_F{ 0.126f, 0.126f });
 
@@ -37,6 +38,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			}, 0.36f);
 
 			row.insert_object([](cwin::grid::proportional_column &col){
+				col.insert_hook<cwin::hook::caption>(L"Proportional Column @ 27%");
+				col.insert_hook<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::client_handle>>();
 				col.set_background_color(D2D1::ColorF(D2D1::ColorF::Magenta));
 			}, 0.27f);
 		}, 0.36f);

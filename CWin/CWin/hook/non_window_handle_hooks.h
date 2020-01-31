@@ -33,6 +33,10 @@ namespace cwin::hook::non_window{
 
 		virtual ~client_handle();
 
+		virtual bool is_big_border() const;
+
+		virtual void is_big_border(const std::function<void(bool)> &callback) const;
+
 	protected:
 		friend class ui::non_window_surface;
 
@@ -42,7 +46,19 @@ namespace cwin::hook::non_window{
 
 		virtual HRGN resize_value_(HRGN value, const SIZE &size) const = 0;
 
+		virtual bool is_big_border_() const;
+
 		std::function<void()> update_callback_;
+	};
+
+	class big_border_client_handle : public client_handle{
+	public:
+		using client_handle::client_handle;
+
+		virtual ~big_border_client_handle();
+
+	protected:
+		virtual bool is_big_border_() const override;
 	};
 
 	template <class handle_type>
@@ -185,12 +201,22 @@ namespace cwin::hook{
 	};
 
 	template <>
+	struct target_type<non_window::triangle_handle<non_window::big_border_client_handle>>{
+		using value = ui::non_window_surface;
+	};
+
+	template <>
 	struct target_type<non_window::rectangle_handle<non_window::handle>>{
 		using value = ui::non_window_surface;
 	};
 
 	template <>
 	struct target_type<non_window::rectangle_handle<non_window::client_handle>>{
+		using value = ui::non_window_surface;
+	};
+
+	template <>
+	struct target_type<non_window::rectangle_handle<non_window::big_border_client_handle>>{
 		using value = ui::non_window_surface;
 	};
 
@@ -205,12 +231,22 @@ namespace cwin::hook{
 	};
 
 	template <>
+	struct target_type<non_window::round_rectangle_handle<non_window::big_border_client_handle>>{
+		using value = ui::non_window_surface;
+	};
+
+	template <>
 	struct target_type<non_window::ellipsis_handle<non_window::handle>>{
 		using value = ui::non_window_surface;
 	};
 
 	template <>
 	struct target_type<non_window::ellipsis_handle<non_window::client_handle>>{
+		using value = ui::non_window_surface;
+	};
+
+	template <>
+	struct target_type<non_window::ellipsis_handle<non_window::big_border_client_handle>>{
 		using value = ui::non_window_surface;
 	};
 }

@@ -42,6 +42,36 @@ void cwin::ui::non_window_surface::get_client_margin(const std::function<void(co
 	});
 }
 
+cwin::hook::non_window::handle &cwin::ui::non_window_surface::get_handle_hook() const{
+	return *execute_task([&]{
+		if (handle_hook_ == nullptr)
+			throw exception::not_supported();
+		return handle_hook_;
+	});
+}
+
+void cwin::ui::non_window_surface::get_handle_hook(const std::function<void(hook::non_window::handle &)> &callback) const{
+	post_or_execute_task([=]{
+		if (handle_hook_ != nullptr)
+			callback(*handle_hook_);
+	});
+}
+
+cwin::hook::non_window::client_handle &cwin::ui::non_window_surface::get_client_handle_hook() const{
+	return *execute_task([&]{
+		if (client_handle_hook_ == nullptr)
+			throw exception::not_supported();
+		return client_handle_hook_;
+	});
+}
+
+void cwin::ui::non_window_surface::get_client_handle_hook(const std::function<void(hook::non_window::client_handle &)> &callback) const{
+	post_or_execute_task([=]{
+		if (client_handle_hook_ != nullptr)
+			callback(*client_handle_hook_);
+	});
+}
+
 void cwin::ui::non_window_surface::added_hook_(hook::object &value){
 	visible_surface::added_hook_(value);
 	if (auto client_handle_value = dynamic_cast<hook::non_window::client_handle *>(&value); client_handle_value != nullptr){
@@ -471,5 +501,5 @@ UINT cwin::ui::non_window_surface::non_client_hit_test_(const POINT &value) cons
 }
 
 const RECT &cwin::ui::non_window_surface::get_client_margin_() const{
-	return thread_.get_client_margin();
+	return ((client_handle_hook_ == nullptr || !client_handle_hook_->is_big_border_()) ? thread_.get_client_margin() : thread_.get_big_client_margin());
 }

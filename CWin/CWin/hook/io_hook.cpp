@@ -394,6 +394,7 @@ void cwin::hook::io::mouse_up_(ui::visible_surface *&target, mouse_button_type b
 	auto pos = GetMessagePos();
 	POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
 
+	auto was_dragging = check_drag_state_();
 	if (mouse_press_ != nullptr){
 		try{
 			mouse_press_->get_io_hook().mouse_up_(target, button);
@@ -416,6 +417,9 @@ void cwin::hook::io::mouse_up_(ui::visible_surface *&target, mouse_button_type b
 	is_dragging_non_client_ = false;
 
 	trigger_<events::io::mouse_up>(nullptr, 0u, *target, position, pressed_button_);
+	if (!was_dragging)//Click
+		trigger_<events::io::mouse_click>(nullptr, 0u, *target, position, pressed_button_);
+
 	pressed_button_ = events::io::mouse_button::button_type::nil;
 }
 

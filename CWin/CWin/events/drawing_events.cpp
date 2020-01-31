@@ -1,6 +1,7 @@
 #include "../ui/ui_non_window_surface.h"
 #include "../ui/ui_window_surface_manager.h"
 #include "../hook/background_hooks.h"
+#include "../hook/non_window_handle_hooks.h"
 #include "../thread/thread_object.h"
 
 #include "managed_event_target.h"
@@ -73,18 +74,22 @@ void cwin::events::non_client_paint::do_default_(){
 
 	auto &size = non_window_context->get_current_size();
 	auto &client_margin = non_window_context->get_client_margin();
+	auto is_big_border = non_window_context->get_client_handle_hook().is_big_border();
 
 	RECT area{ 0, 0, size.cx, client_margin.top };
-	DrawThemeBackground(theme, info_.hdc, WP_SMALLCAPTION, CS_ACTIVE, &area, nullptr);
+	DrawThemeBackground(theme, info_.hdc, (is_big_border ? WP_CAPTION : WP_SMALLCAPTION), CS_ACTIVE, &area, nullptr);
 
 	area = RECT{ 0, (size.cy - client_margin.bottom), size.cx, size.cy };
-	DrawThemeBackground(theme, info_.hdc, WP_SMALLFRAMEBOTTOM, 0, &area, nullptr);
+	DrawThemeBackground(theme, info_.hdc, (is_big_border ? WP_FRAMEBOTTOM : WP_SMALLFRAMEBOTTOM), 0, &area, nullptr);
 
 	area = RECT{ 0, client_margin.top, client_margin.left, (size.cy - client_margin.bottom) };
-	DrawThemeBackground(theme, info_.hdc, WP_SMALLFRAMELEFT, 0, &area, nullptr);
+	DrawThemeBackground(theme, info_.hdc, (is_big_border ? WP_FRAMELEFT : WP_SMALLFRAMELEFT), 0, &area, nullptr);
 
 	area = RECT{ (size.cx - client_margin.right), client_margin.top, size.cx, (size.cy - client_margin.bottom) };
-	DrawThemeBackground(theme, info_.hdc, WP_SMALLFRAMERIGHT, 0, &area, nullptr);
+	DrawThemeBackground(theme, info_.hdc, (is_big_border ? WP_FRAMERIGHT : WP_SMALLFRAMERIGHT), 0, &area, nullptr);
+
+	SIZE close_button_size{};
+	GetThemePartSize(theme, info_.hdc, (is_big_border ? WP_CLOSEBUTTON : WP_SMALLCLOSEBUTTON), 0, nullptr, THEMESIZE::TS_TRUE, &close_button_size);
 
 	get_caption e(context_);
 	trigger_(e, 0u);
@@ -99,20 +104,41 @@ void cwin::events::non_client_paint::do_default_(){
 	NONCLIENTMETRICSW metrics_info{ sizeof(NONCLIENTMETRICSW) };
 	SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, 0u, &metrics_info, 0u);
 
-	auto font = CreateFontIndirectW(&metrics_info.lfSmCaptionFont);
+	auto font = CreateFontIndirectW(is_big_border ? &metrics_info.lfCaptionFont  : &metrics_info.lfSmCaptionFont);
 	auto old_font = SelectObject(info_.hdc, font);
 
-	SIZE theme_size{};
-	GetThemePartSize(theme, info_.hdc, WP_SMALLCAPTION, 0, nullptr, THEMESIZE::TS_TRUE, &theme_size);
+	auto caption_offset = (is_big_border ? 0 : 3);
+	area = RECT{
+		(client_margin.left + caption_offset),
+		client_margin.bottom,
+		(size.cx - (close_button_size.cx + client_margin.left + client_margin.left + caption_offset)),
+		client_margin.top
+	};
 
-	area = RECT{ theme_size.cx, 0, (size.cx - theme_size.cx), client_margin.top };
 	DrawThemeText(theme, info_.hdc, WP_CAPTION, CS_INACTIVE, caption.data(), static_cast<int>(caption.size()), (DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS), 0u, &area);
-
 	SelectObject(info_.hdc, old_font);
 	DeleteObject(font);
 }
 
 cwin::events::get_caption::~get_caption() = default;
+
+void cwin::events::get_caption::set_value(const std::wstring &value){
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	value_ = value;
+}
+
+void cwin::events::get_caption::set_value(const std::wstring_view &value){
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	value_ = value;
+}
+
+void cwin::events::get_caption::set_value(const wchar_t *value){
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	value_ = value;
+}
 
 const std::wstring &cwin::events::get_caption::get_value() const{
 	if (!is_thread_context())

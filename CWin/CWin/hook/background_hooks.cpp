@@ -1,6 +1,8 @@
-#include "../ui/ui_visible_surface.h"
-#include "../events/general_events.h"
+#include "../ui/ui_non_window_surface.h"
 #include "../thread/thread_object.h"
+
+#include "../events/general_events.h"
+#include "../events/drawing_events.h"
 
 #include "background_hooks.h"
 
@@ -25,55 +27,55 @@ cwin::hook::color_background::color_background(ui::visible_surface &target, cons
 cwin::hook::color_background::~color_background() = default;
 
 void cwin::hook::color_background::enable_animation(){
-	background::post_or_execute_task([=]{
+	post_or_execute_task([=]{
 		color_hook_.enable();
 	});
 }
 
 void cwin::hook::color_background::disable_animation(){
-	background::post_or_execute_task([=]{
+	post_or_execute_task([=]{
 		color_hook_.disable();
 	});
 }
 
 bool cwin::hook::color_background::animation_is_enabled() const{
-	return background::execute_task([&]{
+	return execute_task([&]{
 		return color_hook_.is_enabled();
 	});
 }
 
 void cwin::hook::color_background::animation_is_enabled(const std::function<void(bool)> &callback) const{
-	background::post_or_execute_task([=]{
+	post_or_execute_task([=]{
 		callback(color_hook_.is_enabled());
 	});
 }
 
 void cwin::hook::color_background::set_color(const D2D1_COLOR_F &value){
-	background::post_or_execute_task([=]{
+	post_or_execute_task([=]{
 		set_color_(value);
 	});
 }
 
 const D2D1_COLOR_F &cwin::hook::color_background::get_color() const{
-	return *background::execute_task([&]{
+	return *execute_task([&]{
 		return &get_color_();
 	});
 }
 
 void cwin::hook::color_background::get_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const{
-	background::post_or_execute_task([=]{
+	post_or_execute_task([=]{
 		callback(get_color_());
 	});
 }
 
 const D2D1_COLOR_F &cwin::hook::color_background::get_current_color() const{
-	return *background::execute_task([&]{
+	return *execute_task([&]{
 		return &get_current_color_();
 	});
 }
 
 void cwin::hook::color_background::get_current_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const{
-	background::post_or_execute_task([=]{
+	post_or_execute_task([=]{
 		callback(get_current_color_());
 	});
 }
@@ -117,4 +119,44 @@ const D2D1_COLOR_F &cwin::hook::color_background::get_color_() const{
 
 const D2D1_COLOR_F &cwin::hook::color_background::get_current_color_() const{
 	return color_hook_.current_value_;
+}
+
+cwin::hook::caption::caption(ui::non_window_surface &target)
+	: caption(target, L""){}
+
+cwin::hook::caption::caption(ui::non_window_surface &target, const std::wstring &value)
+	: object(target), value_(value){
+	target.get_events().bind([=](events::get_caption &e){
+		e.set_value(value_);
+	});
+}
+
+cwin::hook::caption::~caption() = default;
+
+void cwin::hook::caption::set_value(const std::wstring &value){
+	post_or_execute_task([=]{
+		set_value_(value);
+	});
+}
+
+const std::wstring &cwin::hook::caption::get_value() const{
+	return *execute_task([&]{
+		return &value_;
+	});
+}
+
+void cwin::hook::caption::get_value(const std::function<void(const std::wstring &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(value_);
+	});
+}
+
+cwin::hook::object::resolution_type cwin::hook::caption::resolve_conflict_(relationship_type relationship) const{
+	return resolution_type::replace;
+}
+
+void cwin::hook::caption::set_value_(const std::wstring &value){
+	value_ = value;
+	if (auto non_window_target = dynamic_cast<ui::non_window_surface *>(&target_); non_window_target != nullptr)
+		non_window_target->redraw();
 }

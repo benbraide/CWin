@@ -26,6 +26,14 @@ namespace cwin::ui{
 
 		virtual void get_client_margin(const std::function<void(const RECT &)> &callback) const;
 
+		virtual hook::non_window::handle &get_handle_hook() const;
+
+		virtual void get_handle_hook(const std::function<void(hook::non_window::handle &)> &callback) const;
+
+		virtual hook::non_window::client_handle &get_client_handle_hook() const;
+
+		virtual void get_client_handle_hook(const std::function<void(hook::non_window::client_handle &)> &callback) const;
+
 	protected:
 		friend class window_surface_manager;
 
