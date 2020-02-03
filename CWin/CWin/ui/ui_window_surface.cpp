@@ -425,6 +425,10 @@ DWORD cwin::ui::window_surface::get_persistent_extended_styles_() const{
 	return 0u;
 }
 
+void cwin::ui::window_surface::dispatch_command_(WPARAM code){}
+
+void cwin::ui::window_surface::dispatch_notification_(const NMHDR &info){}
+
 void cwin::ui::window_surface::update_client_bound_(){
 	RECT client_dimension{};
 	GetClientRect(handle_, &client_dimension);

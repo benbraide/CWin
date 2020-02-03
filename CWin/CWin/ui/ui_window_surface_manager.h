@@ -62,6 +62,10 @@ namespace cwin::ui{
 
 		void paint_(visible_surface &target, UINT message, WPARAM wparam, LPARAM lparam, POINT offset);
 
+		void command_(window_surface &target, WPARAM wparam, LPARAM lparam);
+
+		void notify_(window_surface &target, LPARAM lparam);
+
 		void mouse_leave_(window_surface &target);
 
 		void mouse_move_(window_surface &target, UINT message);

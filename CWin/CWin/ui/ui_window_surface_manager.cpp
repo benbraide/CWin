@@ -164,8 +164,20 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 			after_paint_(target, message, wparam, lparam);
 			throw;
 		}
-
 		return 0;
+	case WM_COMMAND:
+		command_(target, wparam, lparam);
+		break;
+	case WM_NOTIFY:
+		notify_(target, lparam);
+		break;
+	case WM_SETFOCUS:
+		mouse_info_.focused = &target;
+		break;
+	case WM_KILLFOCUS:
+		if (&target == mouse_info_.focused)
+			mouse_info_.focused = nullptr;
+		break;
 	case WM_SETCURSOR:
 		if (reinterpret_cast<HWND>(wparam) != target.handle_)
 			return FALSE;
@@ -369,6 +381,23 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		render->BindDC(paint_info_.hdc, &paint_info_.rcPaint);
 		target.trigger_<events::paint>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
 	}
+}
+
+void cwin::ui::window_surface_manager::command_(window_surface &target, WPARAM wparam, LPARAM lparam){
+	if (lparam != 0){//Control command
+		if (auto sender = find_(reinterpret_cast<HWND>(lparam), true); sender != nullptr)
+			sender->dispatch_command_(wparam);
+	}
+
+	if (HIWORD(wparam) != 0u){//Accelerator command
+
+	}
+}
+
+void cwin::ui::window_surface_manager::notify_(window_surface &target, LPARAM lparam){
+	auto info = reinterpret_cast<NMHDR *>(lparam);
+	if (auto sender = find_(info->hwndFrom, true); sender != nullptr)
+		sender->dispatch_notification_(*info);
 }
 
 void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){

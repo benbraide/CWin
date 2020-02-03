@@ -48,56 +48,6 @@ void cwin::ui::visible_surface::is_visible(const std::function<void(bool)> &call
 	});
 }
 
-/*
-cwin::hook::io &cwin::ui::visible_surface::get_io_hook() const{
-	return *execute_task([&]{
-		if (io_hook_ == nullptr)
-			throw exception::not_supported();
-		return io_hook_;
-	});
-}
-
-void cwin::ui::visible_surface::get_io_hook(const std::function<void(hook::io &)> &callback) const{
-	post_or_execute_task([=]{
-		if (io_hook_ != nullptr)
-			callback(*io_hook_);
-	});
-}
-
-bool cwin::ui::visible_surface::has_io_hook() const{
-	return execute_task([&]{
-		return (io_hook_ != nullptr);
-	});
-}
-
-void cwin::ui::visible_surface::has_io_hook(const std::function<void(bool)> &callback) const{
-	post_or_execute_task([=]{
-		callback(io_hook_ != nullptr);
-	});
-}
-
-void cwin::ui::visible_surface::added_hook_(hook::object &value){
-	surface::added_hook_(value);
-	if (auto io_value = dynamic_cast<hook::io *>(&value); io_value != nullptr){
-		(io_hook_ = io_value)->size_callback_ = [=](const SIZE &delta){
-			auto &current_size = get_current_size_();
-			set_size_(SIZE{ (current_size.cx + delta.cx), (current_size.cy + delta.cy) }, false);
-		};
-
-		io_hook_->position_callback_ = [=](const SIZE &delta){
-			auto &current_position = get_current_position_();
-			set_position_(POINT{ (current_position.x + delta.cx), (current_position.y + delta.cy) }, false);
-		};
-	}
-}
-
-void cwin::ui::visible_surface::removed_hook_(hook::object &value){
-	if (&value == io_hook_)
-		io_hook_ = nullptr;
-
-	surface::removed_hook_(value);
-}*/
-
 void cwin::ui::visible_surface::redraw_(HRGN region){
 	redraw_at_(region, get_current_position());
 }

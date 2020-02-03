@@ -116,6 +116,10 @@ namespace cwin::ui{
 
 		virtual DWORD get_persistent_extended_styles_() const;
 
+		virtual void dispatch_command_(WPARAM code);
+
+		virtual void dispatch_notification_(const NMHDR &info);
+
 		virtual void update_client_bound_();
 
 		virtual HINSTANCE get_instance_() const = 0;

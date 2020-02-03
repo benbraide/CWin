@@ -30,20 +30,8 @@ namespace cwin::ui{
 
 		virtual void is_visible(const std::function<void(bool)> &callback) const;
 
-		/*virtual hook::io &get_io_hook() const;
-
-		virtual void get_io_hook(const std::function<void(hook::io &)> &callback) const;
-
-		virtual bool has_io_hook() const;
-
-		virtual void has_io_hook(const std::function<void(bool)> &callback) const;*/
-
 	protected:
 		friend class window_surface_manager;
-
-		//virtual void added_hook_(hook::object &value) override;
-
-		//virtual void removed_hook_(hook::object &value) override;
 
 		virtual void redraw_(HRGN region);
 
@@ -60,6 +48,5 @@ namespace cwin::ui{
 		virtual bool is_visible_() const;
 
 		bool visible_ = true;
-		//hook::io *io_hook_ = nullptr;
 	};
 }
