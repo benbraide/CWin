@@ -28,12 +28,12 @@ namespace cwin::events{
 
 		template <typename handler_type>
 		unsigned __int64 bind_default_(const handler_type &handler){
-			events_.bind_default_(utility::object_to_function_traits::get(handler), nullptr, typeid(nullptr));
+			return events_.bind_default_(utility::object_to_function_traits::get(handler), nullptr, typeid(nullptr));
 		}
 
 		template <typename value_type, typename handler_type>
 		unsigned __int64 bind_default_(const handler_type &handler, const value_type &value){
-			events_.bind_default_(utility::object_to_function_traits::get(handler), &value, typeid(value));
+			return events_.bind_default_(utility::object_to_function_traits::get(handler), &value, typeid(value));
 		}
 
 		virtual void unbind_default_(unsigned __int64 id);

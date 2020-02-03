@@ -1,9 +1,14 @@
 #include "../ui/ui_non_window_surface.h"
+#include "../events/interrupt_events.h"
 
 #include "non_window_handle_hooks.h"
 
 cwin::hook::non_window::handle::handle(ui::non_window_surface &target)
-	: object(target){}
+	: object(target){
+	target_.get_events().bind([=](events::interrupt::resize_non_client_handle &e){
+		e.set_value(resize_value_(e.get_value(), e.get_size()));
+	}, get_talk_id());
+}
 
 cwin::hook::non_window::handle::~handle() = default;
 
@@ -16,7 +21,15 @@ void cwin::hook::non_window::handle::destroy_value_(HRGN value) const{
 }
 
 cwin::hook::non_window::client_handle::client_handle(ui::non_window_surface &target)
-	: object(target){}
+	: object(target){
+	target_.get_events().bind([=](events::interrupt::resize_client_handle &e){
+		e.set_value(resize_value_(e.get_value(), e.get_size()));
+	}, get_talk_id());
+
+	target_.get_events().bind([=](events::interrupt::is_big_border_handle &e){
+		return is_big_border_();
+	}, get_talk_id());
+}
 
 cwin::hook::non_window::client_handle::~client_handle() = default;
 

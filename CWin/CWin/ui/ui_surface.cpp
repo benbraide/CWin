@@ -5,13 +5,39 @@
 #include "ui_visible_surface.h"
 
 cwin::ui::surface::surface(){
-	events_.bind([=](events::interrupt::size_init &e){
+	bind_default_([=](events::interrupt::size_init &e){
 		return &size_;
-	}, get_talk_id());
+	});
 
-	events_.bind([=](events::interrupt::position_init &e){
+	bind_default_([=](events::interrupt::position_init &e){
 		return &position_;
-	}, get_talk_id());
+	});
+
+	bind_default_([=](events::interrupt::size_changer_request &e){
+		e.set_value([=](const SIZE &value, bool enable_interrupt){
+			set_size_(value, enable_interrupt);
+		});
+	});
+	
+	bind_default_([=](events::interrupt::position_changer_request &e){
+		e.set_value([=](const POINT &value, bool enable_interrupt){
+			set_position_(value, enable_interrupt);
+		});
+	});
+	
+	bind_default_([=](events::interrupt::size_updater_request &e){
+		e.set_value([=](const SIZE &old_value, const SIZE &current_value){
+			trigger_<events::after_size_update>(nullptr, 0u, old_value, current_value);
+			size_update_(old_value, current_value);
+		});
+	});
+	
+	bind_default_([=](events::interrupt::position_updater_request &e){
+		e.set_value([=](const POINT &old_value, const POINT &current_value){
+			trigger_<events::after_position_update>(nullptr, 0u, old_value, current_value);
+			position_update_(old_value, current_value);
+		});
+	});
 }
 
 cwin::ui::surface::surface(tree &parent)
@@ -30,6 +56,32 @@ cwin::ui::surface::surface(tree &parent, std::size_t index){
 
 	events_.bind([=](events::interrupt::position_init &e){
 		return &position_;
+	}, get_talk_id());
+	
+	bind_default_([=](events::interrupt::size_changer_request &e){
+		e.set_value([=](const SIZE &value, bool enable_interrupt){
+			set_size_(value, enable_interrupt);
+		});
+	});
+	
+	bind_default_([=](events::interrupt::position_changer_request &e){
+		e.set_value([=](const POINT &value, bool enable_interrupt){
+			set_position_(value, enable_interrupt);
+		});
+	});
+	
+	events_.bind([=](events::interrupt::size_updater_request &e){
+		e.set_value([=](const SIZE &old_value, const SIZE &current_value){
+			trigger_<events::after_size_update>(nullptr, 0u, old_value, current_value);
+			size_update_(old_value, current_value);
+		});
+	}, get_talk_id());
+
+	events_.bind([=](events::interrupt::position_updater_request &e){
+		e.set_value([=](const POINT &old_value, const POINT &current_value){
+			trigger_<events::after_position_update>(nullptr, 0u, old_value, current_value);
+			position_update_(old_value, current_value);
+		});
 	}, get_talk_id());
 }
 

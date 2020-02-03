@@ -62,10 +62,6 @@ bool cwin::grid::column::changing_parent_(tree *value){
 	return (dynamic_cast<row *>(value) != nullptr && non_window_surface::changing_parent_(value));
 }
 
-bool cwin::grid::column::is_created_() const{
-	return (handle_hook_ == nullptr || non_window_surface::is_created_());
-}
-
 bool cwin::grid::column::before_position_change_(const POINT &old_value, const POINT &current_value) const{
 	return (is_updating_ && non_window_surface::before_position_change_(old_value, current_value));
 }

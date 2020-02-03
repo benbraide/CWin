@@ -26,8 +26,6 @@ namespace cwin::grid{
 	protected:
 		virtual bool inserting_child_(ui::object &child) override;
 
-		virtual bool is_created_() const override;
-
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) override;
 
 		virtual void refresh_();

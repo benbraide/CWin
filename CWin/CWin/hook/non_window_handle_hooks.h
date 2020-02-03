@@ -16,8 +16,6 @@ namespace cwin::hook::non_window{
 		virtual ~handle();
 
 	protected:
-		friend class ui::non_window_surface;
-
 		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
 
 		virtual void destroy_value_(HRGN value) const;
@@ -38,8 +36,6 @@ namespace cwin::hook::non_window{
 		virtual void is_big_border(const std::function<void(bool)> &callback) const;
 
 	protected:
-		friend class ui::non_window_surface;
-
 		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
 
 		virtual void destroy_value_(HRGN value) const;

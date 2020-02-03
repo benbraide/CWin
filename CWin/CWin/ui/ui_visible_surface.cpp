@@ -48,6 +48,7 @@ void cwin::ui::visible_surface::is_visible(const std::function<void(bool)> &call
 	});
 }
 
+/*
 cwin::hook::io &cwin::ui::visible_surface::get_io_hook() const{
 	return *execute_task([&]{
 		if (io_hook_ == nullptr)
@@ -95,7 +96,7 @@ void cwin::ui::visible_surface::removed_hook_(hook::object &value){
 		io_hook_ = nullptr;
 
 	surface::removed_hook_(value);
-}
+}*/
 
 void cwin::ui::visible_surface::redraw_(HRGN region){
 	redraw_at_(region, get_current_position());

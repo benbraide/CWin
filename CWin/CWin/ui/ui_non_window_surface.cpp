@@ -1,4 +1,5 @@
 #include "../hook/non_window_handle_hooks.h"
+#include "../events/interrupt_events.h"
 #include "../thread/thread_object.h"
 
 #include "ui_window_surface.h"
@@ -42,108 +43,9 @@ void cwin::ui::non_window_surface::get_client_margin(const std::function<void(co
 	});
 }
 
-cwin::hook::non_window::handle &cwin::ui::non_window_surface::get_handle_hook() const{
-	return *execute_task([&]{
-		if (handle_hook_ == nullptr)
-			throw exception::not_supported();
-		return handle_hook_;
-	});
-}
-
-void cwin::ui::non_window_surface::get_handle_hook(const std::function<void(hook::non_window::handle &)> &callback) const{
-	post_or_execute_task([=]{
-		if (handle_hook_ != nullptr)
-			callback(*handle_hook_);
-	});
-}
-
-cwin::hook::non_window::client_handle &cwin::ui::non_window_surface::get_client_handle_hook() const{
-	return *execute_task([&]{
-		if (client_handle_hook_ == nullptr)
-			throw exception::not_supported();
-		return client_handle_hook_;
-	});
-}
-
-void cwin::ui::non_window_surface::get_client_handle_hook(const std::function<void(hook::non_window::client_handle &)> &callback) const{
-	post_or_execute_task([=]{
-		if (client_handle_hook_ != nullptr)
-			callback(*client_handle_hook_);
-	});
-}
-
-void cwin::ui::non_window_surface::added_hook_(hook::object &value){
-	visible_surface::added_hook_(value);
-	if (auto client_handle_value = dynamic_cast<hook::non_window::client_handle *>(&value); client_handle_value != nullptr){
-		(client_handle_hook_ = client_handle_value)->update_callback_ = [=]{
-			auto &current_size = get_current_size_();
-			size_update_(current_size, current_size);
-		};
-
-		if (handle_ != nullptr){//Create client handle
-			auto &current_size = get_current_size_();
-			auto &client_handle_margin = get_client_margin_();
-
-			SIZE client_size{
-				(current_size.cx - (client_handle_margin.left + client_handle_margin.right)),
-				(current_size.cy - (client_handle_margin.top + client_handle_margin.bottom))
-			};
-
-			if ((client_handle_ = client_handle_hook_->resize_value_(handle_, client_size)) != nullptr){
-				client_handle_bound_.handle = CreateRectRgn(0, 0, 0, 0);
-				update_region_bound_(client_handle_bound_.rect_handle, client_size);
-
-				update_bounds_();
-				if (is_visible_())
-					redraw_(nullptr);
-			}
-
-			auto &current_position = get_current_position_();
-			visible_surface::position_update_(current_position, current_position);
-		}
-	}
-	else if (auto handle_value = dynamic_cast<hook::non_window::handle *>(&value); handle_value != nullptr){
-		(handle_hook_ = handle_value)->update_callback_ = [=]{
-			auto &current_size = get_current_size_();
-			size_update_(current_size, current_size);
-		};
-	}
-}
-
-void cwin::ui::non_window_surface::removed_hook_(hook::object &value){
-	if (&value == client_handle_hook_){
-		client_handle_hook_ = nullptr;
-		if (client_handle_ != nullptr){
-			client_handle_hook_->destroy_value_(client_handle_);
-			client_handle_ = nullptr;
-
-			DeleteObject(client_handle_bound_.handle);
-			DeleteObject(client_handle_bound_.rect_handle);
-
-			client_handle_bound_.handle = nullptr;
-			client_handle_bound_.rect_handle = nullptr;
-
-			if (is_visible_())
-				redraw_(nullptr);
-		}
-
-		auto &current_size = get_current_size_();
-		size_update_(current_size, current_size);
-	}
-	else if (&value == handle_hook_){
-		destroy();
-		handle_hook_ = nullptr;
-	}
-
-	visible_surface::removed_hook_(value);
-}
-
 void cwin::ui::non_window_surface::create_(){
 	if (handle_ != nullptr)
 		return;
-
-	if (handle_hook_ == nullptr)
-		throw exception::not_supported();
 
 	traverse_matching_ancestors_<surface>([](surface &ancestor){
 		if (!ancestor.is_created())
@@ -156,22 +58,16 @@ void cwin::ui::non_window_surface::create_(){
 	});
 
 	auto &current_size = get_current_size_();
-	if ((handle_ = handle_hook_->resize_value_(handle_, current_size)) == nullptr)
+	if ((handle_ = reinterpret_cast<HRGN>(trigger_then_report_result_<events::interrupt::resize_non_client_handle>(0u, handle_, current_size))) == nullptr)
 		throw exception::action_failed();
 
-	if (client_handle_hook_ != nullptr){//Create client handle
-		auto &client_handle_margin = get_client_margin_();
-		SIZE client_size{
-			(current_size.cx - (client_handle_margin.left + client_handle_margin.right)),
-			(current_size.cy - (client_handle_margin.top + client_handle_margin.bottom))
-		};
+	auto &client_handle_margin = get_client_margin_();
+	SIZE client_size{
+		(current_size.cx - (client_handle_margin.left + client_handle_margin.right)),
+		(current_size.cy - (client_handle_margin.top + client_handle_margin.bottom))
+	};
 
-		if ((client_handle_ = client_handle_hook_->resize_value_(client_handle_, client_size)) == nullptr){
-			handle_hook_->destroy_value_(handle_);
-			handle_ = nullptr;
-			throw exception::action_failed();
-		}
-
+	if ((client_handle_ = reinterpret_cast<HRGN>(trigger_then_report_result_<events::interrupt::resize_client_handle>(0u, client_handle_, client_size))) != nullptr){
 		client_handle_bound_.handle = CreateRectRgn(0, 0, 0, 0);
 		update_region_bound_(client_handle_bound_.rect_handle, client_size);
 	}
@@ -185,35 +81,31 @@ void cwin::ui::non_window_surface::create_(){
 }
 
 void cwin::ui::non_window_surface::destroy_(){
-	if (handle_ == nullptr)
-		return;
-
-	if (handle_hook_ == nullptr)
-		throw exception::not_supported();
-
 	if (client_handle_ != nullptr){//Destroy client handle
-		if (client_handle_hook_ == nullptr)
-			throw exception::not_supported();
-
-		client_handle_hook_->destroy_value_(client_handle_);
-		client_handle_ = nullptr;
+		if (!trigger_then_report_prevented_default_<events::interrupt::destroy_client_handle>(0u, client_handle_))
+			DeleteObject(client_handle_);
 
 		DeleteObject(client_handle_bound_.rect_handle);
 		DeleteObject(client_handle_bound_.handle);
 
+		client_handle_ = nullptr;
 		client_handle_bound_.handle = nullptr;
 		client_handle_bound_.rect_handle = nullptr;
 	}
 
+	if (handle_ == nullptr)
+		return;
+
 	if (is_visible_())//Hide object
 		redraw_(nullptr);
 
-	handle_hook_->destroy_value_(handle_);
-	handle_ = nullptr;
-
+	if (!trigger_then_report_prevented_default_<events::interrupt::destroy_non_client_handle>(0u, handle_))
+		DeleteObject(handle_);
+	
 	DeleteObject(handle_bound_.rect_handle);
 	DeleteObject(handle_bound_.handle);
 
+	handle_ = nullptr;
 	handle_bound_.handle = nullptr;
 	handle_bound_.rect_handle = nullptr;
 }
@@ -226,46 +118,44 @@ void cwin::ui::non_window_surface::size_update_(const SIZE &old_value, const SIZ
 	if (handle_ == nullptr)
 		return;
 
-	if (handle_hook_ == nullptr)
-		throw exception::not_supported();
-
-	auto handle_value = handle_hook_->resize_value_(handle_, current_value);
-	if (handle_value == nullptr)
+	auto handle_value = reinterpret_cast<HRGN>(trigger_then_report_result_<events::interrupt::resize_non_client_handle>(0u, handle_, current_value));
+	if (handle_value == nullptr){
+		destroy_();
 		throw exception::action_failed();
+	}
 
 	if (client_handle_ != nullptr){//Resize client handle
-		if (client_handle_hook_ == nullptr){
-			if (handle_value != handle_)
-				handle_hook_->destroy_value_(handle_value);
-			throw exception::not_supported();
-		}
-
 		auto &client_handle_margin = get_client_margin_();
 		SIZE client_size{
 			(current_value.cx - (client_handle_margin.left + client_handle_margin.right)),
 			(current_value.cy - (client_handle_margin.top + client_handle_margin.bottom))
 		};
 
-		auto client_handle_value = client_handle_hook_->resize_value_(client_handle_, client_size);
-		if (client_handle_value == nullptr){//Ignore
-			if (handle_value != handle_)
-				handle_hook_->destroy_value_(handle_value);
-			throw exception::action_failed();
+		auto client_handle_value = reinterpret_cast<HRGN>(trigger_then_report_result_<events::interrupt::resize_client_handle>(0u, client_handle_, client_size));
+		if (client_handle_value != client_handle_ && client_handle_ != nullptr){//Destroy old client handle
+			if (!trigger_then_report_prevented_default_<events::interrupt::destroy_client_handle>(0u, client_handle_))
+				DeleteObject(client_handle_);
 		}
 
-		if (client_handle_value != client_handle_)//Destroy old client handle
-			client_handle_hook_->destroy_value_(client_handle_);
+		if ((client_handle_ = client_handle_value) == nullptr){
+			DeleteObject(client_handle_bound_.rect_handle);
+			DeleteObject(client_handle_bound_.handle);
 
-		client_handle_ = client_handle_value;
-		update_region_bound_(client_handle_bound_.rect_handle, client_size);
+			client_handle_bound_.handle = nullptr;
+			client_handle_bound_.rect_handle = nullptr;
+		}
+		else
+			update_region_bound_(client_handle_bound_.rect_handle, client_size);
 	}
 
 	if (is_visible_())
 		redraw_(nullptr);
 
 	update_region_bound_(handle_bound_.rect_handle, current_value);
-	if (handle_value != handle_)//Destroy old handle
-		handle_hook_->destroy_value_(handle_);
+	if (handle_value != handle_ && handle_ != nullptr){//Destroy old handle
+		if (!trigger_then_report_prevented_default_<events::interrupt::destroy_non_client_handle>(0u, handle_))
+			DeleteObject(handle_);
+	}
 
 	handle_ = handle_value;
 	update_bounds_();
@@ -288,7 +178,7 @@ void cwin::ui::non_window_surface::position_update_(const POINT &old_value, cons
 
 SIZE cwin::ui::non_window_surface::compute_client_size_() const{
 	auto size = size_;
-	if (client_handle_hook_ != nullptr){
+	if (client_handle_ != nullptr){
 		auto &client_handle_margin = get_client_margin_();
 		size.cx -= (client_handle_margin.left + client_handle_margin.right);
 		size.cy -= (client_handle_margin.top + client_handle_margin.bottom);
@@ -299,7 +189,7 @@ SIZE cwin::ui::non_window_surface::compute_client_size_() const{
 
 SIZE cwin::ui::non_window_surface::compute_current_client_size_() const{
 	auto size = get_current_size_();
-	if (client_handle_hook_ != nullptr){
+	if (client_handle_ != nullptr){
 		auto &client_handle_margin = get_client_margin_();
 		size.cx -= (client_handle_margin.left + client_handle_margin.right);
 		size.cy -= (client_handle_margin.top + client_handle_margin.bottom);
@@ -310,7 +200,7 @@ SIZE cwin::ui::non_window_surface::compute_current_client_size_() const{
 
 void cwin::ui::non_window_surface::offset_point_to_window_(POINT &value) const{
 	visible_surface::offset_point_to_window_(value);
-	if (client_handle_hook_ != nullptr){
+	if (client_handle_ != nullptr){
 		auto &client_handle_margin = get_client_margin_();
 		value.x += client_handle_margin.left;
 		value.y += client_handle_margin.top;
@@ -319,7 +209,7 @@ void cwin::ui::non_window_surface::offset_point_to_window_(POINT &value) const{
 
 void cwin::ui::non_window_surface::offset_point_from_window_(POINT &value) const{
 	visible_surface::offset_point_from_window_(value);
-	if (client_handle_hook_ != nullptr){
+	if (client_handle_ != nullptr){
 		auto &client_handle_margin = get_client_margin_();
 		value.x -= client_handle_margin.left;
 		value.y -= client_handle_margin.top;
@@ -497,5 +387,5 @@ UINT cwin::ui::non_window_surface::non_client_hit_test_(const POINT &value) cons
 }
 
 const RECT &cwin::ui::non_window_surface::get_client_margin_() const{
-	return ((client_handle_hook_ == nullptr || !client_handle_hook_->is_big_border_()) ? thread_.get_client_margin() : thread_.get_big_client_margin());
+	return ((trigger_then_report_result_<events::interrupt::is_big_border_handle>(0u) == FALSE) ? thread_.get_client_margin() : thread_.get_big_client_margin());
 }

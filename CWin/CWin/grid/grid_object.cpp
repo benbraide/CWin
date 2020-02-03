@@ -50,10 +50,6 @@ bool cwin::grid::object::inserting_child_(ui::object &child){
 	return (dynamic_cast<row *>(&child) != nullptr && non_window_surface::inserting_child_(child));
 }
 
-bool cwin::grid::object::is_created_() const{
-	return (handle_hook_ == nullptr || non_window_surface::is_created_());
-}
-
 void cwin::grid::object::size_update_(const SIZE &old_value, const SIZE &current_value){
 	non_window_surface::size_update_(old_value, current_value);
 	refresh_();

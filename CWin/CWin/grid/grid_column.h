@@ -26,8 +26,6 @@ namespace cwin::grid{
 
 		virtual bool changing_parent_(tree *value) override;
 
-		virtual bool is_created_() const override;
-
 		virtual bool before_position_change_(const POINT &old_value, const POINT &current_value) const override;
 
 		virtual void refresh_();

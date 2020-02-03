@@ -80,7 +80,10 @@ void cwin::events::non_client_paint::do_default_(){
 
 	auto &size = non_window_context->get_current_size();
 	auto &client_margin = non_window_context->get_client_margin();
-	auto is_big_border = non_window_context->get_client_handle_hook().is_big_border();
+
+	events::interrupt::is_big_border_handle big_border_e(context_);
+	trigger_(big_border_e, 0u);
+	auto is_big_border = (big_border_e.get_result() != FALSE);
 
 	RECT area{ 0, 0, size.cx, client_margin.top };
 	DrawThemeBackground(theme, info_.hdc, (is_big_border ? WP_CAPTION : WP_SMALLCAPTION), CS_ACTIVE, &area, nullptr);

@@ -66,10 +66,6 @@ bool cwin::grid::row::inserting_child_(object &child){
 	return (dynamic_cast<column *>(&child) != nullptr && non_window_surface::inserting_child_(child));
 }
 
-bool cwin::grid::row::is_created_() const{
-	return (handle_hook_ == nullptr || non_window_surface::is_created_());
-}
-
 bool cwin::grid::row::before_position_change_(const POINT &old_value, const POINT &current_value) const{
 	return (is_updating_ && non_window_surface::before_position_change_(old_value, current_value));
 }
