@@ -34,7 +34,9 @@ cwin::ui::window_surface::window_surface(tree &parent, std::size_t index)
 	));
 }
 
-cwin::ui::window_surface::~window_surface() = default;
+cwin::ui::window_surface::~window_surface(){
+	force_destroy_();
+}
 
 HWND cwin::ui::window_surface::get_handle() const{
 	return execute_task([&]{

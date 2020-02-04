@@ -5,7 +5,9 @@
 #include "ui_window_surface.h"
 #include "ui_non_window_surface.h"
 
-cwin::ui::non_window_surface::~non_window_surface() = default;
+cwin::ui::non_window_surface::~non_window_surface(){
+	force_destroy_();
+}
 
 HRGN cwin::ui::non_window_surface::get_handle() const{
 	return execute_task([&]{
