@@ -171,12 +171,24 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 	case WM_NOTIFY:
 		notify_(target, lparam);
 		break;
+	case WM_ENABLE:
+		if (wparam == FALSE)
+			target.trigger_<events::disable>(nullptr, 0u);
+		else//Enabled
+			target.trigger_<events::enable>(nullptr, 0u);
+		break;
 	case WM_SETFOCUS:
 		mouse_info_.focused = &target;
+		if (target.trigger_then_report_prevented_default_<events::io::focus>(0u))
+			return 0;
 		break;
 	case WM_KILLFOCUS:
 		if (&target == mouse_info_.focused)
 			mouse_info_.focused = nullptr;
+
+		if (target.trigger_then_report_prevented_default_<events::io::blur>(0u))
+			return 0;
+
 		break;
 	case WM_SETCURSOR:
 		if (reinterpret_cast<HWND>(wparam) != target.handle_)

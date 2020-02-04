@@ -1,3 +1,5 @@
+#include "../events/general_events.h"
+
 #include "menu_object.h"
 
 cwin::menu::item::item(tree &parent)
@@ -175,7 +177,10 @@ void cwin::menu::item::set_states_(UINT value){
 	}
 
 	if (was_enabled != ((get_computed_states_() & MFS_DISABLED) == 0u)){//Enabled state changed
-
+		if (was_enabled)
+			trigger_<events::disable>(nullptr, 0u);
+		else//Enabled
+			trigger_<events::enable>(nullptr, 0u);
 	}
 }
 

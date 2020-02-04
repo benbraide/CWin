@@ -164,6 +164,20 @@ namespace cwin::events{
 		virtual ~after_window_destroy() = default;
 	};
 
+	class enable : public object{
+	public:
+		using object::object;
+
+		virtual ~enable() = default;
+	};
+
+	class disable : public object{
+	public:
+		using object::object;
+
+		virtual ~disable() = default;
+	};
+
 	template <class pair_type, bool, bool>
 	class pair_change : public disable_result<object>{
 	public:

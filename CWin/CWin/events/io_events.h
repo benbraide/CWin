@@ -7,6 +7,20 @@ namespace cwin::ui{
 }
 
 namespace cwin::events::io{
+	class focus : public object{
+	public:
+		using object::object;
+
+		virtual ~focus() = default;
+	};
+
+	class blur : public object{
+	public:
+		using object::object;
+
+		virtual ~blur() = default;
+	};
+
 	class mouse_cursor : public object{
 	public:
 		mouse_cursor(events::target &target, const POINT &position, UINT hit_target);
@@ -158,5 +172,12 @@ namespace cwin::events::io{
 		using mouse_button::mouse_button;
 
 		virtual ~mouse_dbl_click() = default;
+	};
+
+	class mouse_hover : public object{
+	public:
+		using object::object;
+
+		virtual ~mouse_hover() = default;
 	};
 }
