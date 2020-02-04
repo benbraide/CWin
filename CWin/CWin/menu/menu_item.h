@@ -38,6 +38,8 @@ namespace cwin::menu{
 	protected:
 		friend class tree;
 
+		item();
+
 		virtual bool changing_parent_(ui::tree *value) override;
 
 		virtual void create_() override;
@@ -56,16 +58,14 @@ namespace cwin::menu{
 
 		virtual UINT get_persistent_states_() const;
 
-		virtual void set_types_(UINT value);
+		virtual void update_types_();
 
-		virtual UINT get_computed_types_() const;
+		virtual UINT get_types_() const;
 
-		virtual void prepare_info_(MENUITEMINFOW &info) const;
+		virtual void prepare_info_(MENUITEMINFOW &info) const = 0;
 
 		HBITMAP bitmap_ = nullptr;
 		UINT active_index_ = static_cast<UINT>(-1);
-
 		UINT states_ = 0u;
-		UINT types_ = 0u;
 	};
 }

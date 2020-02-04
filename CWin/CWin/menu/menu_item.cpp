@@ -2,6 +2,8 @@
 
 #include "menu_object.h"
 
+cwin::menu::item::item() = default;
+
 cwin::menu::item::item(tree &parent)
 	: item(parent, static_cast<std::size_t>(-1)){}
 
@@ -73,13 +75,13 @@ void cwin::menu::item::get_computed_states(const std::function<void(UINT)> &call
 
 UINT cwin::menu::item::get_types() const{
 	return execute_task([&]{
-		return types_;
+		return get_types_();
 	});
 }
 
 void cwin::menu::item::get_types(const std::function<void(UINT)> &callback) const{
 	post_or_execute_task([=]{
-		callback(types_);
+		callback(get_types_());
 	});
 }
 
@@ -106,7 +108,7 @@ void cwin::menu::item::create_(){
 			MENUITEMINFOW info{
 				sizeof(MENUITEMINFOW),
 				(MIIM_FTYPE | MIIM_STATE | MIIM_DATA | MIIM_BITMAP),
-				get_computed_types_(),
+				get_types_(),
 				get_computed_states_(),
 				0u,										//Id
 				nullptr,								//Sub-menu
@@ -164,7 +166,7 @@ void cwin::menu::item::set_states_(UINT value){
 	auto was_enabled = ((get_computed_states_() & MFS_DISABLED) == 0u);
 
 	states_ = value;
-	if (auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr); object_ancestor != nullptr && object_ancestor->is_created()){
+	if (auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr); object_ancestor != nullptr && is_created_()){
 		MENUITEMINFOW info{
 			sizeof(MENUITEMINFOW),
 			MIIM_STATE,
@@ -198,13 +200,12 @@ UINT cwin::menu::item::get_persistent_states_() const{
 	return 0u;
 }
 
-void cwin::menu::item::set_types_(UINT value){
-	types_ = value;
-	if (auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr); object_ancestor != nullptr && object_ancestor->is_created()){
+void cwin::menu::item::update_types_(){
+	if (auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr); object_ancestor != nullptr && is_created_()){
 		MENUITEMINFOW info{
 			sizeof(MENUITEMINFOW),
 			MIIM_FTYPE,
-			get_computed_types_()
+			get_types_()
 		};
 
 		if (SetMenuItemInfoW(object_ancestor->get_handle(), active_index_, TRUE, &info) == FALSE)
@@ -212,10 +213,8 @@ void cwin::menu::item::set_types_(UINT value){
 	}
 }
 
-UINT cwin::menu::item::get_computed_types_() const{
+UINT cwin::menu::item::get_types_() const{
 	if (auto tree_parent = dynamic_cast<menu::tree *>(parent_); tree_parent != nullptr)
-		return (tree_parent->get_types_(tree_parent->find_child(*this)) | types_);
-	return types_;
+		return tree_parent->get_types_(tree_parent->find_child(*this));
+	return 0u;
 }
-
-void cwin::menu::item::prepare_info_(MENUITEMINFOW &info) const{}
