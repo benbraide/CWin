@@ -2,9 +2,7 @@
 
 #include "general_events.h"
 
-cwin::events::target::~target(){
-	thread_.remove_inbound_event_references_(*this);
-}
+cwin::events::target::~target() = default;
 
 bool cwin::events::target::event_is_supported(const std::type_info &type) const{
 	return thread_.get_queue().execute_task([&]{

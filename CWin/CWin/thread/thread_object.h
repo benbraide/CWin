@@ -26,7 +26,7 @@ namespace cwin::thread{
 		};
 
 		struct bound_event_info{
-			events::target *target;
+			unsigned __int64 target_talk_id;
 			events::manager::key_type key;
 			unsigned __int64 id;
 		};
@@ -142,11 +142,11 @@ namespace cwin::thread{
 
 		void remove_item_(item &item);
 
+		item *find_item_(unsigned __int64 talk_id) const;
+
 		void add_outbound_event_(unsigned __int64 talk_id, events::target &target, events::manager::key_type key, unsigned __int64 event_id);
 
-		void remove_inbound_event_references_(events::target &target);
-
-		void unbound_events_(unsigned __int64 id, events::target *target);
+		void unbound_events_(unsigned __int64 talk_id, unsigned __int64 target_talk_id);
 
 		void add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner);
 

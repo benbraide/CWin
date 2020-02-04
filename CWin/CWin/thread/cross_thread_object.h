@@ -33,7 +33,7 @@ namespace cwin::thread{
 	protected:
 		virtual queue &get_queue_() const;
 
-		virtual void unbound_events_(events::target *target);
+		virtual void unbound_events_(unsigned __int64 target_talk_id);
 
 		object &thread_;
 	};

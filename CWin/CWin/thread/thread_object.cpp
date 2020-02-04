@@ -339,37 +339,36 @@ void cwin::thread::object::remove_item_(item &item){
 	items_.erase(it);//Remove entry
 }
 
+cwin::thread::item *cwin::thread::object::find_item_(unsigned __int64 talk_id) const{
+	if (items_.empty())
+		return nullptr;
+
+	auto it = std::find_if(items_.begin(), items_.end(), [&](const item_info &item){
+		return (item.value->get_talk_id() == talk_id);
+	});
+
+	return ((it == items_.end()) ? nullptr : it->value);
+}
+
 void cwin::thread::object::add_outbound_event_(unsigned __int64 talk_id, events::target &target, events::manager::key_type key, unsigned __int64 event_id){
-	bound_events_[talk_id].push_back(bound_event_info{ &target, key, event_id });
+	bound_events_[talk_id].push_back(bound_event_info{ target.get_talk_id(), key, event_id });
 }
 
-void cwin::thread::object::remove_inbound_event_references_(events::target &target){
+void cwin::thread::object::unbound_events_(unsigned __int64 talk_id, unsigned __int64 target_talk_id){
 	if (bound_events_.empty())
 		return;
 
-	for (auto &bound : bound_events_){//Erase all inbound events references
-		for (auto it = bound.second.begin(); it != bound.second.end();){
-			if (it->target == &target)
-				bound.second.erase(it++);
-			else
-				++it;
-		}
-	}
-}
-
-void cwin::thread::object::unbound_events_(unsigned __int64 id, events::target *target){
-	if (bound_events_.empty())
-		return;
-
-	auto it = bound_events_.find(id);
+	auto it = bound_events_.find(talk_id);
 	if (it == bound_events_.end())
 		return;
 
 	for (auto &info : it->second){
-		if (target == nullptr || target == info.target){
-			info.target->get_events().unbind_(info.key, info.id);
-			if (target == info.target)
-				break;
+		if (target_talk_id == 0u || target_talk_id == info.target_talk_id){
+			if (auto target = find_item_(target_talk_id); target != nullptr){
+				target->get_events().unbind_(info.key, info.id);
+				if (target_talk_id == info.target_talk_id)
+					break;
+			}
 		}
 	}
 

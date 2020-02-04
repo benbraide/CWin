@@ -5,7 +5,7 @@ cwin::thread::cross_object::cross_object(object &thread)
 
 cwin::thread::cross_object::~cross_object(){
 	thread_.get_queue().add_to_blacklist(get_talk_id());
-	thread_.unbound_events_(get_talk_id(), nullptr);
+	thread_.unbound_events_(get_talk_id(), 0u);
 }
 
 unsigned __int64 cwin::thread::cross_object::get_talk_id() const{
@@ -32,6 +32,6 @@ cwin::thread::queue &cwin::thread::cross_object::get_queue_() const{
 	return thread_.get_queue();
 }
 
-void cwin::thread::cross_object::unbound_events_(events::target *target){
-	thread_.unbound_events_(get_talk_id(), target);
+void cwin::thread::cross_object::unbound_events_(unsigned __int64 target_talk_id){
+	thread_.unbound_events_(get_talk_id(), target_talk_id);
 }

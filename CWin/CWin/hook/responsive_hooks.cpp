@@ -22,7 +22,7 @@ void cwin::hook::parent_size::bind_size_event_(ui::tree *parent, ui::tree *previ
 		return;
 
 	if (previous_parent != nullptr)
-		unbound_events_(previous_parent);
+		unbound_events_(previous_parent->get_talk_id());
 
 	if (parent != nullptr){
 		parent->get_events().bind([this](events::after_size_update &e){
@@ -50,7 +50,7 @@ cwin::hook::children_dimension::children_dimension(ui::surface &target, const st
 	}, get_talk_id());
 
 	target_.get_events().bind([this](events::after_child_remove &e){
-		unbound_events_(&e.get_target());
+		unbound_events_(e.get_target().get_talk_id());
 		if (callback_ != nullptr)
 			callback_();
 	}, get_talk_id());
