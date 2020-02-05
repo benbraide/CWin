@@ -416,34 +416,41 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 	auto pos = GetMessagePos();
 	POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
 
-	if (auto hit_target = target.current_hit_test(position); hit_target != HTNOWHERE){
-		auto is_inside_offspring = false;
+	if (auto hit_target = target.current_hit_test_(position); hit_target != HTNOWHERE){
 		if (hit_target == HTCLIENT){//Check if mouse is inside a window offspring
+			auto is_inside_offspring = false;
 			target.traverse_matching_offspring_<window_surface>([&](window_surface &offspring){
-				if (target.current_hit_test(position) != HTNOWHERE){
+				if (target.current_hit_test_(position) != HTNOWHERE){
 					is_inside_offspring = true;
 					return false;
 				}
 
 				return true;
-			});
-		}
+				});
 
-		if (!is_inside_offspring){//Moved between client and non-client
-			TRACKMOUSEEVENT info{ sizeof(TRACKMOUSEEVENT), TME_LEAVE, target.handle_, 0 };
-			if (hit_target != HTCLIENT)
-				info.dwFlags |= TME_NONCLIENT;
-
-			TrackMouseEvent(&info);
+			if (!is_inside_offspring){//Moved between client and non-client
+				track_info_.dwFlags = TME_LEAVE;
+				track_info_.hwndTrack = target.handle_;
+				TrackMouseEvent(&track_info_);
+			}
 		}
+		else if ((track_info_.dwFlags & TME_NONCLIENT) == 0u){
+			track_info_.dwFlags = (TME_LEAVE | TME_NONCLIENT);
+			track_info_.hwndTrack = target.handle_;
+			TrackMouseEvent(&track_info_);
+		}
+		else
+			track_info_.dwFlags = 0u;
 	}
 	else{//Outside window
+		track_info_.dwFlags = 0u;
 		target.trigger_<events::interrupt::mouse_leave>(nullptr, 0u);
+
 		if (mouse_info_.target == &target)
 			mouse_info_.target = nullptr;
 
 		for (auto window_ancestor = target.get_matching_ancestor<window_surface>(); window_ancestor != nullptr; window_ancestor = window_ancestor->get_matching_ancestor<window_surface>()){
-			if (window_ancestor->current_hit_test(position) != HTNOWHERE)
+			if (window_ancestor->current_hit_test_(position) != HTNOWHERE)
 				break;
 			else//Outside ancestor
 				window_ancestor->trigger_<events::interrupt::mouse_leave>(nullptr, 0u);
@@ -456,11 +463,12 @@ void cwin::ui::window_surface_manager::mouse_move_(window_surface &target, UINT 
 		if (mouse_info_.target == nullptr || !mouse_info_.target->is_ancestor_(target))
 			target.trigger_<events::interrupt::mouse_enter>(nullptr, 0u);
 
-		TRACKMOUSEEVENT info{ sizeof(TRACKMOUSEEVENT), TME_LEAVE, target.handle_, 0 };
-		if (message == WM_NCMOUSEMOVE)
-			info.dwFlags |= TME_NONCLIENT;
-
-		TrackMouseEvent(&info);
+		mouse_info_.target = &target;
+		if (track_info_.dwFlags == 0u){
+			track_info_.dwFlags = ((message == WM_NCMOUSEMOVE) ? (TME_LEAVE | TME_NONCLIENT) : TME_LEAVE);
+			track_info_.hwndTrack = target.handle_;
+			TrackMouseEvent(&track_info_);
+		}
 	}
 
 	if (message == WM_MOUSEMOVE)

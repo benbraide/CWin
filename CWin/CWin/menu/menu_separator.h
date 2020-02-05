@@ -23,3 +23,10 @@ namespace cwin::menu{
 		virtual void prepare_info_(MENUITEMINFOW &info) const override;
 	};
 }
+
+namespace cwin::ui{
+	template <>
+	struct parent_type<menu::separator>{
+		using value = menu::tree;
+	};
+}

@@ -23,3 +23,10 @@ namespace cwin::menu{
 		std::wstring text_;
 	};
 }
+
+namespace cwin::ui{
+	template <>
+	struct parent_type<menu::action_item>{
+		using value = menu::tree;
+	};
+}

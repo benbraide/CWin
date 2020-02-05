@@ -94,6 +94,7 @@ namespace cwin::ui{
 
 		cache_info cache_{};
 		mouse_info mouse_info_{};
+		TRACKMOUSEEVENT track_info_{ sizeof(TRACKMOUSEEVENT) };
 
 		subhook_t begin_paint_detour_;
 		subhook_t end_paint_detour_;

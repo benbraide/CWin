@@ -12,6 +12,11 @@
 #include "grid/grid_object.h"
 #include "events/drawing_events.h"
 
+#include "menu/popup_menu.h"
+#include "menu/menu_action_item.h"
+#include "menu/menu_link_item.h"
+#include "menu/menu_separator.h"
+
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
 	cwin::window::top_level window;
@@ -22,6 +27,32 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	window.create();
 	window.show();
+
+	window.insert_object([](cwin::menu::popup &popup){
+		popup.insert_object([](cwin::menu::action_item &item){
+			item.set_text(L"First Action Item");
+		});
+
+		popup.insert_object([](cwin::menu::action_item &item){
+			item.set_text(L"Second Action Item");
+		});
+
+		popup.insert_object([](cwin::menu::separator &){});
+
+		popup.insert_object([](cwin::menu::action_item &item){
+			item.set_text(L"Third Action Item");
+		});
+
+		popup.insert_object([](cwin::menu::separator &){});
+
+		popup.insert_object([](cwin::menu::link_item &item){
+			item.set_text(L"First Link Item");
+
+			item.add([](cwin::menu::action_item &item){
+				item.set_text(L"First Action Sub Item");
+			});
+		});
+	});
 
 	window.insert_object([](cwin::grid::fill_object &grid){
 		grid.insert_hook<cwin::hook::io>();
