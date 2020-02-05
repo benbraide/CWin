@@ -1,3 +1,5 @@
+#include "../ui/ui_visible_surface.h"
+
 #include "interrupt_events.h"
 
 cwin::events::interrupt::draw_background::draw_background(target &context, ID2D1RenderTarget &render, const D2D1_RECT_F &area)
@@ -81,4 +83,21 @@ UINT cwin::events::interrupt::mouse_drag_non_client::get_hit_target() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
 	return hit_target_;
+}
+
+cwin::events::interrupt::top_moused_request::~top_moused_request() = default;
+
+cwin::ui::visible_surface *cwin::events::interrupt::top_moused_request::get_value() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return reinterpret_cast<ui::visible_surface *>(result_);
+}
+
+bool cwin::events::interrupt::top_moused_request::handle_set_result_(const void *value, const std::type_info &type){
+	if (type == typeid(ui::visible_surface *))
+		result_ = reinterpret_cast<LRESULT>(*static_cast<ui::visible_surface *const *>(value));
+	else
+		throw exception::bad_value();
+
+	return true;
 }

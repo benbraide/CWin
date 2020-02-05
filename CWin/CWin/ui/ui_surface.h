@@ -89,6 +89,14 @@ namespace cwin::ui{
 
 		virtual void compute_current_absolute_dimension(const std::function<void(const RECT &)> &callback) const;
 
+		virtual void compute_relative_to_absolute(POINT &value) const;
+
+		virtual void compute_relative_to_absolute(RECT &value) const;
+
+		virtual void compute_absolute_to_relative(POINT &value) const;
+
+		virtual void compute_absolute_to_relative(RECT &value) const;
+
 		virtual void offset_point_to_window(POINT &value) const;
 
 		virtual void offset_point_from_window(POINT &value) const;

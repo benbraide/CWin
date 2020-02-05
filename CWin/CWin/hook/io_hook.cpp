@@ -56,6 +56,19 @@ cwin::hook::io::io(ui::visible_surface &target)
 	target_.get_events().bind([=](events::interrupt::mouse_dbl_click &e){
 		mouse_dbl_click_(get_mouse_button(e.get_button()));
 	}, get_talk_id());
+
+	target_.get_events().bind([=](events::interrupt::top_moused_request &) -> ui::visible_surface *{
+		if (mouse_over_ == nullptr)
+			return nullptr;
+
+		events::interrupt::top_moused_request e(*mouse_over_);
+		trigger_(*mouse_over_, e, 0u);
+
+		if (auto value = e.get_value(); value != nullptr)
+			return value;
+
+		return mouse_over_;
+	}, get_talk_id());
 }
 
 cwin::hook::io::~io() = default;

@@ -2,6 +2,10 @@
 
 #include "event_manager.h"
 
+namespace cwin::menu{
+	class manager;
+}
+
 namespace cwin::events{
 	class managed_target : public target{
 	public:
@@ -15,6 +19,7 @@ namespace cwin::events{
 
 	protected:
 		friend class object;
+		friend class cwin::menu::manager;
 
 		template <typename handler_type>
 		unsigned __int64 bind_(events::target &target, const handler_type &handler){

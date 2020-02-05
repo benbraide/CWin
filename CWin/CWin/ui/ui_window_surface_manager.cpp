@@ -252,7 +252,7 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		break;
 	}
 	
-	return CallWindowProcW(thread_.get_class_entry(target.get_class_name_()), target.handle_, message, wparam, lparam);
+	return thread_.get_menu_manager().dispatch_(target, message, wparam, lparam, mouse_info_);
 }
 
 void cwin::ui::window_surface_manager::position_changed_(window_surface &target, WINDOWPOS &info){

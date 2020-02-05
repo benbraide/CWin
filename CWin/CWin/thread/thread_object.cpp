@@ -1,7 +1,7 @@
 #include "../app/app_object.h"
 
 cwin::thread::object::object()
-	: queue_(*this), window_manager_(*this), id_(GetCurrentThreadId()){
+	: queue_(*this), window_manager_(*this), menu_manager_(*this), id_(GetCurrentThreadId()){
 	handle_bound_.handle = CreateRectRgn(0, 0, 0, 0);
 	handle_bound_.rect_handle = handle_bound_.handle;
 
@@ -116,6 +116,14 @@ cwin::ui::window_surface_manager &cwin::thread::object::get_window_manager(){
 
 const cwin::ui::window_surface_manager &cwin::thread::object::get_window_manager() const{
 	return window_manager_;
+}
+
+cwin::menu::manager &cwin::thread::object::get_menu_manager(){
+	return menu_manager_;
+}
+
+const cwin::menu::manager &cwin::thread::object::get_menu_manager() const{
+	return menu_manager_;
 }
 
 DWORD cwin::thread::object::get_id() const{

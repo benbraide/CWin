@@ -1,3 +1,5 @@
+#include "../thread/thread_object.h"
+
 #include "menu_object.h"
 
 cwin::menu::object::~object(){
@@ -30,6 +32,7 @@ void cwin::menu::object::create_(){
 	};
 
 	SetMenuInfo(handle_, &info);
+	thread_.get_menu_manager().menus_[handle_] = this;
 }
 
 void cwin::menu::object::destroy_(){
@@ -38,6 +41,9 @@ void cwin::menu::object::destroy_(){
 
 	if (DestroyMenu(handle_) == FALSE)
 		throw ui::exception::action_failed();
+
+	if (auto &manager = thread_.get_menu_manager(); !manager.menus_.empty())
+		manager.menus_.erase(handle_);
 
 	handle_ = nullptr;
 }

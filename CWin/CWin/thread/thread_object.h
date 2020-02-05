@@ -6,7 +6,7 @@
 #include "../utility/random_number_generator.h"
 
 #include "../ui/ui_surface.h"
-#include "../ui/ui_window_surface_manager.h"
+#include "../menu/menu_manager.h"
 
 #include "thread_item.h"
 
@@ -45,6 +45,10 @@ namespace cwin::thread{
 		ui::window_surface_manager &get_window_manager();
 
 		const ui::window_surface_manager &get_window_manager() const;
+
+		menu::manager &get_menu_manager();
+
+		const menu::manager &get_menu_manager() const;
 
 		DWORD get_id() const;
 
@@ -180,6 +184,7 @@ namespace cwin::thread{
 
 		queue queue_;
 		ui::window_surface_manager window_manager_;
+		menu::manager menu_manager_;
 
 		DWORD id_;
 		mutable D2D1_POINT_2F dpi_scale_{};

@@ -2,6 +2,10 @@
 
 #include "event_object.h"
 
+namespace cwin::ui{
+	class visible_surface;
+}
+
 namespace cwin::events::interrupt{
 	template <class pair_type, bool is_init>
 	class pair_init_or_request : public object{
@@ -291,6 +295,18 @@ namespace cwin::events::interrupt{
 		using mouse_button::mouse_button;
 
 		virtual ~mouse_dbl_click() = default;
+	};
+
+	class top_moused_request : public object{
+	public:
+		using object::object;
+
+		virtual ~top_moused_request();
+
+		virtual ui::visible_surface *get_value() const;
+
+	protected:
+		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
 	};
 
 	template <bool is_client>

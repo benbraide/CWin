@@ -291,6 +291,30 @@ void cwin::ui::surface::compute_current_absolute_dimension(const std::function<v
 	});
 }
 
+void cwin::ui::surface::compute_relative_to_absolute(POINT &value) const{
+	execute_task([&]{
+		compute_relative_to_absolute_(value);
+	});
+}
+
+void cwin::ui::surface::compute_relative_to_absolute(RECT &value) const{
+	execute_task([&]{
+		compute_relative_to_absolute_(value);
+	});
+}
+
+void cwin::ui::surface::compute_absolute_to_relative(POINT &value) const{
+	execute_task([&]{
+		compute_absolute_to_relative_(value);
+	});
+}
+
+void cwin::ui::surface::compute_absolute_to_relative(RECT &value) const{
+	execute_task([&]{
+		compute_absolute_to_relative_(value);
+	});
+}
+
 void cwin::ui::surface::offset_point_to_window(POINT &value) const{
 	execute_task([&]{
 		offset_point_to_window_(value);
