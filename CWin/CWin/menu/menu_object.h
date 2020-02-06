@@ -20,6 +20,8 @@ namespace cwin::menu{
 
 		virtual bool is_created_() const override;
 
+		virtual void register_to_manager_(bool insert);
+
 		virtual HMENU create_handle_() const = 0;
 
 		HMENU handle_ = nullptr;

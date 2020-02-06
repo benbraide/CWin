@@ -20,6 +20,8 @@ namespace cwin::menu{
 	protected:
 		friend class menu::item;
 
+		virtual bool inserting_child_(object &child) override;
+
 		virtual UINT get_states_(std::size_t index) const;
 
 		virtual UINT get_types_(std::size_t index) const;

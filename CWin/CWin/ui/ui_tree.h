@@ -218,6 +218,8 @@ namespace cwin::ui{
 
 		virtual void after_create_() override;
 
+		virtual bool before_destroy_() override;
+
 		virtual void after_destroy_() override;
 
 		template <typename object_type, typename... args_types>

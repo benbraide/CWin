@@ -30,6 +30,12 @@ namespace cwin::menu{
 
 		void init_(ui::window_surface &target, HMENU handle, WORD index, bool is_system);
 
+		void uninit_(ui::window_surface &target, HMENU handle, bool is_system);
+
+		void select_(ui::window_surface &target, HMENU handle, std::size_t index);
+
+		bool system_command_(ui::window_surface &target, UINT code, const POINT &position);
+
 		thread::object &thread_;
 		std::unordered_map<HMENU, object *> menus_;
 

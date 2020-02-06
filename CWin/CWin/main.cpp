@@ -13,9 +13,14 @@
 #include "events/drawing_events.h"
 
 #include "menu/popup_menu.h"
-#include "menu/menu_action_item.h"
-#include "menu/menu_link_item.h"
+#include "menu/action_menu_item.h"
+#include "menu/link_menu_item.h"
 #include "menu/menu_separator.h"
+
+#include "menu/system_popup_menu.h"
+#include "menu/system_action_menu_item.h"
+#include "menu/system_link_menu_item.h"
+#include "menu/system_menu_separator.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
@@ -27,6 +32,24 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	window.create();
 	window.show();
+
+	window.insert_object([](cwin::menu::system_popup &popup){
+		popup.insert_object([](cwin::menu::system_separator &){});
+
+		popup.insert_object([](cwin::menu::system_action_item &item){
+			item.set_text(L"Custom System Item");
+		});
+
+		popup.insert_object([](cwin::menu::system_separator &){});
+
+		popup.insert_object([](cwin::menu::system_link_item &link){
+			link.set_text(L"Custom System Link Item");
+
+			link.add([](cwin::menu::system_action_item &item){
+				item.set_text(L"Custom System Action Sub Item");
+			});
+		});
+	});
 
 	window.insert_object([](cwin::menu::popup &popup){
 		popup.insert_object([](cwin::menu::action_item &item){
@@ -45,10 +68,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 		popup.insert_object([](cwin::menu::separator &){});
 
-		popup.insert_object([](cwin::menu::link_item &item){
-			item.set_text(L"First Link Item");
+		popup.insert_object([](cwin::menu::link_item &link){
+			link.set_text(L"First Link Item");
 
-			item.add([](cwin::menu::action_item &item){
+			link.add([](cwin::menu::action_item &item){
 				item.set_text(L"First Action Sub Item");
 			});
 		});

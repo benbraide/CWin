@@ -3,6 +3,8 @@
 #include "ui_tree.h"
 
 cwin::ui::tree::~tree(){
+	force_destroy_();
+
 	auto objects = std::move(objects_);
 	for (auto object : objects){
 		try{
@@ -78,7 +80,33 @@ void cwin::ui::tree::after_create_(){
 	auto_create_objects_.clear();
 }
 
+bool cwin::ui::tree::before_destroy_(){
+	if (!object::before_destroy_())
+		return false;
+
+	auto children = children_;
+	for (auto child : children){
+		try{
+			child->destroy();
+		}
+		catch (const exception::not_supported &){}
+		catch (const exception::action_canceled &){}
+		catch (const exception::action_failed &){}
+	}
+
+	return true;
+}
+
 void cwin::ui::tree::after_destroy_(){
+	auto objects = std::move(objects_);
+	for (auto object : objects){
+		try{
+			object.second = nullptr;//Delete
+		}
+		catch (const exception::not_supported &){}
+		catch (const exception::action_canceled &){}
+	}
+
 	auto children = children_;
 	for (auto child : children){
 		try{

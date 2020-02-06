@@ -44,6 +44,16 @@ LRESULT cwin::menu::manager::dispatch_(ui::window_surface &target, UINT message,
 	case WM_INITMENUPOPUP:
 		init_(target, reinterpret_cast<HMENU>(wparam), LOWORD(lparam), (HIWORD(lparam) != FALSE));
 		break;
+	case WM_UNINITMENUPOPUP:
+		uninit_(target, reinterpret_cast<HMENU>(wparam), (HIWORD(lparam) == MF_SYSMENU));
+		break;
+	case WM_MENUCOMMAND:
+		select_(target, reinterpret_cast<HMENU>(lparam), wparam);
+		break;
+	case WM_SYSCOMMAND:
+		if (system_command_(target, (static_cast<UINT>(wparam) & 0xFFF0u), POINT{ GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam) }))
+			return 0;
+		break;
 	default:
 		break;
 	}
@@ -127,4 +137,46 @@ void cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, WORD i
 			}
 		}
 	});
+}
+
+void cwin::menu::manager::uninit_(ui::window_surface &target, HMENU handle, bool is_system){
+	if (auto menu_target = find_(handle, true); menu_target != nullptr)
+		menu_target->trigger_<events::menu::uninit>(nullptr, 0u);
+}
+
+void cwin::menu::manager::select_(ui::window_surface &target, HMENU handle, std::size_t index){
+	auto menu_target = find_(handle, true);
+	if (menu_target == nullptr)
+		return;
+
+	item *target_item = nullptr;
+	menu_target->traverse_matching_offspring<item>([&](item &offspring){
+		if (target_item->get_active_index() != index)
+			return true;
+
+		target_item = &offspring;
+		return false;
+	});
+
+	if (target_item != nullptr)
+		target_item->trigger_<events::menu::select>(nullptr, 0u);
+}
+
+bool cwin::menu::manager::system_command_(ui::window_surface &target, UINT code, const POINT &position){
+	auto hit_target = target.current_hit_test(position);
+	switch (hit_target){
+	case HTSYSMENU:
+	case HTMINBUTTON:
+	case HTMAXBUTTON:
+	case HTCLOSE:
+		return false;
+	}
+
+	auto menu_target = find_(GetSystemMenu(target.get_handle(), FALSE), true);
+	if (menu_target == nullptr)
+		return false;
+
+
+
+	return true;
 }

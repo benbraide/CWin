@@ -42,6 +42,8 @@ namespace cwin::menu{
 
 		virtual bool changing_parent_(ui::tree *value) override;
 
+		virtual void changed_parent_(ui::tree *old_value) override;
+
 		virtual void create_() override;
 
 		virtual void destroy_() override;

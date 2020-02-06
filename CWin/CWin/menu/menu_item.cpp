@@ -89,6 +89,23 @@ bool cwin::menu::item::changing_parent_(ui::tree *value){
 	return ((value == nullptr || dynamic_cast<tree *>(value) != nullptr) && !is_created_());
 }
 
+void cwin::menu::item::changed_parent_(ui::tree *old_value){
+	try{
+		destroy_();
+	}
+	catch (const ui::exception::not_supported &){
+		if (old_value != nullptr){
+			old_value->traverse_matching_offspring<item>([&](item &offspring){
+				offspring.update_active_index_(active_index_, true);
+			});
+		}
+
+		active_index_ = static_cast<UINT>(-1);
+	}
+
+	object::changed_parent_(old_value);
+}
+
 void cwin::menu::item::create_(){
 	if (active_index_ != static_cast<UINT>(-1))
 		return;

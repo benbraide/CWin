@@ -1,17 +1,6 @@
 #include "menu_bar.h"
 #include "menu_separator.h"
 
-cwin::menu::separator::separator(tree &parent)
-	: separator(parent, static_cast<std::size_t>(-1)){}
-
-cwin::menu::separator::separator(tree &parent, std::size_t index){
-	index_ = index;
-	if (&parent.get_thread() == &thread_)
-		set_parent_(parent);
-	else//Error
-		throw thread::exception::context_mismatch();
-}
-
 cwin::menu::separator::~separator() = default;
 
 bool cwin::menu::separator::changing_parent_(ui::tree *value){

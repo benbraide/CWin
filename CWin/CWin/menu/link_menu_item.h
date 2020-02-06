@@ -21,7 +21,7 @@ namespace cwin::menu{
 				throw thread::exception::outside_context();
 
 			if (popup_ == nullptr)
-				popup_ = std::make_shared<popup>();
+				popup_ = create_popup_();
 
 			popup_->insert_object(callback, args...);
 		}
@@ -34,6 +34,8 @@ namespace cwin::menu{
 		virtual void prepare_info_(MENUITEMINFOW &info) const override;
 
 		virtual void set_text_(const std::wstring &value);
+
+		virtual std::shared_ptr<popup> create_popup_();
 
 		std::wstring text_;
 		std::shared_ptr<popup> popup_;

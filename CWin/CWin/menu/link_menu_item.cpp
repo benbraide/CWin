@@ -1,4 +1,4 @@
-#include "menu_link_item.h"
+#include "link_menu_item.h"
 
 cwin::menu::link_item::~link_item(){
 	force_destroy_();
@@ -24,7 +24,7 @@ void cwin::menu::link_item::get_text(const std::function<void(const std::wstring
 
 void cwin::menu::link_item::create_(){
 	if (popup_ == nullptr)
-		popup_ = std::make_shared<popup>();
+		popup_ = create_popup_();
 
 	popup_->create();
 	item::create_();
@@ -56,4 +56,8 @@ void cwin::menu::link_item::set_text_(const std::wstring &value){
 		if (SetMenuItemInfoW(object_ancestor->get_handle(), active_index_, TRUE, &info) == FALSE)
 			throw ui::exception::action_failed();
 	}
+}
+
+std::shared_ptr<cwin::menu::popup> cwin::menu::link_item::create_popup_(){
+	return std::make_shared<popup>(*this);
 }

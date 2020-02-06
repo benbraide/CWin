@@ -5,9 +5,7 @@
 namespace cwin::menu{
 	class separator : public item{
 	public:
-		explicit separator(tree &parent);
-
-		separator(tree &parent, std::size_t index);
+		using item::item;
 
 		virtual ~separator();
 

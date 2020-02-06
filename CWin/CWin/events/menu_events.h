@@ -72,4 +72,32 @@ namespace cwin::events::menu{
 	protected:
 		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
 	};
+
+	class uninit : public object{
+	public:
+		using object::object;
+
+		virtual ~uninit() = default;
+	};
+
+	class select : public object{
+	public:
+		using object::object;
+
+		virtual ~select() = default;
+	};
+
+	class check : public object{
+	public:
+		using object::object;
+
+		virtual ~check() = default;
+	};
+
+	class uncheck : public object{
+	public:
+		using object::object;
+
+		virtual ~uncheck() = default;
+	};
 }

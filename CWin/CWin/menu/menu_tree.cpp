@@ -26,6 +26,10 @@ void cwin::menu::tree::get_types(std::size_t index, const std::function<void(UIN
 	});
 }
 
+bool cwin::menu::tree::inserting_child_(object &child){
+	return (dynamic_cast<menu::item *>(&child) != nullptr || dynamic_cast<menu::tree *>(&child) != nullptr);
+}
+
 UINT cwin::menu::tree::get_states_(std::size_t index) const{
 	return 0u;
 }
