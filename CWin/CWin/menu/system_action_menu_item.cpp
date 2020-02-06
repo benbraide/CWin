@@ -1,3 +1,6 @@
+#include "../ui/ui_window_surface.h"
+#include "../events/menu_events.h"
+
 #include "system_popup_menu.h"
 #include "system_action_menu_item.h"
 
@@ -9,6 +12,15 @@ cwin::menu::default_system_action_item::default_system_action_item(system_popup 
 		throw thread::exception::context_mismatch();
 
 	active_index_ = index;
+	bind_default_([=](events::menu::select &){//Perform default action
+		auto system_parent = dynamic_cast<system_popup *>(parent_);
+		if (system_parent == nullptr)
+			return;
+
+		if (auto window_owner = dynamic_cast<ui::window_surface *>(system_parent->get_parent()); window_owner != nullptr)
+			SendMessageW(window_owner->get_handle(), WM_SYSCOMMAND, id_, 0);
+	});
+
 	MENUITEMINFOW info{
 		sizeof(MENUITEMINFOW),
 		(MIIM_ID | MIIM_STRING | MIIM_STATE | MIIM_BITMAP)

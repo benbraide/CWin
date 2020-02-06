@@ -5,6 +5,7 @@
 #include "../ui/ui_window_surface.h"
 
 #include "menu_separator.h"
+#include "system_popup_menu.h"
 #include "menu_manager.h"
 
 cwin::menu::manager::manager(thread::object &thread)
@@ -35,6 +36,11 @@ cwin::menu::object *cwin::menu::manager::find_(HMENU key, bool cache){
 	return it->second;
 }
 
+LRESULT cwin::menu::manager::call_default_(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
+	auto class_entry = thread_.get_class_entry(target.get_class_name());
+	return CallWindowProcW(((class_entry == nullptr) ? DefWindowProcW : class_entry), target.get_handle(), message, wparam, lparam);
+}
+
 LRESULT cwin::menu::manager::dispatch_(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam, ui::window_surface_manager::mouse_info &mouse_info){
 	switch (message){
 	case WM_CONTEXTMENU:
@@ -42,8 +48,7 @@ LRESULT cwin::menu::manager::dispatch_(ui::window_surface &target, UINT message,
 			return 0;
 		break;
 	case WM_INITMENUPOPUP:
-		init_(target, reinterpret_cast<HMENU>(wparam), LOWORD(lparam), (HIWORD(lparam) != FALSE));
-		break;
+		return init_(target, reinterpret_cast<HMENU>(wparam), lparam);
 	case WM_UNINITMENUPOPUP:
 		uninit_(target, reinterpret_cast<HMENU>(wparam), (HIWORD(lparam) == MF_SYSMENU));
 		break;
@@ -58,8 +63,7 @@ LRESULT cwin::menu::manager::dispatch_(ui::window_surface &target, UINT message,
 		break;
 	}
 
-	auto class_entry = thread_.get_class_entry(target.get_class_name());
-	return CallWindowProcW(((class_entry == nullptr) ? DefWindowProcW : class_entry), target.get_handle(), message, wparam, lparam);
+	return call_default_(target, message, wparam, lparam);
 }
 
 bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, ui::window_surface_manager::mouse_info &mouse_info){
@@ -116,27 +120,38 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 	return true;
 }
 
-void cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, WORD index, bool is_system){
+LRESULT cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, LPARAM lparam){
+	auto result = call_default_(target, WM_INITMENUPOPUP, reinterpret_cast<WPARAM>(handle), lparam);
 	auto menu_target = find_(handle, true);
-	if (menu_target == nullptr || menu_target->trigger_then_report_prevented_default_<events::menu::init>(0u))
-		return;
 
-	menu_target->traverse_matching_offspring<menu::item>([&](menu::item &offspring){
-		events::menu::init_item e(*menu_target, offspring);
-		menu_target->trigger_(e, 0u);
-		if (!e.prevented_default()){//Update state
-			switch (static_cast<events::menu::init_item::state_type>(e.get_result())){
-			case events::menu::init_item::state_type::disable:
-				offspring.add_states(MFS_DISABLED);
-				break;
-			case events::menu::init_item::state_type::enable:
-				offspring.remove_states(MFS_DISABLED);
-				break;
-			default:
-				break;
+	if (menu_target == nullptr)
+		return result;
+
+	if (!menu_target->trigger_then_report_prevented_default_<events::menu::init>(0u)){
+		menu_target->traverse_matching_offspring<menu::item>([&](menu::item &offspring){
+			events::menu::init_item e(*menu_target, offspring);
+			menu_target->trigger_(e, 0u);
+			if (!e.prevented_default()){//Update state
+				switch (static_cast<events::menu::init_item::state_type>(e.get_result())){
+				case events::menu::init_item::state_type::disable:
+					offspring.add_states(MFS_DISABLED);
+					break;
+				case events::menu::init_item::state_type::enable:
+					offspring.remove_states(MFS_DISABLED);
+					break;
+				default:
+					break;
+				}
 			}
-		}
-	});
+		});
+	}
+
+	if (auto popup_target = dynamic_cast<popup *>(menu_target); popup_target != nullptr){
+		if (auto top_popup = popup_target->get_top(); top_popup == nullptr || top_popup == popup_target)
+			active_context_ = top_popup;
+	}
+
+	return result;
 }
 
 void cwin::menu::manager::uninit_(ui::window_surface &target, HMENU handle, bool is_system){
@@ -160,23 +175,19 @@ void cwin::menu::manager::select_(ui::window_surface &target, HMENU handle, std:
 
 	if (target_item != nullptr)
 		target_item->trigger_<events::menu::select>(nullptr, 0u);
+
+	if (menu_target == active_context_)
+		active_context_ = nullptr;
 }
 
 bool cwin::menu::manager::system_command_(ui::window_surface &target, UINT code, const POINT &position){
-	auto hit_target = target.current_hit_test(position);
-	switch (hit_target){
-	case HTSYSMENU:
-	case HTMINBUTTON:
-	case HTMAXBUTTON:
-	case HTCLOSE:
-		return false;
-	}
-
-	auto menu_target = find_(GetSystemMenu(target.get_handle(), FALSE), true);
-	if (menu_target == nullptr)
+	auto menu_target = dynamic_cast<system_popup *>(find_(GetSystemMenu(target.get_handle(), FALSE), true));
+	if (menu_target == nullptr || menu_target != active_context_)
 		return false;
 
-
+	active_context_ = nullptr;
+	if (auto target_item = dynamic_cast<item *>(menu_target->find(code)); target_item != nullptr)
+		target_item->trigger_<events::menu::select>(nullptr, 0u);
 
 	return true;
 }

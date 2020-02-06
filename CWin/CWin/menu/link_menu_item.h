@@ -15,6 +15,10 @@ namespace cwin::menu{
 
 		virtual void get_text(const std::function<void(const std::wstring &)> &callback) const;
 
+		virtual popup *get_popup() const;
+
+		virtual void get_popup(const std::function<void(popup *)> &callback) const;
+
 		template <typename callback_type, typename... args_types>
 		void add(const callback_type &callback, args_types &&... args){
 			if (!is_thread_context())

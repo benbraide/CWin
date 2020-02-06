@@ -24,11 +24,13 @@ namespace cwin::menu{
 
 		object *find_(HMENU key, bool cache);
 
+		LRESULT call_default_(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);
+
 		LRESULT dispatch_(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam, ui::window_surface_manager::mouse_info &mouse_info);
 
 		bool context_(ui::window_surface &target, POINT position, ui::window_surface_manager::mouse_info &mouse_info);
 
-		void init_(ui::window_surface &target, HMENU handle, WORD index, bool is_system);
+		LRESULT init_(ui::window_surface &target, HMENU handle, LPARAM lparam);
 
 		void uninit_(ui::window_surface &target, HMENU handle, bool is_system);
 
@@ -39,7 +41,9 @@ namespace cwin::menu{
 		thread::object &thread_;
 		std::unordered_map<HMENU, object *> menus_;
 
+		object *active_context_ = nullptr;
 		std::shared_ptr<object> context_ref_;
+
 		cache_info cache_{};
 	};
 }

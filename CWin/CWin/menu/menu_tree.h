@@ -22,6 +22,10 @@ namespace cwin::menu{
 
 		virtual bool inserting_child_(object &child) override;
 
+		virtual bool traverse_offspring_(const std::function<bool(object &)> &callback) const override;
+
+		virtual bool reverse_traverse_offspring_(const std::function<bool(object &)> &callback) const override;
+
 		virtual UINT get_states_(std::size_t index) const;
 
 		virtual UINT get_types_(std::size_t index) const;

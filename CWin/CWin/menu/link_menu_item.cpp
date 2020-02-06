@@ -22,6 +22,18 @@ void cwin::menu::link_item::get_text(const std::function<void(const std::wstring
 	});
 }
 
+cwin::menu::popup *cwin::menu::link_item::get_popup() const{
+	return execute_task([&]{
+		return popup_.get();
+	});
+}
+
+void cwin::menu::link_item::get_popup(const std::function<void(popup *)> &callback) const{
+	post_or_execute_task([=]{
+		callback(popup_.get());
+	});
+}
+
 void cwin::menu::link_item::create_(){
 	if (popup_ == nullptr)
 		popup_ = create_popup_();
