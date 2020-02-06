@@ -66,6 +66,8 @@ namespace cwin::thread{
 
 		void add_to_blacklist(unsigned __int64 id);
 
+		bool is_blacklisted(unsigned __int64 id) const;
+
 		void post_task(const std::function<void()> &task) const;
 
 		void post_task(const std::function<void()> &task, unsigned __int64 id) const;

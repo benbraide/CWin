@@ -5,9 +5,15 @@
 #include "../utility/options.h"
 #include "../utility/windows.h"
 
-#include "event_target.h"
+#include "event_exception.h"
+
+namespace cwin::thread{
+	class object;
+}
 
 namespace cwin::events{
+	class target;
+
 	class object{
 	public:
 		enum class option_type{

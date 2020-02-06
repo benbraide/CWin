@@ -2,7 +2,18 @@
 
 #include "general_events.h"
 
+cwin::events::target::target(thread::object &thread)
+	: cross_object(thread), events_(*this){}
+
 cwin::events::target::~target() = default;
+
+cwin::events::manager &cwin::events::target::get_events(){
+	return events_;
+}
+
+const cwin::events::manager &cwin::events::target::get_events() const{
+	return events_;
+}
 
 bool cwin::events::target::event_is_supported(const std::type_info &type) const{
 	return thread_.get_queue().execute_task([&]{
@@ -14,13 +25,41 @@ bool cwin::events::target::event_is_supported_(const std::type_info &type) const
 	return true;
 }
 
-bool cwin::events::target::adding_event_handler_(const std::type_info &type, unsigned __int64 owner_talk_id, const void *value, const std::type_info &value_type, std::size_t count){
+void cwin::events::target::unbind_default_(unsigned __int64 id){
+	events_.unbind_default_(id);
+}
+
+void cwin::events::target::unbind_default_(manager::key_type key, unsigned __int64 id){
+	events_.unbind_default_(key, id);
+}
+
+bool cwin::events::target::default_exists_(unsigned __int64 id) const{
+	return events_.default_exists_(id);
+}
+
+bool cwin::events::target::default_exists_(manager::key_type key, unsigned __int64 id) const{
+	return events_.default_exists_(key, id);
+}
+
+void cwin::events::target::trigger_(object &e, unsigned __int64 id) const{
+	events_.trigger_(e, id);
+}
+
+void cwin::events::target::trigger_(const target &context, object &e, unsigned __int64 id) const{
+	context.trigger_(e, id);
+}
+
+void cwin::events::target::trigger_default_(object &e, unsigned __int64 id) const{
+	events_.trigger_default_(e, id);
+}
+
+bool cwin::events::target::adding_event_handler_(const std::type_info &type, unsigned __int64 talk_id, const void *value, const std::type_info &value_type, std::size_t count){
 	return event_is_supported_(type);
 }
 
-void cwin::events::target::added_event_handler_(const std::type_info &type, unsigned __int64 id, unsigned __int64 owner_talk_id, const void *value, const std::type_info &value_type, std::size_t count){
-	if (owner_talk_id != 0u)//Store outbound event
-		thread_.add_outbound_event_(owner_talk_id, *this, &type, id);
+void cwin::events::target::added_event_handler_(const std::type_info &type, unsigned __int64 id, unsigned __int64 talk_id, const void *value, const std::type_info &value_type, std::size_t count){
+	if (talk_id != 0u)//Store outbound event
+		thread_.add_outbound_event_(talk_id, *this, &type, id);
 
 	if (auto is_interval = (&type == &typeid(interval)); is_interval || &type == &typeid(timer))
 		added_timer_event_handler_(id, value, value_type, is_interval, false);

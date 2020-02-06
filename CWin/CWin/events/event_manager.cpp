@@ -11,10 +11,6 @@ cwin::events::target &cwin::events::manager::get_target() const{
 	return target_;
 }
 
-bool cwin::events::manager::is_thread_context() const{
-	return get_thread().is_context();
-}
-
 void cwin::events::manager::unbind(unsigned __int64 id){
 	get_queue_().execute_task([&]{
 		unbind_(id);
@@ -49,10 +45,6 @@ void cwin::events::manager::exists(key_type key, unsigned __int64 id, const std:
 	get_queue_().post_or_execute_task([=]{
 		callback(exists_(key, id));
 	}, get_talk_id(), thread::queue::highest_task_priority);
-}
-
-cwin::thread::queue &cwin::events::manager::get_queue_() const{
-	return target_.get_thread().get_queue();
 }
 
 void cwin::events::manager::unbind_(unsigned __int64 id){
@@ -214,8 +206,11 @@ void cwin::events::manager::trigger_(object &e, unsigned __int64 id) const{
 	std::size_t index = 0u;
 	std::list<std::size_t> unbind_list;
 
-	for (auto &handler_info : it->second.list){//Call listeners
-		if (id != 0u && handler_info.id != id)
+	auto &queue = thread_.get_queue();
+	auto list = it->second.list;
+
+	for (auto &handler_info : list){//Call listeners
+		if ((id != 0u && handler_info.id != id) || queue.is_blacklisted(handler_info.handler->get_talk_id()))
 			continue;
 
 		handler_info.handler->call(e);
@@ -247,8 +242,11 @@ void cwin::events::manager::trigger_default_(object &e, unsigned __int64 id) con
 	std::size_t index = 0u;
 	std::list<std::size_t> unbind_list;
 
-	for (auto &handler_info : it->second.default_list){//Do default
-		if (id != 0u && handler_info.id != id)
+	auto &queue = thread_.get_queue();
+	auto default_list = it->second.default_list;
+
+	for (auto &handler_info : default_list){//Do default
+		if ((id != 0u && handler_info.id != id) || queue.is_blacklisted(handler_info.handler->get_talk_id()))
 			continue;
 
 		handler_info.handler->call(e);
@@ -258,10 +256,30 @@ void cwin::events::manager::trigger_default_(object &e, unsigned __int64 id) con
 		}
 
 		++index;
-		if (e.options_.is_set(object::option_type::stopped_propagation))
+		if (id != 0u || e.options_.is_set(object::option_type::stopped_propagation))
 			break;//Propagation stopped
 	}
 
 	for (auto unbind_item = unbind_list.rbegin(); unbind_item != unbind_list.rend(); ++unbind_item)
 		it->second.default_list.erase(std::next(it->second.default_list.begin(), *unbind_item));
+}
+
+unsigned __int64 cwin::events::manager::get_talk_id_of_(events::target &target) const{
+	return target.get_talk_id();
+}
+
+bool cwin::events::manager::alert_target_(bool is_adding, key_type key, unsigned __int64 id, unsigned __int64 talk_id, const void *value, const std::type_info &value_type, std::size_t size) const{
+	if (is_adding)
+		return target_.adding_event_handler_(*key, talk_id, value, value_type, size);
+
+	target_.added_event_handler_(*key, id, talk_id, value, value_type, size);
+	return true;
+}
+
+bool cwin::events::manager::alert_target_default_(bool is_adding, key_type key, unsigned __int64 id, const void *value, const std::type_info &value_type, std::size_t size) const{
+	if (is_adding)
+		return target_.adding_default_event_handler_(*key, value, value_type, size);
+
+	target_.added_default_event_handler_(*key, id, value, value_type, size);
+	return true;
 }

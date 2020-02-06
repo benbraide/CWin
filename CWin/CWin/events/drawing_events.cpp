@@ -4,7 +4,6 @@
 #include "../hook/non_window_handle_hooks.h"
 #include "../thread/thread_object.h"
 
-#include "managed_event_target.h"
 #include "interrupt_events.h"
 #include "drawing_events.h"
 

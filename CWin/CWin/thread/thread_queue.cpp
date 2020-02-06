@@ -8,6 +8,11 @@ void cwin::thread::queue::add_to_blacklist(unsigned __int64 id){
 	black_list_[id] = '\0';
 }
 
+bool cwin::thread::queue::is_blacklisted(unsigned __int64 id) const{
+	std::lock_guard<std::mutex> guard(lock_);
+	return (black_list_.find(id) != black_list_.end());
+}
+
 void cwin::thread::queue::post_task(const std::function<void()> &task) const{
 	post_task(task, static_cast<unsigned __int64>(0), default_task_priority);
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../thread/thread_queue.h"
+#include "../thread/cross_thread_object.h"
 
 #include "event_object.h"
 
@@ -9,13 +9,25 @@ namespace cwin::hook{
 }
 
 namespace cwin::events{
+	class target;
+
 	class handler{
 	public:
+		explicit handler(unsigned __int64 talk_id)
+			: talk_id_(talk_id){}
+
 		virtual ~handler() = default;
+
+		virtual unsigned __int64 get_talk_id() const{
+			return talk_id_;
+		}
 
 		virtual void call(object &object) const = 0;
 
 		virtual const std::type_info &get_type_info() const = 0;
+
+	protected:
+		unsigned __int64 talk_id_;
 	};
 
 	template <class object_type, typename return_type>
@@ -23,8 +35,8 @@ namespace cwin::events{
 	public:
 		using callback_type = std::function<return_type(object_type)>;
 
-		explicit typed_handler(const callback_type &callback)
-			: callback_(callback){}
+		typed_handler(const callback_type &callback, unsigned __int64 talk_id)
+			: handler(talk_id), callback_(callback){}
 
 		virtual void call(object &object) const override{
 			call_<return_type>(object, std::bool_constant<std::is_void_v<return_type>>());
@@ -81,62 +93,60 @@ namespace cwin::events{
 
 		virtual events::target &get_target() const;
 
-		virtual bool is_thread_context() const;
-
 		template <typename handler_type>
-		unsigned __int64 bind(const handler_type &handler, unsigned __int64 owner_talk_id = 0u){
-			return get_queue_().execute_task([&]{
-				return bind_(utility::object_to_function_traits::get(handler), owner_talk_id, nullptr, typeid(nullptr));
-			}, get_talk_id(), thread::queue::highest_task_priority);
+		unsigned __int64 bind(const handler_type &handler, unsigned __int64 talk_id = 0u){
+			return execute_task([&]{
+				return bind_(utility::object_to_function_traits::get(handler), talk_id, nullptr, typeid(nullptr));
+			});
 		}
 
 		template <typename object_type, typename handler_type>
-		unsigned __int64 bind(const handler_type &handler, unsigned __int64 owner_talk_id = 0u){
-			return get_queue_().execute_task([&]{
-				return bind_<object_type>(utility::object_to_function_traits::get(handler), owner_talk_id, nullptr, typeid(nullptr));
-			}, get_talk_id(), thread::queue::highest_task_priority);
+		unsigned __int64 bind(const handler_type &handler, unsigned __int64 talk_id = 0u){
+			return execute_task([&]{
+				return bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id, nullptr, typeid(nullptr));
+			});
 		}
 		
 		template <typename value_type, typename handler_type>
-		unsigned __int64 bind(const handler_type &handler, const value_type &value, unsigned __int64 owner_talk_id = 0u){
-			return get_queue_().execute_task([&]{
-				return bind_(utility::object_to_function_traits::get(handler), owner_talk_id, &value, typeid(value));
-			}, get_talk_id(), thread::queue::highest_task_priority);
+		unsigned __int64 bind(const handler_type &handler, const value_type &value, unsigned __int64 talk_id = 0u){
+			return execute_task([&]{
+				return bind_(utility::object_to_function_traits::get(handler), talk_id, &value, typeid(value));
+			});
 		}
 
 		template <typename object_type, typename value_type, typename handler_type>
-		unsigned __int64 bind(const handler_type &handler, const value_type &value, unsigned __int64 owner_talk_id = 0u){
-			return get_queue_().execute_task([&]{
-				return bind_<object_type>(utility::object_to_function_traits::get(handler), owner_talk_id, &value, typeid(value));
-			}, get_talk_id(), thread::queue::highest_task_priority);
+		unsigned __int64 bind(const handler_type &handler, const value_type &value, unsigned __int64 talk_id = 0u){
+			return execute_task([&]{
+				return bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id, &value, typeid(value));
+			});
 		}
 
 		template <typename handler_type>
-		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, unsigned __int64 owner_talk_id = 0u){
-			get_queue_().post_or_execute_task([=]{
-				callback(bind_(utility::object_to_function_traits::get(handler), owner_talk_id, nullptr, typeid(nullptr)));
-			}, get_talk_id(), thread::queue::highest_task_priority);
+		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, unsigned __int64 talk_id = 0u){
+			post_or_execute_task([=]{
+				callback(bind_(utility::object_to_function_traits::get(handler), talk_id, nullptr, typeid(nullptr)));
+			});
 		}
 
 		template <typename object_type, typename handler_type>
-		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, unsigned __int64 owner_talk_id = 0u){
-			get_queue_().post_or_execute_task([=]{
-				callback(bind_<object_type>(utility::object_to_function_traits::get(handler), owner_talk_id, nullptr, typeid(nullptr)));
-			}, get_talk_id(), thread::queue::highest_task_priority);
+		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, unsigned __int64 talk_id = 0u){
+			post_or_execute_task([=]{
+				callback(bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id, nullptr, typeid(nullptr)));
+			});
 		}
 
 		template <typename value_type, typename handler_type>
-		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, const value_type &value, unsigned __int64 owner_talk_id = 0u){
-			get_queue_().post_or_execute_task([=]{
-				callback(bind_(utility::object_to_function_traits::get(handler), owner_talk_id, &value, typeid(value)));
-			}, get_talk_id(), thread::queue::highest_task_priority);
+		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, const value_type &value, unsigned __int64 talk_id = 0u){
+			post_or_execute_task([=]{
+				callback(bind_(utility::object_to_function_traits::get(handler), talk_id, &value, typeid(value)));
+			});
 		}
 
 		template <typename object_type, typename value_type, typename handler_type>
-		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, const value_type &value, unsigned __int64 owner_talk_id = 0u){
-			get_queue_().post_or_execute_task([=]{
-				callback(bind_<object_type>(utility::object_to_function_traits::get(handler), owner_talk_id, &value, typeid(value)));
-			}, get_talk_id(), thread::queue::highest_task_priority);
+		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, const value_type &value, unsigned __int64 talk_id = 0u){
+			post_or_execute_task([=]{
+				callback(bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id, &value, typeid(value)));
+			});
 		}
 
 		virtual void unbind(unsigned __int64 id);
@@ -161,16 +171,16 @@ namespace cwin::events{
 
 		template <typename object_type>
 		void exists(unsigned __int64 id, const std::function<void(bool)> &callback) const{
-			get_queue_().post_or_execute_task([=]{
+			post_or_execute_task([=]{
 				callback(exists_(get_key<object_type>(), id));
-			}, get_talk_id(), thread::queue::highest_task_priority);
+			});
 		}
 
 		virtual void exists(key_type key, unsigned __int64 id, const std::function<void(bool)> &callback) const;
 
 		template <typename object_type>
 		std::size_t get_bound_count() const{
-			return get_queue_().execute_task([&]{
+			return execute_task([&]{
 				if (count_ == 0u || handlers_.empty())
 					return static_cast<std::size_t>(0);
 
@@ -192,37 +202,35 @@ namespace cwin::events{
 		}
 
 	protected:
-		friend class target;
 		friend class object;
+		friend class target;
 
 		friend class hook::object;
 		friend class thread::object;
 
-		virtual thread::queue &get_queue_() const;
-		
 		template <typename object_type, typename return_type>
-		unsigned __int64 bind_(const std::function<return_type()> &handler, unsigned __int64 owner_talk_id, const void *value, const std::type_info &value_type){
+		unsigned __int64 bind_(const std::function<return_type()> &handler, unsigned __int64 talk_id, const void *value, const std::type_info &value_type){
 			return bind_<return_type, object_type>([handler](object_type &){
 				return handler();
-			}, owner_talk_id, value, value_type);
+			}, talk_id, value, value_type);
 		}
 
 		template <typename object_type, typename return_type>
-		unsigned __int64 bind_(const std::function<return_type(const object_type &)> &handler, unsigned __int64 owner_talk_id, const void *value, const std::type_info &value_type){
+		unsigned __int64 bind_(const std::function<return_type(const object_type &)> &handler, unsigned __int64 talk_id, const void *value, const std::type_info &value_type){
 			return bind_<return_type, object_type>([handler](object_type &e){
 				return handler(e);
-			}, owner_talk_id, value, value_type);
+			}, talk_id, value, value_type);
 		}
 
 		template <typename object_type, typename return_type>
-		unsigned __int64 bind_(const std::function<return_type(object_type &)> &handler, unsigned __int64 owner_talk_id, const void *value, const std::type_info &value_type){
+		unsigned __int64 bind_(const std::function<return_type(object_type &)> &handler, unsigned __int64 talk_id, const void *value, const std::type_info &value_type){
 			auto key = get_key<object_type>();
 			auto &handler_list = handlers_[key];
 
-			if (!target_.adding_event_handler_(*key, owner_talk_id, value, value_type, handler_list.list.size()))
+			if (!alert_target_(true, key, 0u, talk_id, value, value_type, handler_list.list.size()))
 				return 0u;//Rejected
 
-			auto handler_object = std::make_shared<events::typed_handler<object_type &, return_type>>(handler);
+			auto handler_object = std::make_shared<events::typed_handler<object_type &, return_type>>(handler, talk_id);
 			if (handler_object == nullptr)
 				return 0u;
 
@@ -236,7 +244,7 @@ namespace cwin::events{
 			});
 
 			++count_;
-			target_.added_event_handler_(*key, id, owner_talk_id, value, value_type, handler_list.list.size());
+			alert_target_(false, key, id, talk_id, value, value_type, handler_list.list.size());
 
 			return id;
 		}
@@ -246,10 +254,10 @@ namespace cwin::events{
 			auto key = get_key<object_type>();
 			auto &handler_list = handlers_[key];
 
-			if (!target_.adding_default_event_handler_(*key, value, value_type, handler_list.default_list.size()))
+			if (!alert_target_default_(true, key, 0u, value, value_type, handler_list.default_list.size()))
 				return 0u;//Rejected
 
-			auto handler_object = std::make_shared<events::typed_handler<object_type &, return_type>>(handler);
+			auto handler_object = std::make_shared<events::typed_handler<object_type &, return_type>>(handler, get_talk_id_of_(target_));
 			if (handler_object == nullptr)
 				return 0u;
 
@@ -259,7 +267,7 @@ namespace cwin::events{
 				handler_object
 			});
 
-			target_.added_default_event_handler_(*key, id, value, value_type, handler_list.default_list.size());
+			alert_target_default_(false, key, id, value, value_type, handler_list.default_list.size());
 			return id;
 		}
 
@@ -307,35 +315,14 @@ namespace cwin::events{
 
 		virtual void trigger_default_(object &e, unsigned __int64 id) const;
 
-		events::target &target_;
+		virtual unsigned __int64 get_talk_id_of_(events::target &target) const;
+
+		virtual bool alert_target_(bool is_adding, key_type key, unsigned __int64 id, unsigned __int64 talk_id, const void *value, const std::type_info &value_type, std::size_t size) const;
+
+		virtual bool alert_target_default_(bool is_adding, key_type key, unsigned __int64 id, const void *value, const std::type_info &value_type, std::size_t size) const;
+
+		target &target_;
 		std::size_t count_ = 0u;
 		mutable map_type handlers_;
-	};
-
-	template <class owner_type>
-	class owned_manager : public manager{
-	public:
-		virtual ~owned_manager() = default;
-
-	protected:
-		friend owner_type;
-
-		explicit owned_manager(owner_type &owner)
-			: manager(owner){}
-
-		using manager::get_queue_;
-		using manager::get_options_;
-
-		using manager::bind_;
-		using manager::bind_default_;
-
-		using manager::unbind_;
-		using manager::unbind_default_;
-
-		using manager::exists_;
-		using manager::default_exists_;
-
-		using manager::trigger_;
-		using manager::trigger_default_;
 	};
 }
