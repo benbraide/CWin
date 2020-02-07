@@ -14,13 +14,17 @@
 
 #include "menu/popup_menu.h"
 #include "menu/action_menu_item.h"
+#include "menu/check_menu_item.h"
 #include "menu/link_menu_item.h"
 #include "menu/menu_separator.h"
+#include "menu/radio_menu_group.h"
 
 #include "menu/system_popup_menu.h"
 #include "menu/system_action_menu_item.h"
+#include "menu/system_check_menu_item.h"
 #include "menu/system_link_menu_item.h"
 #include "menu/system_menu_separator.h"
+#include "menu/system_radio_menu_group.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
@@ -38,6 +42,22 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 		popup.insert_object([](cwin::menu::system_action_item &item){
 			item.set_text(L"Custom System Item");
+		});
+		
+		popup.insert_object([](cwin::menu::system_check_item &item){
+			item.set_text(L"Custom System Check Item");
+		});
+		
+		popup.insert_object([](cwin::menu::system_separator &){});
+		
+		popup.insert_object([](cwin::menu::system_radio_group &group){
+			group.insert_object([](cwin::menu::system_check_item &item){
+				item.set_text(L"First Custom System Radio Item");
+			});
+
+			group.insert_object([](cwin::menu::system_check_item &item){
+				item.set_text(L"Second Custom System Radio Item");
+			});
 		});
 
 		popup.insert_object([](cwin::menu::system_separator &){});
@@ -64,6 +84,26 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 		popup.insert_object([](cwin::menu::action_item &item){
 			item.set_text(L"Third Action Item");
+		});
+		
+		popup.insert_object([](cwin::menu::check_item &item){
+			item.set_text(L"First Check Item");
+		});
+
+		popup.insert_object([](cwin::menu::separator &){});
+		
+		popup.insert_object([](cwin::menu::radio_group &group){
+			group.insert_object([](cwin::menu::check_item &item){
+				item.set_text(L"First Radio Item");
+			});
+
+			group.insert_object([](cwin::menu::check_item &item){
+				item.set_text(L"Second Radio Item");
+			});
+
+			group.insert_object([](cwin::menu::check_item &item){
+				item.set_text(L"Third Radio Item");
+			});
 		});
 
 		popup.insert_object([](cwin::menu::separator &){});

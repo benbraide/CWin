@@ -166,7 +166,7 @@ void cwin::menu::manager::select_(ui::window_surface &target, HMENU handle, std:
 
 	item *target_item = nullptr;
 	menu_target->traverse_matching_offspring<item>([&](item &offspring){
-		if (target_item->get_active_index() != index)
+		if (offspring.get_active_index() != index)
 			return true;
 
 		target_item = &offspring;

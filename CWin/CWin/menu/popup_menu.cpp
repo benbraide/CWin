@@ -7,10 +7,15 @@
 cwin::menu::popup::popup() = default;
 
 cwin::menu::popup::popup(ui::visible_surface &owner)
+	: popup(owner, true){}
+
+cwin::menu::popup::popup(ui::visible_surface &owner, bool bind_context)
 	: object(owner, static_cast<std::size_t>(-1)){
-	owner.get_events().bind([=](events::menu::context &){
-		return this;
-	}, get_talk_id());
+	if (bind_context){
+		owner.get_events().bind([=](events::menu::context &){
+			return this;
+		}, get_talk_id());
+	}
 }
 
 cwin::menu::popup::popup(link_item &link)

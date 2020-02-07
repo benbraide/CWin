@@ -28,6 +28,8 @@ namespace cwin::menu{
 		virtual void get_top(const std::function<void(popup *)> &callback) const;
 
 	protected:
+		popup(ui::visible_surface &owner, bool bind_context);
+
 		virtual bool changing_parent_(ui::tree *value) override;
 
 		virtual HMENU create_handle_() const override;
