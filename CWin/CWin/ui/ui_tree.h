@@ -224,11 +224,7 @@ namespace cwin::ui{
 
 		template <typename object_type, typename... args_types>
 		void insert_object_(const std::function<bool(object_type &)> &callback, args_types &&... args){
-			auto compatible_self = dynamic_cast<typename parent_type<object_type>::value *>(this);
-			if (compatible_self == nullptr)
-				throw exception::not_supported();
-
-			auto value = std::make_shared<object_type>(*compatible_self, std::forward<args_types>(args)...);
+			auto value = create_object_<object_type>(std::bool_constant<std::is_same_v<typename parent_type<object_type>::value, undefined_parent_type>>(), args...);
 			if (value == nullptr)
 				throw exception::action_failed();
 
@@ -249,6 +245,20 @@ namespace cwin::ui{
 			}
 			else
 				auto_create_objects_.push_back(value.get());
+		}
+
+		template <typename object_type, typename... args_types>
+		std::shared_ptr<object_type> create_object_(std::false_type, args_types &&... args){
+			auto compatible_self = dynamic_cast<typename parent_type<object_type>::value *>(this);
+			if (compatible_self == nullptr)
+				throw exception::not_supported();
+
+			return std::make_shared<object_type>(*compatible_self, std::forward<args_types>(args)...);
+		}
+
+		template <typename object_type, typename... args_types>
+		std::shared_ptr<object_type> create_object_(std::true_type, args_types &&... args){
+			return create_object<object_type>::template get(*this, args...);
 		}
 
 		virtual void insert_child_(object &child);

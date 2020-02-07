@@ -412,8 +412,18 @@ namespace cwin::ui{
 		std::size_t index_ = static_cast<std::size_t>(-1);
 	};
 
+	struct undefined_parent_type;
+
 	template <class object_type>
 	struct parent_type{
-		using value = tree;
+		using value = undefined_parent_type;
+	};
+
+	template <class object_type>
+	struct create_object{
+		template <typename parent_type, typename... args_types>
+		static std::shared_ptr<object_type> get(parent_type &parent, args_types &&... args){
+			return std::make_shared<object_type>(parent, std::forward<args_types>(args)...);
+		}
 	};
 }
