@@ -26,6 +26,10 @@
 #include "menu/system_menu_separator.h"
 #include "menu/system_radio_menu_group.h"
 
+#include "menu/library_popup_menu.h"
+#include "menu/library_action_menu_item.h"
+#include "menu/library_menu_separator.h"
+
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
 	cwin::window::top_level window;
@@ -70,6 +74,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			});
 		});
 	});
+
+	/*window.insert_object([](cwin::menu::library_popup &popup){
+
+	}, L"ComCtl32.dll", L"EDITMENU");*/
 
 	window.insert_object([](cwin::menu::popup &popup){
 		popup.insert_object([](cwin::menu::action_item &item){
