@@ -30,6 +30,8 @@
 #include "menu/library_action_menu_item.h"
 #include "menu/library_menu_separator.h"
 
+#include "control/edit_control.h"
+
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
 	cwin::window::top_level window;
@@ -77,7 +79,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	/*window.insert_object([](cwin::menu::library_popup &popup){
 
-	}, L"ComCtl32.dll", L"EDITMENU");*/
+	}, L"ComCtl32.dll", 1u);*/
 
 	window.insert_object([](cwin::menu::popup &popup){
 		popup.insert_object([](cwin::menu::action_item &item){
@@ -125,7 +127,12 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 		});
 	});
 
-	window.insert_object([](cwin::grid::fill_object &grid){
+	window.insert_object([](cwin::control::edit &ctrl){
+		ctrl.set_size(SIZE{ 100, 50 });
+		ctrl.set_position(POINT{ 30, 30 });
+	});
+
+	/*window.insert_object([](cwin::grid::fill_object &grid){
 		grid.insert_hook<cwin::hook::io>();
 		grid.insert_hook<cwin::hook::caption>(L"Fill Grid Object @ 36%");
 		grid.insert_hook<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::big_border_client_handle>>();
@@ -147,7 +154,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				col.find_first_similar_hook<cwin::hook::color_background>()->set_color(D2D1::ColorF(D2D1::ColorF::Magenta));
 			}, 0.27f);
 		}, 0.36f);
-	});
+	});*/
 
 	/*cwin::non_window::rectangle *rnwp = nullptr;
 	window.insert_object([&rnwp](cwin::non_window::rectangle &rnw){

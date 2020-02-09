@@ -17,6 +17,8 @@ namespace cwin::ui{
 
 		virtual void get_handle(const std::function<void(HWND)> &callback) const;
 
+		virtual bool is_dialog_message(MSG &msg) const;
+
 		virtual void set_styles(DWORD value);
 
 		virtual void add_styles(DWORD value);

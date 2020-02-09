@@ -32,6 +32,18 @@ cwin::ui::window_surface_manager::window_surface_manager(thread::object &thread)
 }
 
 cwin::ui::window_surface_manager::~window_surface_manager(){
+	if (begin_paint_detour_ != nullptr){
+		subhook_remove(begin_paint_detour_);
+		delete begin_paint_detour_;
+		begin_paint_detour_ = nullptr;
+	}
+
+	if (end_paint_detour_ != nullptr){
+		subhook_remove(end_paint_detour_);
+		delete end_paint_detour_;
+		end_paint_detour_ = nullptr;
+	}
+
 	if (hook_handle_ != nullptr){
 		UnhookWindowsHookEx(hook_handle_);
 		hook_handle_ = nullptr;
@@ -251,7 +263,7 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 	default:
 		break;
 	}
-	
+
 	return thread_.get_menu_manager().dispatch_(target, message, wparam, lparam, mouse_info_);
 }
 

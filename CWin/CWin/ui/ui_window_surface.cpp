@@ -50,6 +50,12 @@ void cwin::ui::window_surface::get_handle(const std::function<void(HWND)> &callb
 	});
 }
 
+bool cwin::ui::window_surface::is_dialog_message(MSG &msg) const{
+	return execute_task([&]{
+		return is_dialog_message_(msg);
+	});
+}
+
 void cwin::ui::window_surface::set_styles(DWORD value){
 	post_or_execute_task([=]{
 		set_styles_(value);

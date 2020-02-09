@@ -1,5 +1,7 @@
 #pragma once
 
+#include <variant>
+
 #include "popup_menu.h"
 
 namespace cwin::menu{
@@ -8,6 +10,10 @@ namespace cwin::menu{
 		library_popup(const std::wstring &name, const std::wstring &menu_name);
 
 		library_popup(ui::visible_surface &owner, const std::wstring &name, const std::wstring &menu_name);
+
+		library_popup(const std::wstring &name, WORD menu_name);
+
+		library_popup(ui::visible_surface &owner, const std::wstring &name, WORD menu_name);
 
 		virtual ~library_popup();
 
@@ -19,7 +25,7 @@ namespace cwin::menu{
 		virtual HMENU create_handle_() const override;
 
 		std::wstring name_;
-		std::wstring menu_name_;
+		std::variant<std::wstring, WORD> menu_name_;
 		mutable HMENU menu_handle_ = nullptr;
 	};
 }

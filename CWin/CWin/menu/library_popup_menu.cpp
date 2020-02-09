@@ -9,6 +9,12 @@ cwin::menu::library_popup::library_popup(const std::wstring &name, const std::ws
 cwin::menu::library_popup::library_popup(ui::visible_surface &owner, const std::wstring &name, const std::wstring &menu_name)
 	: popup(owner), name_(name), menu_name_(menu_name){}
 
+cwin::menu::library_popup::library_popup(const std::wstring &name, WORD menu_name)
+	: name_(name), menu_name_(menu_name){}
+
+cwin::menu::library_popup::library_popup(ui::visible_surface &owner, const std::wstring &name, WORD menu_name)
+	: popup(owner), name_(name), menu_name_(menu_name){}
+
 cwin::menu::library_popup::~library_popup(){
 	force_destroy_();
 }
@@ -55,7 +61,8 @@ HMENU cwin::menu::library_popup::create_handle_() const{
 	if (library == nullptr)
 		return nullptr;
 
-	if ((menu_handle_ = LoadMenuW(library, menu_name_.data())) == nullptr){
+	auto menu_name = (std::holds_alternative<WORD>(menu_name_) ? MAKEINTRESOURCEW(std::get<WORD>(menu_name_)) : std::get<std::wstring>(menu_name_).data());
+	if ((menu_handle_ = LoadMenuW(library, menu_name)) == nullptr){//1 4 16 32 48 64 80 [user32.dll]
 		FreeLibrary(library);
 		return nullptr;
 	}
