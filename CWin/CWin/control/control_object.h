@@ -20,6 +20,16 @@ namespace cwin::control{
 
 		virtual const wchar_t *get_class_name_() const override;
 
+		virtual SIZE measure_themed_text_(const std::wstring &value, HFONT font, DWORD format_flags) const;
+
+		virtual SIZE measure_text_(const std::wstring &value, HFONT font, DWORD format_flags) const;
+
+		virtual const wchar_t *get_theme_name_() const = 0;
+
+		virtual int get_theme_part_id_() const = 0;
+
+		virtual int get_theme_state_id_() const = 0;
+
 		std::wstring class_name_;
 	};
 }

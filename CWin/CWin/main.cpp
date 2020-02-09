@@ -30,7 +30,8 @@
 #include "menu/library_action_menu_item.h"
 #include "menu/library_menu_separator.h"
 
-#include "control/edit_control.h"
+#include "control/push_button_control.h"
+#include "control/split_button_control.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
@@ -127,9 +128,39 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 		});
 	});
 
-	window.insert_object([](cwin::control::edit &ctrl){
-		ctrl.set_size(SIZE{ 100, 50 });
+	window.insert_object([](cwin::control::push_button &ctrl){
+		ctrl.set_text(L"Button");
 		ctrl.set_position(POINT{ 30, 30 });
+	});
+	
+	window.insert_object([](cwin::control::default_push_button &ctrl){
+		ctrl.set_text(L"Default Button");
+		ctrl.insert_hook<cwin::hook::relative_placement>(
+			cwin::hook::relative_placement::sibling_type::previous,				//Source
+			cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
+			cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
+			POINT{ 5, 0 }
+		);
+	});
+	
+	window.insert_object([](cwin::control::split_button &ctrl){
+		ctrl.set_text(L"Split Button");
+		ctrl.insert_hook<cwin::hook::relative_placement>(
+			cwin::hook::relative_placement::sibling_type::previous,				//Source
+			cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
+			cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
+			POINT{ 5, 0 }
+		);
+	});
+	
+	window.insert_object([](cwin::control::default_split_button &ctrl){
+		ctrl.set_text(L"Default Split Button");
+		ctrl.insert_hook<cwin::hook::relative_placement>(
+			cwin::hook::relative_placement::sibling_type::previous,				//Source
+			cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
+			cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
+			POINT{ 5, 0 }
+		);
 	});
 
 	/*window.insert_object([](cwin::grid::fill_object &grid){

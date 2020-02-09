@@ -92,11 +92,22 @@ namespace cwin::hook{
 			bottom_right,
 		};
 
+		enum class sibling_type{
+			previous,
+			next,
+		};
+
 		relative_placement(ui::surface &target, ui::surface &source);
 
 		relative_placement(ui::surface &target, ui::surface &source, alignment_type alignment, alignment_type source_alignment);
 
 		relative_placement(ui::surface &target, ui::surface &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset);
+
+		relative_placement(ui::surface &target, sibling_type source);
+
+		relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment);
+
+		relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment, const POINT &offset);
 
 		virtual ~relative_placement();
 
@@ -121,6 +132,8 @@ namespace cwin::hook{
 		virtual const POINT &get_offset() const;
 
 		virtual void get_offset(const std::function<void(const POINT &)> &callback) const;
+
+		static ui::surface &get_sibling(ui::surface &target, sibling_type type);
 
 	protected:
 		virtual void set_alignment_(alignment_type value);

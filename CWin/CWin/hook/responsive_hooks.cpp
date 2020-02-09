@@ -218,6 +218,15 @@ cwin::hook::relative_placement::relative_placement(ui::surface &target, ui::surf
 	update_();
 }
 
+cwin::hook::relative_placement::relative_placement(ui::surface &target, sibling_type source)
+	: relative_placement(target, source, alignment_type::top_left, alignment_type::top_right, POINT{}){}
+
+cwin::hook::relative_placement::relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment)
+	: relative_placement(target, source, alignment, source_alignment, POINT{}){}
+
+cwin::hook::relative_placement::relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment, const POINT &offset)
+	: relative_placement(target, get_sibling(target, source), alignment, source_alignment, offset){}
+
 cwin::hook::relative_placement::~relative_placement() = default;
 
 cwin::ui::surface &cwin::hook::relative_placement::get_source() const{
@@ -284,6 +293,13 @@ void cwin::hook::relative_placement::get_offset(const std::function<void(const P
 	post_or_execute_task([=]{
 		callback(offset_);
 	});
+}
+
+cwin::ui::surface &cwin::hook::relative_placement::get_sibling(ui::surface &target, sibling_type type){
+	auto sibling = dynamic_cast<ui::surface *>((type == sibling_type::previous) ? target.get_previous_sibling() : target.get_next_sibling());
+	if (sibling == nullptr)
+		throw ui::exception::not_supported();
+	return *sibling;
 }
 
 void cwin::hook::relative_placement::set_alignment_(alignment_type value){
