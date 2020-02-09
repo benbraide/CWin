@@ -136,11 +136,11 @@ void cwin::ui::object::create(){
 			return true;
 		});
 
-		if (!before_create_() || trigger_then_report_prevented_default_<events::before_create>(0u))
+		if (!before_create_() || events_.trigger_then_report_prevented_default<events::before_create>(0u))
 			throw exception::action_canceled();
 
 		create_();
-		trigger_<events::after_create>(nullptr, 0u);
+		events_.trigger<events::after_create>(nullptr, 0u);
 		after_create_();
 	});
 }
@@ -150,11 +150,11 @@ void cwin::ui::object::destroy(){
 		if (!is_created_())
 			return;
 
-		if (!before_destroy_() || trigger_then_report_prevented_default_<events::before_destroy>(0u))
+		if (!before_destroy_() || events_.trigger_then_report_prevented_default<events::before_destroy>(0u))
 			throw exception::action_canceled();
 
 		destroy_();
-		trigger_<events::after_destroy>(nullptr, 0u);
+		events_.trigger<events::after_destroy>(nullptr, 0u);
 
 		if (should_call_after_destroy_())
 			after_destroy_();
@@ -183,11 +183,11 @@ void cwin::ui::object::remove_parent_(){
 }
 
 bool cwin::ui::object::changing_parent_(tree *value){
-	return !trigger_then_report_prevented_default_<events::before_parent_change>(0u, value);
+	return !events_.trigger_then_report_prevented_default<events::before_parent_change>(0u, value);
 }
 
 void cwin::ui::object::changed_parent_(tree *old_value){
-	trigger_<events::after_parent_change>(nullptr, 0u, old_value);
+	events_.trigger<events::after_parent_change>(nullptr, 0u, old_value);
 }
 
 cwin::ui::tree *cwin::ui::object::get_parent_() const{
@@ -254,11 +254,11 @@ void cwin::ui::object::set_index_(std::size_t value){
 }
 
 bool cwin::ui::object::changing_index_(std::size_t value){
-	return !trigger_then_report_prevented_default_<events::before_index_change>(0u, value);
+	return !events_.trigger_then_report_prevented_default<events::before_index_change>(0u, value);
 }
 
 void cwin::ui::object::changed_index_(std::size_t old_value){
-	trigger_<events::after_index_change>(nullptr, 0u, old_value);
+	events_.trigger<events::after_index_change>(nullptr, 0u, old_value);
 }
 
 std::size_t cwin::ui::object::get_index_() const{

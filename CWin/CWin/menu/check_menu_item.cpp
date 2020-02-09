@@ -145,7 +145,7 @@ void cwin::menu::check_item::check_(){
 	is_checked_ = true;
 	set_states_(states_);
 
-	trigger_<events::menu::check>(nullptr, 0u);
+	events_.trigger<events::menu::check>(nullptr, 0u);
 	if (is_radio_()){//Remove checks from siblings
 		traverse_matching_siblings_<check_item>([](check_item &offspring, bool){
 			offspring.uncheck_(true);
@@ -160,7 +160,7 @@ void cwin::menu::check_item::uncheck_(bool sibbling_checked){
 
 	is_checked_ = false;
 	set_states_(states_);
-	trigger_<events::menu::uncheck>(nullptr, 0u);
+	events_.trigger<events::menu::uncheck>(nullptr, 0u);
 }
 
 void cwin::menu::check_item::toggle_check_(){

@@ -110,7 +110,7 @@ void cwin::control::with_text::update_size_(){
 
 void cwin::control::with_text::update_size_(bool enable_interrupt){
 	update_size_(enable_interrupt, [=](const SIZE &old_value, const SIZE &current_value){
-		trigger_<events::after_size_update>(nullptr, 0u, old_value, current_value);
+		events_.trigger<events::after_size_update>(nullptr, 0u, old_value, current_value);
 		size_update_(old_value, current_value);
 	});
 }

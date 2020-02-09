@@ -23,6 +23,12 @@ void cwin::events::manager::unbind(key_type key, unsigned __int64 id){
 	}, get_talk_id(), thread::queue::highest_task_priority);
 }
 
+void cwin::events::manager::trigger(object &e, unsigned __int64 id) const{
+	get_queue_().execute_task([&]{
+		trigger_(e, id);
+	}, get_talk_id(), thread::queue::highest_task_priority);
+}
+
 bool cwin::events::manager::exists(unsigned __int64 id) const{
 	return get_queue_().execute_task([=]{
 		return exists_(id);

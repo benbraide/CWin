@@ -41,14 +41,6 @@ bool cwin::events::target::default_exists_(manager::key_type key, unsigned __int
 	return events_.default_exists_(key, id);
 }
 
-void cwin::events::target::trigger_(object &e, unsigned __int64 id) const{
-	events_.trigger_(e, id);
-}
-
-void cwin::events::target::trigger_(const target &context, object &e, unsigned __int64 id) const{
-	context.trigger_(e, id);
-}
-
 void cwin::events::target::trigger_default_(object &e, unsigned __int64 id) const{
 	events_.trigger_default_(e, id);
 }

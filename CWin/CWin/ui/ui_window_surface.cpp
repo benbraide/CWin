@@ -197,7 +197,7 @@ bool cwin::ui::window_surface::should_call_after_destroy_() const{
 
 void cwin::ui::window_surface::after_destroy_(){
 	visible_surface::after_destroy_();
-	trigger_<events::after_window_destroy>(nullptr, 0u);
+	events_.trigger<events::after_window_destroy>(nullptr, 0u);
 }
 
 void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &current_value){

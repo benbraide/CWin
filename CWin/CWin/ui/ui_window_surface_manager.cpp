@@ -185,20 +185,20 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		break;
 	case WM_ENABLE:
 		if (wparam == FALSE)
-			target.trigger_<events::disable>(nullptr, 0u);
+			target.get_events().trigger<events::disable>(nullptr, 0u);
 		else//Enabled
-			target.trigger_<events::enable>(nullptr, 0u);
+			target.get_events().trigger<events::enable>(nullptr, 0u);
 		break;
 	case WM_SETFOCUS:
 		mouse_info_.focused = &target;
-		if (target.trigger_then_report_prevented_default_<events::io::focus>(0u))
+		if (target.get_events().trigger_then_report_prevented_default<events::io::focus>(0u))
 			return 0;
 		break;
 	case WM_KILLFOCUS:
 		if (&target == mouse_info_.focused)
 			mouse_info_.focused = nullptr;
 
-		if (target.trigger_then_report_prevented_default_<events::io::blur>(0u))
+		if (target.get_events().trigger_then_report_prevented_default<events::io::blur>(0u))
 			return 0;
 
 		break;
@@ -206,7 +206,7 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		if (reinterpret_cast<HWND>(wparam) != target.handle_)
 			return FALSE;
 
-		if (target.trigger_then_report_prevented_default_<events::interrupt::mouse_cursor>(0u, static_cast<UINT>(LOWORD(lparam))))
+		if (target.get_events().trigger_then_report_prevented_default<events::interrupt::mouse_cursor>(0u, static_cast<UINT>(LOWORD(lparam))))
 			return 0;
 
 		break;
@@ -330,9 +330,15 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		render->SetTransform(D2D1::IdentityMatrix());
 		render->BindDC(paint_info_.hdc, &paint_info_.rcPaint);
 
-		target.trigger_<events::erase_background>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
-		RestoreDC(paint_info_.hdc, -1);
+		target.get_events().trigger<events::erase_background>(
+			nullptr,
+			0u,
+			MSG{ window_target->handle_, message, wparam, lparam },
+			thread_.get_class_entry(window_target->get_class_name_()),
+			paint_info_
+		);
 
+		RestoreDC(paint_info_.hdc, -1);
 		return;
 	}
 
@@ -375,7 +381,7 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 			render->SetTransform(D2D1::IdentityMatrix());
 			render->BindDC(paint_info_.hdc, &paint_info.rcPaint);
 			
-			target.trigger_<events::non_client_paint>(nullptr, 0u, paint_info);
+			target.get_events().trigger<events::non_client_paint>(nullptr, 0u, paint_info);
 			RestoreDC(paint_info_.hdc, -1);
 		}
 
@@ -395,15 +401,15 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		render->SetTransform(D2D1::IdentityMatrix());
 		render->BindDC(paint_info_.hdc, &paint_info.rcPaint);
 
-		target.trigger_<events::erase_background>(nullptr, 0u, paint_info);
-		target.trigger_<events::paint>(nullptr, 0u, paint_info);
+		target.get_events().trigger<events::erase_background>(nullptr, 0u, paint_info);
+		target.get_events().trigger<events::paint>(nullptr, 0u, paint_info);
 
 		RestoreDC(paint_info_.hdc, -1);
 	}
 	else if (auto window_target = dynamic_cast<window_surface *>(&target); window_target != nullptr){
 		render->SetTransform(D2D1::IdentityMatrix());
 		render->BindDC(paint_info_.hdc, &paint_info_.rcPaint);
-		target.trigger_<events::paint>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
+		target.get_events().trigger<events::paint>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
 	}
 }
 
@@ -456,7 +462,7 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 	}
 	else{//Outside window
 		track_info_.dwFlags = 0u;
-		target.trigger_<events::interrupt::mouse_leave>(nullptr, 0u);
+		target.get_events().trigger<events::interrupt::mouse_leave>(nullptr, 0u);
 
 		if (mouse_info_.target == &target)
 			mouse_info_.target = nullptr;
@@ -465,7 +471,7 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 			if (window_ancestor->current_hit_test_(position) != HTNOWHERE)
 				break;
 			else//Outside ancestor
-				window_ancestor->trigger_<events::interrupt::mouse_leave>(nullptr, 0u);
+				window_ancestor->get_events().trigger<events::interrupt::mouse_leave>(nullptr, 0u);
 		}
 	}
 }
@@ -473,7 +479,7 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 void cwin::ui::window_surface_manager::mouse_move_(window_surface &target, UINT message){
 	if (mouse_info_.target != &target){//Mouse entry
 		if (mouse_info_.target == nullptr || !mouse_info_.target->is_ancestor_(target))
-			target.trigger_<events::interrupt::mouse_enter>(nullptr, 0u);
+			target.get_events().trigger<events::interrupt::mouse_enter>(nullptr, 0u);
 
 		mouse_info_.target = &target;
 		if (track_info_.dwFlags == 0u){
@@ -484,7 +490,7 @@ void cwin::ui::window_surface_manager::mouse_move_(window_surface &target, UINT 
 	}
 
 	if (message == WM_MOUSEMOVE)
-		target.trigger_<events::interrupt::mouse_move>(nullptr, 0u);
+		target.get_events().trigger<events::interrupt::mouse_move>(nullptr, 0u);
 
 	auto pos = GetMessagePos();
 	mouse_info_.last_position.x = GET_X_LPARAM(pos);
@@ -497,19 +503,19 @@ void cwin::ui::window_surface_manager::mouse_down_(window_surface &target, mouse
 	mouse_info_.pressed_position.y = GET_Y_LPARAM(pos);
 
 	mouse_info_.focused = &target;
-	target.trigger_<events::interrupt::mouse_down>(nullptr, 0u, button);
+	target.get_events().trigger<events::interrupt::mouse_down>(nullptr, 0u, button);
 }
 
 void cwin::ui::window_surface_manager::mouse_up_(window_surface &target, mouse_button_type button){
-	target.trigger_<events::interrupt::mouse_up>(nullptr, 0u, button);
+	target.get_events().trigger<events::interrupt::mouse_up>(nullptr, 0u, button);
 }
 
 void cwin::ui::window_surface_manager::mouse_dbl_click_(window_surface &target, mouse_button_type button){
-	target.trigger_<events::interrupt::mouse_dbl_click>(nullptr, 0u, button);
+	target.get_events().trigger<events::interrupt::mouse_dbl_click>(nullptr, 0u, button);
 }
 
 void cwin::ui::window_surface_manager::mouse_wheel_(window_surface &target, const SIZE &delta){
-	target.trigger_<events::interrupt::mouse_wheel>(nullptr, 0u, delta);
+	target.get_events().trigger<events::interrupt::mouse_wheel>(nullptr, 0u, delta);
 }
 
 LRESULT CALLBACK cwin::ui::window_surface_manager::entry_(HWND handle, UINT message, WPARAM wparam, LPARAM lparam){

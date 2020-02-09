@@ -19,8 +19,8 @@ cwin::menu::library_popup::~library_popup(){
 	force_destroy_();
 }
 
-void cwin::menu::library_popup::create_(){
-	popup::create_();
+void cwin::menu::library_popup::after_create_(){
+	popup::after_create_();
 
 	UINT count = GetMenuItemCount(handle_);
 	if (count == 0u)//Empty list

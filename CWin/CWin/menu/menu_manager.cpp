@@ -72,7 +72,7 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 
 	ui::visible_surface *top_moused = nullptr;
 	if (position.x != -1 || position.y != -1){
-		top_moused = reinterpret_cast<ui::visible_surface *>(target.trigger_then_report_result_<events::interrupt::top_moused_request>(0u));
+		top_moused = reinterpret_cast<ui::visible_surface *>(target.get_events().trigger_then_report_result<events::interrupt::top_moused_request>(0u));
 		if (top_moused == nullptr)//Use target
 			top_moused = &target;
 	}
@@ -84,7 +84,7 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 
 	for (; moused != nullptr; moused = moused->get_matching_ancestor<ui::visible_surface>()){
 		events::menu::context e(*moused, *top_moused);
-		moused->trigger_(e, 0u);
+		moused->get_events().trigger(e, 0u);
 
 		if (e.prevented_default()){//Skip
 			if (e.stopped_propagation())
@@ -109,7 +109,7 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 		return true;
 
 	if (position.x == -1 && position.y == -1){//Request default position
-		auto position_value = moused->trigger_then_report_result_<events::menu::get_context_position>(0u, *top_moused);
+		auto position_value = moused->get_events().trigger_then_report_result<events::menu::get_context_position>(0u, *top_moused);
 		position = POINT{ GET_X_LPARAM(position_value), GET_Y_LPARAM(position_value) };
 	}
 
@@ -127,10 +127,10 @@ LRESULT cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, LPA
 	if (menu_target == nullptr)
 		return result;
 
-	if (!menu_target->trigger_then_report_prevented_default_<events::menu::init>(0u)){
+	if (!menu_target->get_events().trigger_then_report_prevented_default<events::menu::init>(0u)){
 		menu_target->traverse_matching_offspring<menu::item>([&](menu::item &offspring){
 			events::menu::init_item e(*menu_target, offspring);
-			menu_target->trigger_(e, 0u);
+			menu_target->get_events().trigger(e, 0u);
 			if (!e.prevented_default()){//Update state
 				switch (static_cast<events::menu::init_item::state_type>(e.get_result())){
 				case events::menu::init_item::state_type::disable:
@@ -156,7 +156,7 @@ LRESULT cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, LPA
 
 void cwin::menu::manager::uninit_(ui::window_surface &target, HMENU handle, bool is_system){
 	if (auto menu_target = find_(handle, true); menu_target != nullptr)
-		menu_target->trigger_<events::menu::uninit>(nullptr, 0u);
+		menu_target->get_events().trigger<events::menu::uninit>(nullptr, 0u);
 }
 
 void cwin::menu::manager::select_(ui::window_surface &target, HMENU handle, std::size_t index){
@@ -174,7 +174,7 @@ void cwin::menu::manager::select_(ui::window_surface &target, HMENU handle, std:
 	});
 
 	if (target_item != nullptr)
-		target_item->trigger_<events::menu::select>(nullptr, 0u);
+		target_item->get_events().trigger<events::menu::select>(nullptr, 0u);
 
 	if (menu_target == active_context_)
 		active_context_ = nullptr;
@@ -187,7 +187,7 @@ bool cwin::menu::manager::system_command_(ui::window_surface &target, UINT code,
 
 	active_context_ = nullptr;
 	if (auto target_item = dynamic_cast<item *>(menu_target->find(code)); target_item != nullptr)
-		target_item->trigger_<events::menu::select>(nullptr, 0u);
+		target_item->get_events().trigger<events::menu::select>(nullptr, 0u);
 
 	return true;
 }

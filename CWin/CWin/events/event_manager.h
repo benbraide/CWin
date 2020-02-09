@@ -158,6 +158,84 @@ namespace cwin::events{
 
 		virtual void unbind(key_type key, unsigned __int64 id);
 
+		virtual void trigger(object &e, unsigned __int64 id) const;
+
+		template <typename object_type, typename... args_types>
+		void trigger(const std::function<void(utility::small_options &, LRESULT)> &callback, unsigned __int64 id, args_types &&... args) const{
+			object_type e(target_, std::forward<args_types>(args)...);
+			trigger(e, id);
+
+			if (callback != nullptr){
+				utility::small_options options;
+				if (e.prevented_default())
+					options.set(object::option_type::prevented_default);
+
+				if (e.stopped_propagation())
+					options.set(object::option_type::stopped_propagation);
+
+				if (e.done_default())
+					options.set(object::option_type::done_default);
+
+				callback(options, e.get_result());
+			}
+		}
+
+		template <typename object_type, typename... args_types>
+		void trigger(const std::function<void(LRESULT)> &callback, unsigned __int64 id, args_types &&... args) const{
+			trigger<object_type>([&](utility::small_options &, LRESULT result){
+				callback(result);
+			}, id, std::forward<args_types>(args)...);
+		}
+		
+		template <typename object_type, typename... args_types>
+		void trigger(const std::function<void(bool)> &callback, unsigned __int64 id, args_types &&... args) const{
+			trigger<object_type>([&](utility::small_options &opts, LRESULT){
+				callback(opts.is_set(object::option_type::prevented_default));
+			}, id, std::forward<args_types>(args)...);
+		}
+		
+		template <typename object_type, typename... args_types>
+		void trigger(const std::function<void()> &callback, unsigned __int64 id, args_types &&... args) const{
+			trigger<object_type>([&](utility::small_options &, LRESULT){
+				callback();
+			}, id, std::forward<args_types>(args)...);
+		}
+		
+		template <typename object_type, typename... args_types>
+		void trigger(std::nullptr_t, unsigned __int64 id, args_types &&... args) const{
+			trigger<object_type>([&](utility::small_options &, LRESULT){}, id, std::forward<args_types>(args)...);
+		}
+		
+		template <typename object_type, typename... args_types>
+		LRESULT trigger_then_report_result(unsigned __int64 id, args_types &&... args) const{
+			LRESULT value = 0;
+			trigger<object_type>([&](utility::small_options &, LRESULT result){
+				value = result;
+			}, id, std::forward<args_types>(args)...);
+
+			return value;
+		}
+		
+		template <typename object_type, typename... args_types>
+		utility::small_options trigger_then_report_options(unsigned __int64 id, args_types &&... args) const{
+			utility::small_options value;
+			trigger<object_type>([&](utility::small_options &opts, LRESULT){
+				value = opts;
+			}, id, std::forward<args_types>(args)...);
+
+			return value;
+		}
+		
+		template <typename object_type, typename... args_types>
+		bool trigger_then_report_prevented_default(unsigned __int64 id, args_types &&... args) const{
+			auto value = false;
+			trigger<object_type>([&](utility::small_options &opts, LRESULT){
+				value = opts.is_set(object::option_type::prevented_default);
+			}, id, std::forward<args_types>(args)...);
+
+			return value;
+		}
+
 		virtual bool exists(unsigned __int64 id) const;
 
 		template <typename object_type>
@@ -238,7 +316,7 @@ namespace cwin::events{
 			if (handler_list.options.is_set(handler_list_option_type::bounding_disabled))
 				return 0u;//Bounding disabled
 
-			handler_list.list.push_front(handler_info{
+			handler_list.list.push_back(handler_info{
 				id,
 				handler_object
 			});
@@ -262,7 +340,7 @@ namespace cwin::events{
 				return 0u;
 
 			auto id = reinterpret_cast<unsigned __int64>(handler_object.get());
-			handler_list.default_list.push_front(handler_info{
+			handler_list.default_list.push_back(handler_info{
 				id,
 				handler_object
 			});

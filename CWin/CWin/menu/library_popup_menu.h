@@ -18,7 +18,7 @@ namespace cwin::menu{
 		virtual ~library_popup();
 
 	protected:
-		virtual void create_() override;
+		virtual void after_create_() override;
 
 		virtual void destroy_() override;
 
