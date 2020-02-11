@@ -32,6 +32,7 @@
 
 #include "control/push_button_control.h"
 #include "control/split_button_control.h"
+#include "control/radio_check_button_control_group.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
@@ -151,10 +152,62 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
 			POINT{ 5, 0 }
 		);
+
+		ctrl.insert_popup_item([](cwin::menu::action_item &item){
+			item.set_text(L"First Action Item");
+		});
+
+		ctrl.insert_popup_item([](cwin::menu::action_item &item){
+			item.set_text(L"Second Action Item");
+		});
 	});
 	
 	window.insert_object([](cwin::control::default_split_button &ctrl){
 		ctrl.set_text(L"Default Split Button");
+		ctrl.insert_hook<cwin::hook::relative_placement>(
+			cwin::hook::relative_placement::sibling_type::previous,				//Source
+			cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
+			cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
+			POINT{ 5, 0 }
+		);
+	});
+	
+	window.insert_object([](cwin::control::check_button &ctrl){
+		ctrl.set_text(L"Check Button");
+		ctrl.insert_hook<cwin::hook::relative_placement>(
+			cwin::hook::relative_placement::sibling(0),							//Source
+			cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
+			cwin::hook::relative_placement::alignment_type::bottom_left,		//Source Alignment
+			POINT{ 0, 20 }
+		);
+	});
+
+	window.insert_object([](cwin::control::radio_group &grp){
+		grp.insert_hook<cwin::hook::relative_placement>(
+			cwin::hook::relative_placement::sibling_type::previous,				//Source
+			cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
+			cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
+			POINT{ 5, 0 }
+		);
+
+		grp.insert_object([](cwin::control::check_button &ctrl){
+			ctrl.set_text(L"First Radio Button");
+			ctrl.set_position(POINT{ 0, 0 });
+		});
+
+		grp.insert_object([](cwin::control::check_button &ctrl){
+			ctrl.set_text(L"Second Radio Button");
+			ctrl.insert_hook<cwin::hook::relative_placement>(
+				cwin::hook::relative_placement::sibling_type::previous,				//Source
+				cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
+				cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
+				POINT{ 5, 0 }
+			);
+		});
+	});
+
+	window.insert_object([](cwin::control::three_state_check_button &ctrl){
+		ctrl.set_text(L"Three State Check Button");
 		ctrl.insert_hook<cwin::hook::relative_placement>(
 			cwin::hook::relative_placement::sibling_type::previous,				//Source
 			cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment

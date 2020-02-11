@@ -160,8 +160,7 @@ namespace cwin::ui{
 
 			static void call_traverse_siblings(const object &target, const std::function<bool(object &)> &callback){
 				call_traverse_siblings(target, [&](object &value, bool){
-					callback(value);
-					return true;
+					return callback(value);
 				});
 			}
 
@@ -173,8 +172,7 @@ namespace cwin::ui{
 			template <typename target_type>
 			static void call_traverse_matching_siblings(const object &target, const std::function<bool(target_type &)> &callback){
 				call_traverse_matching_siblings<target_type>(target, [&](target_type &value, bool){
-					callback(value);
-					return true;
+					return callback(value);
 				});
 			}
 
@@ -193,8 +191,7 @@ namespace cwin::ui{
 
 			static void call_reverse_traverse_siblings(const object &target, const std::function<bool(object &)> &callback){
 				call_reverse_traverse_siblings(target, [&](object &value, bool){
-					callback(value);
-					return true;
+					return callback(value);
 				});
 			}
 
@@ -206,8 +203,7 @@ namespace cwin::ui{
 			template <typename target_type>
 			static void call_reverse_traverse_matching_siblings(const object &target, const std::function<bool(target_type &)> &callback){
 				call_reverse_traverse_matching_siblings<target_type>(target, [&](target_type &value, bool){
-					callback(value);
-					return true;
+					return callback(value);
 				});
 			}
 		};

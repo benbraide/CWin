@@ -227,6 +227,15 @@ cwin::hook::relative_placement::relative_placement(ui::surface &target, sibling_
 cwin::hook::relative_placement::relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment, const POINT &offset)
 	: relative_placement(target, get_sibling(target, source), alignment, source_alignment, offset){}
 
+cwin::hook::relative_placement::relative_placement(ui::surface &target, const sibling &source)
+	: relative_placement(target, source, alignment_type::top_left, alignment_type::top_right, POINT{}){}
+
+cwin::hook::relative_placement::relative_placement(ui::surface &target, const sibling &source, alignment_type alignment, alignment_type source_alignment)
+	: relative_placement(target, source, alignment, source_alignment, POINT{}){}
+
+cwin::hook::relative_placement::relative_placement(ui::surface &target, const sibling &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset)
+	: relative_placement(target, source.get(target), alignment, source_alignment, offset){}
+
 cwin::hook::relative_placement::~relative_placement() = default;
 
 cwin::ui::surface &cwin::hook::relative_placement::get_source() const{
@@ -360,6 +369,29 @@ void cwin::hook::relative_placement::update_(){
 		(source_position.x + source_offset.x + offset_.x - target_offset.x),
 		(source_position.y + source_offset.y + offset_.y - target_offset.y)
 	});
+}
+
+cwin::hook::relative_placement::sibling::sibling(std::size_t index)
+	: index_(index){}
+
+cwin::ui::surface &cwin::hook::relative_placement::sibling::get(ui::surface &target) const{
+	auto index = index_;
+	ui::surface *value = nullptr;
+
+	target.traverse_matching_siblings<ui::surface>([&](ui::surface &sibling){
+		if (index == 0u){
+			value = &sibling;
+			return false;
+		}
+
+		--index;
+		return true;
+	});
+
+	if (value == nullptr)
+		throw ui::exception::not_supported();
+
+	return *value;
 }
 
 cwin::hook::fill::fill(ui::surface &target)

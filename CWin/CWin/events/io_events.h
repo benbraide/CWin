@@ -180,4 +180,18 @@ namespace cwin::events::io{
 
 		virtual ~mouse_hover() = default;
 	};
+
+	class click : public object{
+	public:
+		using object::object;
+
+		virtual ~click() = default;
+	};
+
+	class dbl_click : public object{
+	public:
+		using object::object;
+
+		virtual ~dbl_click() = default;
+	};
 }

@@ -313,17 +313,8 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		SaveDC(paint_info_.hdc);
 		target.offset_point_to_window_(offset);
 
-		target.reverse_traverse_matching_children_<non_window_surface>([&](non_window_surface &child){//Exclude children
-			if (child.handle_ == nullptr || !child.is_created() || !child.is_visible_())
-				return true;
-
-			auto &child_position = child.get_current_position();
-			POINT window_position{ (child_position.x + offset.x), (child_position.y + offset.y) };
-			auto &child_bound = child.get_bound();
-
-			utility::rgn::move(child_bound.handle, POINT{ (window_position.x + child_bound.offset.x), (window_position.y + child_bound.offset.y) });
-			ExtSelectClipRgn(paint_info_.hdc, child_bound.handle, RGN_DIFF);//Exclude clip
-
+		target.reverse_traverse_matching_children_<visible_surface>([&](visible_surface &child){//Exclude children
+			exclude_from_paint_(child, offset);
 			return true;
 		});
 
@@ -353,8 +344,10 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		paint_(child, message, 0, 0, window_position);
 		auto &child_bound = child.get_bound();
 
-		utility::rgn::move(child_bound.handle, POINT{ (window_position.x + child_bound.offset.x), (window_position.y + child_bound.offset.y) });
-		ExtSelectClipRgn(paint_info_.hdc, child_bound.handle, RGN_DIFF);//Exclude clip
+		if (dynamic_cast<non_window_surface *>(&child) != nullptr){
+			utility::rgn::move(child_bound.handle, POINT{ (window_position.x + child_bound.offset.x), (window_position.y + child_bound.offset.y) });
+			ExtSelectClipRgn(paint_info_.hdc, child_bound.handle, RGN_DIFF);//Exclude clip
+		}
 
 		return true;
 	});
@@ -411,6 +404,27 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		render->BindDC(paint_info_.hdc, &paint_info_.rcPaint);
 		target.get_events().trigger<events::paint>(nullptr, 0u, MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
 	}
+}
+
+void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &target, POINT offset){
+	if (dynamic_cast<window_surface *>(&target) != nullptr || !target.is_created() || !target.is_visible_())
+		return;
+
+	auto &position = target.get_current_position();
+	offset.x += position.x;
+	offset.y += position.y;
+
+	if (auto non_window_target = dynamic_cast<non_window_surface *>(&target); non_window_target == nullptr || non_window_target->handle_ == nullptr){
+		target.offset_point_to_window_(offset);
+		target.reverse_traverse_matching_children_<visible_surface>([&](visible_surface &child){//Exclude children
+			exclude_from_paint_(child, offset);
+			return true;
+		});
+	}
+
+	auto &bound = target.get_bound();
+	utility::rgn::move(bound.handle, POINT{ (offset.x + bound.offset.x), (offset.y + bound.offset.y) });
+	ExtSelectClipRgn(paint_info_.hdc, bound.handle, RGN_DIFF);//Exclude clip
 }
 
 void cwin::ui::window_surface_manager::command_(window_surface &target, WPARAM wparam, LPARAM lparam){

@@ -405,8 +405,11 @@ void cwin::hook::io::mouse_up_(mouse_button_type button){
 	is_dragging_non_client_ = false;
 
 	trigger_<events::io::mouse_up>(nullptr, 0u, position, pressed_button_);
-	if (!was_dragging)//Click
+	if (!was_dragging){//Click
 		trigger_<events::io::mouse_click>(nullptr, 0u, position, pressed_button_);
+		if (pressed_button_ == mouse_button_type::left)
+			trigger_<events::io::click>(nullptr, 0u);
+	}
 
 	pressed_button_ = events::io::mouse_button::button_type::nil;
 }
@@ -419,6 +422,8 @@ void cwin::hook::io::mouse_dbl_click_(mouse_button_type button){
 		trigger_<events::interrupt::mouse_dbl_click>(*mouse_press_, nullptr, 0u, get_mouse_button(button));
 
 	trigger_<events::io::mouse_dbl_click>(nullptr, 0u, position, button);
+	if (button == mouse_button_type::left)
+		trigger_<events::io::dbl_click>(nullptr, 0u);
 }
 
 void cwin::hook::io::mouse_wheel_(const SIZE &delta){

@@ -97,6 +97,16 @@ namespace cwin::hook{
 			next,
 		};
 
+		class sibling{
+		public:
+			explicit sibling(std::size_t index);
+
+			ui::surface &get(ui::surface &target) const;
+
+		private:
+			std::size_t index_;
+		};
+
 		relative_placement(ui::surface &target, ui::surface &source);
 
 		relative_placement(ui::surface &target, ui::surface &source, alignment_type alignment, alignment_type source_alignment);
@@ -108,6 +118,12 @@ namespace cwin::hook{
 		relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment);
 
 		relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment, const POINT &offset);
+
+		relative_placement(ui::surface &target, const sibling &source);
+
+		relative_placement(ui::surface &target, const sibling &source, alignment_type alignment, alignment_type source_alignment);
+
+		relative_placement(ui::surface &target, const sibling &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset);
 
 		virtual ~relative_placement();
 

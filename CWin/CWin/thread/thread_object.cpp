@@ -464,13 +464,13 @@ void cwin::thread::object::run_animation_loop_(){
 		if (animation_callbacks_.empty())
 			continue;
 
-		queue_.post_task([=, animation_callbacks = std::move(animation_callbacks_)]{
+		queue_.post_task([=, clock = std::chrono::high_resolution_clock::now(), animation_callbacks = std::move(animation_callbacks_)]{
 			if (!running_animation_loop_)
 				return;//Ignore
 
 			for (auto &entry : animation_callbacks){
 				if (queue_.black_list_.find(entry.talk_id) == queue_.black_list_.end())
-					entry.callback(std::chrono::high_resolution_clock::now());
+					entry.callback(clock);
 			}
 		}, 0u, queue::highest_task_priority);
 	}

@@ -62,6 +62,8 @@ namespace cwin::ui{
 
 		void paint_(visible_surface &target, UINT message, WPARAM wparam, LPARAM lparam, POINT offset);
 
+		void exclude_from_paint_(visible_surface &target, POINT offset);
+
 		void command_(window_surface &target, WPARAM wparam, LPARAM lparam);
 
 		void notify_(window_surface &target, LPARAM lparam);
