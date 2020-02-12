@@ -33,9 +33,11 @@
 #include "control/push_button_control.h"
 #include "control/split_button_control.h"
 #include "control/radio_check_button_control_group.h"
+#include "control/tool_tip_control.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
+	cwin::control::tool_tip tool_tip;
 	cwin::window::top_level window;
 
 	window.set_size(SIZE{ 900, 500 });
@@ -45,6 +47,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 	window.create();
 	window.show();
 
+	tool_tip.create();
 	window.insert_object([](cwin::menu::system_popup &popup){
 		popup.insert_object([](cwin::menu::system_separator &){});
 
@@ -129,9 +132,13 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 		});
 	});
 
-	window.insert_object([](cwin::control::push_button &ctrl){
+	window.insert_object([&](cwin::control::push_button &ctrl){
 		ctrl.set_text(L"Button");
 		ctrl.set_position(POINT{ 30, 30 });
+
+		tool_tip.insert_object([](cwin::control::tool_tip_item &item){
+			item.set_text(L"Sample Tip");
+		}, ctrl);
 	});
 	
 	window.insert_object([](cwin::control::default_push_button &ctrl){

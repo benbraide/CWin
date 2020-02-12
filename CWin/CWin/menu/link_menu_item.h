@@ -21,13 +21,12 @@ namespace cwin::menu{
 
 		template <typename callback_type, typename... args_types>
 		void add(const callback_type &callback, args_types &&... args){
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
+			execute_task([&]{
+				if (popup_ == nullptr)
+					popup_ = create_popup_();
 
-			if (popup_ == nullptr)
-				popup_ = create_popup_();
-
-			popup_->insert_object(callback, args...);
+				popup_->insert_object(callback, args...);
+			});
 		}
 
 	protected:

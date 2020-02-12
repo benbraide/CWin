@@ -75,7 +75,7 @@ std::shared_ptr<cwin::menu::popup> cwin::control::split_button::create_popup_(){
 	return std::make_shared<menu::popup>();
 }
 
-void cwin::control::split_button::dispatch_notification_(const NMHDR &info){
+void cwin::control::split_button::dispatch_notification_(NMHDR &info){
 	with_text::dispatch_notification_(info);
 	if (info.code == BCN_DROPDOWN)
 		events_.trigger<events::control::split_button_dropdown>(nullptr, 0u);

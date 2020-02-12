@@ -1,3 +1,4 @@
+#include "../app/app_object.h"
 #include "../hook/io_hook.h"
 #include "../hook/background_hooks.h"
 #include "../thread/thread_object.h"
@@ -329,6 +330,7 @@ void cwin::ui::window_surface::update_bounds_(){
 		SetWindowRgn(handle_, handle_bound_copy, TRUE);
 
 	update_client_bound_();
+	events_.trigger<events::after_bounds_change>(nullptr, 0u);
 }
 
 const cwin::ui::surface::handle_bound_info &cwin::ui::window_surface::get_bound_() const{
@@ -393,6 +395,10 @@ bool cwin::ui::window_surface::is_dialog_message_(MSG &msg) const{
 	return (IsDialogMessageW(handle_, &msg) != FALSE);
 }
 
+bool cwin::ui::window_surface::is_top_level_() const{
+	return (get_matching_ancestor_<window_surface>(nullptr) == nullptr);
+}
+
 void cwin::ui::window_surface::set_styles_(DWORD value){
 	styles_ = value;
 	if (handle_ != nullptr && (value = get_computed_styles_()) != static_cast<DWORD>(GetWindowLongPtrW(handle_, GWL_STYLE))){
@@ -435,7 +441,7 @@ DWORD cwin::ui::window_surface::get_persistent_extended_styles_() const{
 
 void cwin::ui::window_surface::dispatch_command_(WPARAM code){}
 
-void cwin::ui::window_surface::dispatch_notification_(const NMHDR &info){}
+void cwin::ui::window_surface::dispatch_notification_(NMHDR &info){}
 
 void cwin::ui::window_surface::update_client_bound_(){
 	RECT client_dimension{};
@@ -445,4 +451,16 @@ void cwin::ui::window_surface::update_client_bound_(){
 	offset_point_to_window_(offset);
 
 	update_region_bound_(client_handle_bound_.handle, SIZE{ (client_dimension.right - (client_dimension.left + offset.x)), (client_dimension.bottom - (client_dimension.top + offset.y)) });
+}
+
+HINSTANCE cwin::ui::window_surface::get_instance_() const{
+	return GetModuleHandleW(nullptr);
+}
+
+const wchar_t *cwin::ui::window_surface::get_class_name_() const{
+	return WINP_CLASS_WUUID;
+}
+
+const wchar_t *cwin::ui::window_surface::get_caption_() const{
+	return L"";
 }

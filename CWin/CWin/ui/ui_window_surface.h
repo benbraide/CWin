@@ -102,6 +102,8 @@ namespace cwin::ui{
 
 		virtual bool is_dialog_message_(MSG &msg) const;
 
+		virtual bool is_top_level_() const;
+
 		virtual void set_styles_(DWORD value);
 
 		virtual DWORD get_computed_styles_() const;
@@ -120,15 +122,15 @@ namespace cwin::ui{
 
 		virtual void dispatch_command_(WPARAM code);
 
-		virtual void dispatch_notification_(const NMHDR &info);
+		virtual void dispatch_notification_(NMHDR &info);
 
 		virtual void update_client_bound_();
 
-		virtual HINSTANCE get_instance_() const = 0;
+		virtual HINSTANCE get_instance_() const;
 
-		virtual const wchar_t *get_class_name_() const = 0;
+		virtual const wchar_t *get_class_name_() const;
 
-		virtual const wchar_t *get_caption_() const = 0;
+		virtual const wchar_t *get_caption_() const;
 
 		HWND handle_ = nullptr;
 		handle_bound_info handle_bound_{};

@@ -1,5 +1,3 @@
-#include "../app/app_object.h"
-
 #include "window_object.h"
 
 cwin::window::object::~object() = default;
@@ -20,14 +18,6 @@ void cwin::window::object::get_caption(const std::function<void(const std::wstri
 	post_or_execute_task([=]{
 		callback(caption_);
 	});
-}
-
-HINSTANCE cwin::window::object::get_instance_() const{
-	return GetModuleHandleW(nullptr);
-}
-
-const wchar_t *cwin::window::object::get_class_name_() const{
-	return WINP_CLASS_WUUID;
 }
 
 const wchar_t *cwin::window::object::get_caption_() const{

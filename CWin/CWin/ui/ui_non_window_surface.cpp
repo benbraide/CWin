@@ -1,4 +1,5 @@
 #include "../hook/non_window_handle_hooks.h"
+#include "../events/general_events.h"
 #include "../events/interrupt_events.h"
 #include "../thread/thread_object.h"
 
@@ -283,6 +284,7 @@ void cwin::ui::non_window_surface::update_bounds_(){
 		client_handle_bound_.offset.y = (intersect_rect.top - offset.y);
 	}
 
+	events_.trigger<events::after_bounds_change>(nullptr, 0u);
 	traverse_matching_children_<surface>([&](surface &child){
 		child.update_bounds();
 		return true;

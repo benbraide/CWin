@@ -11,7 +11,7 @@ namespace cwin::ui{
 
 		template <typename callback_type, typename... args_types>
 		void insert_object(const callback_type &callback, args_types &&... args){
-			post_or_execute_task([=]{
+			execute_task([&]{
 				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
 				tree_call_forwarder<return_type>::template call_insert_object(*this, utility::object_to_function_traits::get(callback), args...);
 			});

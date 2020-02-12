@@ -178,6 +178,13 @@ namespace cwin::events{
 		virtual ~disable() = default;
 	};
 
+	class after_bounds_change : public object{
+	public:
+		using object::object;
+
+		virtual ~after_bounds_change() = default;
+	};
+
 	template <class pair_type, bool, bool>
 	class pair_change : public disable_result<object>{
 	public:

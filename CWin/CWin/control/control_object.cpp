@@ -86,3 +86,15 @@ SIZE cwin::control::object::measure_text_(const std::wstring &value, HFONT font,
 
 	return SIZE{ size.cx, symbols_size.cy };
 }
+
+const wchar_t *cwin::control::object::get_theme_name_() const{
+	return L"";
+}
+
+int cwin::control::object::get_theme_part_id_() const{
+	return 0;
+}
+
+int cwin::control::object::get_theme_state_id_() const{
+	return 0;
+}

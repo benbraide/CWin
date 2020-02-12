@@ -563,7 +563,7 @@ LRESULT CALLBACK cwin::ui::window_surface_manager::hook_entry_(int code, WPARAM 
 	manager.cache_.target->handle_ = manager.cache_.key;
 
 	manager.windows_[manager.cache_.key] = manager.cache_.target;
-	if (manager.cache_.target->get_matching_ancestor<window_surface>() == nullptr)
+	if (manager.cache_.target->is_top_level_())
 		manager.top_level_windows_[manager.cache_.key] = manager.cache_.target;
 
 	if (auto class_entry = manager.thread_.get_class_entry(info->lpszClass); class_entry != nullptr && class_entry != DefWindowProcW)

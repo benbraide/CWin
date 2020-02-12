@@ -16,10 +16,6 @@ namespace cwin::window{
 		virtual void get_caption(const std::function<void(const std::wstring &)> &callback) const;
 
 	protected:
-		virtual HINSTANCE get_instance_() const override;
-
-		virtual const wchar_t *get_class_name_() const override;
-
 		virtual const wchar_t *get_caption_() const override;
 
 		virtual void set_caption_(const std::wstring &value);

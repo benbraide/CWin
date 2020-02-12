@@ -19,13 +19,12 @@ namespace cwin::control{
 
 		template <typename callback_type, typename... args_types>
 		void insert_popup_item(const callback_type &callback, args_types &&... args){
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
+			execute_task([&]{
+				if (popup_ == nullptr)
+					popup_ = create_popup_();
 
-			if (popup_ == nullptr)
-				popup_ = create_popup_();
-
-			popup_->insert_object(callback, args...);
+				popup_->insert_object(callback, args...);
+			});
 		}
 
 	protected:
@@ -33,7 +32,7 @@ namespace cwin::control{
 
 		virtual DWORD get_persistent_styles_() const override;
 
-		virtual void dispatch_notification_(const NMHDR &info) override;
+		virtual void dispatch_notification_(NMHDR &info) override;
 
 		virtual const wchar_t *get_theme_name_() const override;
 

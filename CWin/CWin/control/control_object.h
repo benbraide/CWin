@@ -24,11 +24,11 @@ namespace cwin::control{
 
 		virtual SIZE measure_text_(const std::wstring &value, HFONT font, DWORD format_flags) const;
 
-		virtual const wchar_t *get_theme_name_() const = 0;
+		virtual const wchar_t *get_theme_name_() const;
 
-		virtual int get_theme_part_id_() const = 0;
+		virtual int get_theme_part_id_() const;
 
-		virtual int get_theme_state_id_() const = 0;
+		virtual int get_theme_state_id_() const;
 
 		std::wstring class_name_;
 	};
