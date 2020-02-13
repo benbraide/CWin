@@ -87,4 +87,11 @@ namespace cwin::events::control{
 	using get_tool_tip_max_width = get_tool_tip_scalar_value<int>;
 	using get_tool_tip_font = get_tool_tip_scalar_value<HFONT>;
 	using get_tool_tip_image = get_tool_tip_scalar_value<HGDIOBJ>;
+
+	class tool_tip_link_clicked : public object{
+	public:
+		using object::object;
+
+		virtual ~tool_tip_link_clicked() = default;
+	};
 }

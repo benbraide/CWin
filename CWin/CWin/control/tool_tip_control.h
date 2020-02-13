@@ -19,11 +19,11 @@ namespace cwin::control{
 
 		virtual DWORD get_persistent_extended_styles_() const override;
 
-		virtual void dispatch_notification_(NMHDR &info) override;
+		virtual LRESULT dispatch_notification_(NMHDR &info) override;
 
-		virtual void need_text_(NMHDR &info);
+		virtual void need_text_(tool_tip_item &current_item, NMHDR &info);
 
-		virtual tool_tip_item *get_current_item_() const;
+		virtual tool_tip_item &get_current_item_() const;
 
 		std::wstring text_ref_;
 	};

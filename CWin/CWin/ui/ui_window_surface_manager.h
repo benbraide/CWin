@@ -66,7 +66,7 @@ namespace cwin::ui{
 
 		void command_(window_surface &target, WPARAM wparam, LPARAM lparam);
 
-		void notify_(window_surface &target, LPARAM lparam);
+		LRESULT notify_(window_surface &target, LPARAM lparam);
 
 		void mouse_leave_(window_surface &target);
 

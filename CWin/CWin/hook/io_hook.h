@@ -52,6 +52,8 @@ namespace cwin::hook{
 
 		virtual bool check_drag_state_() const;
 
+		virtual bool check_drag_threshold_(const POINT &mouse_position) const;
+
 		virtual void after_mouse_drag_(const SIZE &delta);
 
 		virtual void offset_size_(const SIZE &delta) const;
@@ -66,6 +68,8 @@ namespace cwin::hook{
 		mouse_button_type pressed_button_ = mouse_button_type::nil;
 
 		bool is_dragging_ = false;
+		bool drag_is_past_threshold_ = false;
+
 		bool is_dragging_offspring_ = false;
 		bool is_dragging_non_client_ = false;
 

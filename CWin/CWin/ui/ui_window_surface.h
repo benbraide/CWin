@@ -122,7 +122,7 @@ namespace cwin::ui{
 
 		virtual void dispatch_command_(WPARAM code);
 
-		virtual void dispatch_notification_(NMHDR &info);
+		virtual LRESULT dispatch_notification_(NMHDR &info);
 
 		virtual void update_client_bound_();
 

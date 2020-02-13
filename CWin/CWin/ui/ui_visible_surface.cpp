@@ -88,19 +88,25 @@ void cwin::ui::visible_surface::redraw_at_(HRGN region, POINT position){
 }
 
 void cwin::ui::visible_surface::show_(){
-	if (!visible_){
-		visible_ = true;
-		redraw_(nullptr);
-		set_windows_visibility_(visible_);
-	}
+	if (visible_)
+		return;
+
+	visible_ = true;
+	redraw_(nullptr);
+
+	set_windows_visibility_(visible_);
+	events_.trigger<events::show>(nullptr, 0u);
 }
 
 void cwin::ui::visible_surface::hide_(){
-	if (visible_){
-		visible_ = false;
-		redraw_(nullptr);
-		set_windows_visibility_(visible_);
-	}
+	if (!visible_)
+		return;
+
+	visible_ = false;
+	redraw_(nullptr);
+
+	set_windows_visibility_(visible_);
+	events_.trigger<events::hide>(nullptr, 0u);
 }
 
 void cwin::ui::visible_surface::set_windows_visibility_(bool is_visible){

@@ -367,16 +367,20 @@ void cwin::ui::window_surface::redraw_(const RECT &region){
 }
 
 void cwin::ui::window_surface::show_(){
-	if (handle_ == nullptr)
+	if (handle_ == nullptr && (styles_ & WS_VISIBLE) == 0u){
 		styles_ |= WS_VISIBLE;
-	else
+		events_.trigger<events::show>(nullptr, 0u);
+	}
+	else if (handle_ != nullptr)
 		ShowWindow(handle_, SW_SHOW);
 }
 
 void cwin::ui::window_surface::hide_(){
-	if (handle_ == nullptr)
+	if (handle_ == nullptr && (styles_ & WS_VISIBLE) != 0u){
 		styles_ &= ~WS_VISIBLE;
-	else
+		events_.trigger<events::hide>(nullptr, 0u);
+	}
+	else if (handle_ != nullptr)
 		ShowWindow(handle_, SW_HIDE);
 }
 
@@ -441,7 +445,9 @@ DWORD cwin::ui::window_surface::get_persistent_extended_styles_() const{
 
 void cwin::ui::window_surface::dispatch_command_(WPARAM code){}
 
-void cwin::ui::window_surface::dispatch_notification_(NMHDR &info){}
+LRESULT cwin::ui::window_surface::dispatch_notification_(NMHDR &info){
+	return 0;
+}
 
 void cwin::ui::window_surface::update_client_bound_(){
 	RECT client_dimension{};

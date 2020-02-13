@@ -133,11 +133,13 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 	});
 
 	window.insert_object([&](cwin::control::push_button &ctrl){
+		ctrl.insert_hook<cwin::hook::client_drag>();
 		ctrl.set_text(L"Button");
 		ctrl.set_position(POINT{ 30, 30 });
 
 		tool_tip.insert_object([](cwin::control::tool_tip_item &item){
 			item.set_text(L"Sample Tip");
+			item.set_title(L"Sample Title");
 		}, ctrl);
 	});
 	

@@ -165,6 +165,12 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		if (!target.is_updating_)
 			position_changed_(target, *reinterpret_cast<WINDOWPOS *>(lparam));
 		break;
+	case WM_SHOWWINDOW:
+		if (wparam == FALSE)
+			target.get_events().trigger<events::hide>(nullptr, 0u);
+		else//Show
+			target.get_events().trigger<events::show>(nullptr, 0u);
+		break;
 	case WM_ERASEBKGND:
 	case WM_PAINT:
 		try{
@@ -181,8 +187,7 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		command_(target, wparam, lparam);
 		break;
 	case WM_NOTIFY:
-		notify_(target, lparam);
-		break;
+		return notify_(target, lparam);
 	case WM_ENABLE:
 		if (wparam == FALSE)
 			target.get_events().trigger<events::disable>(nullptr, 0u);
@@ -421,10 +426,11 @@ void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &targ
 			return true;
 		});
 	}
-
-	auto &bound = target.get_bound();
-	utility::rgn::move(bound.handle, POINT{ (offset.x + bound.offset.x), (offset.y + bound.offset.y) });
-	ExtSelectClipRgn(paint_info_.hdc, bound.handle, RGN_DIFF);//Exclude clip
+	else{//Exclude
+		auto &bound = target.get_bound();
+		utility::rgn::move(bound.handle, POINT{ (offset.x + bound.offset.x), (offset.y + bound.offset.y) });
+		ExtSelectClipRgn(paint_info_.hdc, bound.handle, RGN_DIFF);//Exclude clip
+	}
 }
 
 void cwin::ui::window_surface_manager::command_(window_surface &target, WPARAM wparam, LPARAM lparam){
@@ -438,10 +444,11 @@ void cwin::ui::window_surface_manager::command_(window_surface &target, WPARAM w
 	}
 }
 
-void cwin::ui::window_surface_manager::notify_(window_surface &target, LPARAM lparam){
+LRESULT cwin::ui::window_surface_manager::notify_(window_surface &target, LPARAM lparam){
 	auto info = reinterpret_cast<NMHDR *>(lparam);
 	if (auto sender = find_(info->hwndFrom, true); sender != nullptr)
-		sender->dispatch_notification_(*info);
+		return sender->dispatch_notification_(*info);
+	return 0;
 }
 
 void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){

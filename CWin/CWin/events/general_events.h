@@ -178,6 +178,20 @@ namespace cwin::events{
 		virtual ~disable() = default;
 	};
 
+	class show : public object{
+	public:
+		using object::object;
+
+		virtual ~show() = default;
+	};
+
+	class hide : public object{
+	public:
+		using object::object;
+
+		virtual ~hide() = default;
+	};
+
 	class after_bounds_change : public object{
 	public:
 		using object::object;

@@ -193,9 +193,13 @@ void cwin::hook::io::mouse_leave_(){
 
 	mouse_up_(pressed_button_);
 	pressed_button_ = events::io::mouse_button::button_type::nil;
-
 	mouse_press_ = nullptr;
+
 	is_dragging_ = false;
+	drag_is_past_threshold_ = false;
+
+	is_dragging_offspring_ = false;
+	is_dragging_non_client_ = false;
 
 	trigger_<events::io::mouse_leave>(nullptr, 0u);
 }
@@ -260,19 +264,10 @@ void cwin::hook::io::mouse_move_(){
 	if (pressed_button_ != mouse_button_type::nil && dynamic_cast<ui::window_surface *>(&target_) != nullptr){
 		auto &mouse_info = thread_.get_window_manager().get_mouse_info();
 		if (!check_drag_state_()){//Check for drag
-			SIZE delta{
-				(position.x - mouse_info.pressed_position.x),
-				(position.y - mouse_info.pressed_position.y)
-			};
-
-			SIZE abs_delta{
-				std::abs(delta.cx),
-				std::abs(delta.cy)
-			};
-
-			if ((mouse_info.drag_threshold.cx <= abs_delta.cx || mouse_info.drag_threshold.cy <= abs_delta.cy)){
+			if (!drag_is_past_threshold_ && check_drag_threshold_(position)){
+				drag_is_past_threshold_ = true;
 				if (!trigger_then_report_prevented_default_<events::interrupt::mouse_drag_begin>(0u))
-					mouse_drag_(delta);
+					mouse_drag_(SIZE{ (position.x - mouse_info.pressed_position.x), (position.y - mouse_info.pressed_position.y) });
 			}
 		}
 		else//Continue drag
@@ -386,7 +381,7 @@ void cwin::hook::io::mouse_up_(mouse_button_type button){
 	auto pos = GetMessagePos();
 	POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
 
-	auto was_dragging = check_drag_state_();
+	auto was_dragging = (drag_is_past_threshold_ || check_drag_state_());
 	if (mouse_press_ != nullptr){
 		trigger_<events::interrupt::mouse_up>(*mouse_press_, nullptr, 0u, get_mouse_button(button));
 		mouse_press_ = nullptr;
@@ -401,6 +396,8 @@ void cwin::hook::io::mouse_up_(mouse_button_type button){
 	}
 
 	non_client_mouse_press_ = nullptr;
+	drag_is_past_threshold_ = false;
+
 	is_dragging_offspring_ = false;
 	is_dragging_non_client_ = false;
 
@@ -454,6 +451,16 @@ void cwin::hook::io::offset_position_(const SIZE &delta) const{
 		auto &current_position = surface_target->get_current_position();
 		position_callback_(POINT{ (current_position.x + delta.cx), (current_position.y + delta.cy) }, false);
 	}
+}
+
+bool cwin::hook::io::check_drag_threshold_(const POINT &mouse_position) const{
+	auto &mouse_info = thread_.get_window_manager().get_mouse_info();
+	SIZE abs_delta{
+		std::abs(mouse_position.x - mouse_info.pressed_position.x),
+		std::abs(mouse_position.y - mouse_info.pressed_position.y)
+	};
+
+	return (mouse_info.drag_threshold.cx <= abs_delta.cx || mouse_info.drag_threshold.cy <= abs_delta.cy);
 }
 
 cwin::hook::client_drag::client_drag(ui::visible_surface &target)
