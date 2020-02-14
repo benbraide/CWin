@@ -35,6 +35,16 @@ void cwin::control::tab::get_current_item(const std::function<void(tab_item &)> 
 	});
 }
 
+void cwin::control::tab::after_create_(){
+	tool_tip_.create();
+	object::after_create_();
+}
+
+void cwin::control::tab::after_destroy_(){
+	tool_tip_.destroy();
+	object::after_destroy_();
+}
+
 bool cwin::control::tab::inserting_child_(ui::object &child){
 	return (dynamic_cast<tab_item *>(&child) != nullptr);
 }

@@ -88,6 +88,12 @@ void cwin::control::tool_tip_item::get_target(const std::function<void(ui::visib
 	});
 }
 
+void cwin::control::tool_tip_item::set_dimension(const RECT &value){
+	post_or_execute_task([=]{
+		set_dimension_(value);
+	});
+}
+
 const RECT &cwin::control::tool_tip_item::get_dimension() const{
 	return *execute_task([&]{
 		return &dimension_;
@@ -261,10 +267,18 @@ void cwin::control::tool_tip_item::destroy_(){
 		return;
 	}
 
+	HWND window_handle = nullptr;
+	if (auto window_target = dynamic_cast<ui::window_surface *>(&target_); window_target == nullptr){
+		if (auto window_ancestor = target_.get_matching_ancestor<ui::window_surface>(); window_ancestor != nullptr)
+			window_handle = window_ancestor->get_handle();
+	}
+	else//Window target
+		window_handle = window_target->get_handle();
+
 	TTTOOLINFOW info{
 		sizeof(TTTOOLINFOW),
 		0u,
-		nullptr,
+		window_handle,
 		id_
 	};
 
@@ -274,6 +288,11 @@ void cwin::control::tool_tip_item::destroy_(){
 
 bool cwin::control::tool_tip_item::is_created_() const{
 	return (id_ != 0u);
+}
+
+void cwin::control::tool_tip_item::set_dimension_(const RECT &value){
+	dimension_ = value;
+	update_dimension_();
 }
 
 void cwin::control::tool_tip_item::set_max_width_(int value){
@@ -305,11 +324,15 @@ void cwin::control::tool_tip_item::update_dimension_(){
 		return;
 
 	POINT offset{};
+	HWND window_handle = nullptr;
+
 	if (auto window_target = dynamic_cast<ui::window_surface *>(&target_); window_target == nullptr){
 		target_.traverse_matching_ancestors<ui::visible_surface>([&](ui::visible_surface &ancestor){
 			ancestor.offset_point_to_window(offset);
-			if (auto window_ancestor = dynamic_cast<ui::window_surface *>(&ancestor); window_ancestor != nullptr)
+			if (auto window_ancestor = dynamic_cast<ui::window_surface *>(&ancestor); window_ancestor != nullptr){
+				window_handle = window_ancestor->get_handle();
 				return false;
+			}
 
 			auto &ancestor_position = ancestor.get_current_position();
 			offset.x += ancestor_position.x;
@@ -318,6 +341,8 @@ void cwin::control::tool_tip_item::update_dimension_(){
 			return true;
 		});
 	}
+	else//Window target
+		window_handle = window_target->get_handle();
 
 	auto &client_bound = target_.get_client_bound();
 	utility::rgn::move(client_bound.handle, client_bound.offset);
@@ -330,7 +355,7 @@ void cwin::control::tool_tip_item::update_dimension_(){
 	TTTOOLINFOW info{
 		sizeof(TTTOOLINFOW),
 		0u,
-		nullptr,
+		window_handle,
 		id_,
 		dimension,
 	};

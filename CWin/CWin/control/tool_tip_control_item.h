@@ -21,6 +21,8 @@ namespace cwin::control{
 
 		virtual void get_target(const std::function<void(ui::visible_surface &)> &callback) const;
 
+		virtual void set_dimension(const RECT &value);
+
 		virtual const RECT &get_dimension() const;
 
 		virtual void get_dimension(const std::function<void(const RECT &)> &callback) const;
@@ -65,6 +67,8 @@ namespace cwin::control{
 		virtual void destroy_() override;
 
 		virtual bool is_created_() const override;
+
+		virtual void set_dimension_(const RECT &value);
 
 		virtual void set_max_width_(int value);
 

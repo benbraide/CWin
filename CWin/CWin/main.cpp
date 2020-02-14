@@ -234,6 +234,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 		tab.insert_object([&](cwin::control::tab_item &page){
 			page.set_caption(L"Second Tab Page");
 		});
+
+		tab.insert_object([&](cwin::control::tab_item &page){
+			page.set_caption(L"Inserted Tab Page");
+		}, 1u);
 	});
 
 	/*window.insert_object([](cwin::grid::fill_object &grid){

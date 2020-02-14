@@ -96,7 +96,7 @@ void cwin::menu::item::changed_parent_(ui::tree *old_value){
 	catch (const ui::exception::not_supported &){
 		if (old_value != nullptr){
 			old_value->traverse_matching_offspring<item>([&](item &offspring){
-				offspring.update_active_index_(active_index_, true);
+				offspring.update_active_index_(active_index_, false);
 			});
 		}
 
@@ -157,7 +157,7 @@ void cwin::menu::item::destroy_(){
 		throw ui::exception::action_failed();
 
 	object_ancestor->traverse_matching_offspring<item>([&](item &offspring){
-		offspring.update_active_index_(active_index_, true);
+		offspring.update_active_index_(active_index_, false);
 	});
 
 	active_index_ = static_cast<UINT>(-1);

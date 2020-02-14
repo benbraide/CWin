@@ -52,7 +52,7 @@ void cwin::control::tool_tip::need_text_(tool_tip_item &current_item, NMHDR &inf
 	events::control::get_tool_tip_text text(current_item);
 	current_item.get_events().trigger(text, 0u);
 
-	if (text.prevented_default() || !(text_ref_ = text.get_value()).empty())
+	if (!text.prevented_default() && !(text_ref_ = text.get_value()).empty())
 		reinterpret_cast<NMTTDISPINFOW *>(&info)->lpszText = const_cast<wchar_t *>(text_ref_.data());
 	else//Empty text
 		return;

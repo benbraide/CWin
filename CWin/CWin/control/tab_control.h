@@ -1,6 +1,6 @@
 #pragma once
 
-#include "control_object.h"
+#include "tool_tip_control.h"
 #include "tab_control_item.h"
 
 namespace cwin::control{
@@ -19,6 +19,12 @@ namespace cwin::control{
 		virtual void get_current_item(const std::function<void(tab_item &)> &callback) const;
 
 	protected:
+		friend class tab_item;
+
+		virtual void after_create_() override;
+
+		virtual void after_destroy_() override;
+
 		virtual bool inserting_child_(ui::object &child) override;
 
 		virtual SIZE compute_client_size_() const override;
@@ -42,5 +48,6 @@ namespace cwin::control{
 		virtual tab_item &get_current_item_() const;
 
 		RECT client_margin_{};
+		tool_tip tool_tip_;
 	};
 }

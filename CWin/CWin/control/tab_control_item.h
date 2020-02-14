@@ -2,6 +2,8 @@
 
 #include "../window/child_window.h"
 
+#include "tool_tip_control_item.h"
+
 namespace cwin::control{
 	class tab;
 
@@ -22,6 +24,8 @@ namespace cwin::control{
 
 		virtual bool changing_parent_(ui::tree *value) override;
 
+		virtual void changed_parent_(ui::tree *old_value) override;
+
 		virtual void after_create_() override;
 
 		virtual void after_destroy_() override;
@@ -33,6 +37,7 @@ namespace cwin::control{
 		virtual void update_active_index_(int index, bool increment);
 
 		int active_index_ = -1;
+		tool_tip_item *tool_tip_item_ = nullptr;
 	};
 }
 
