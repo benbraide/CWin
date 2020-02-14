@@ -48,6 +48,18 @@ void cwin::ui::visible_surface::is_visible(const std::function<void(bool)> &call
 	});
 }
 
+bool cwin::ui::visible_surface::is_occluded() const{
+	return execute_task([&]{
+		return is_occluded_();
+	});
+}
+
+void cwin::ui::visible_surface::is_occluded(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(is_occluded_());
+	});
+}
+
 void cwin::ui::visible_surface::redraw_(HRGN region){
 	redraw_at_(region, get_current_position());
 }
@@ -118,4 +130,14 @@ void cwin::ui::visible_surface::set_windows_visibility_(bool is_visible){
 
 bool cwin::ui::visible_surface::is_visible_() const{
 	return visible_;
+}
+
+bool cwin::ui::visible_surface::is_occluded_() const{
+	if (!is_visible_())
+		return true;
+
+	if (auto visible_parent = get_matching_ancestor_<visible_surface>(nullptr); visible_parent != nullptr)
+		return visible_parent->is_occluded_();
+
+	return false;
 }

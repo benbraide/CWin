@@ -68,6 +68,8 @@ namespace cwin::ui{
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value) override;
 
+		virtual void update_window_relative_position_() override;
+
 		virtual SIZE compute_client_size_() const override;
 
 		virtual SIZE compute_current_client_size_() const override;
@@ -97,8 +99,6 @@ namespace cwin::ui{
 		virtual void hide_() override;
 
 		virtual void set_windows_visibility_(bool is_visible) override;
-
-		virtual bool is_visible_() const override;
 
 		virtual bool is_dialog_message_(MSG &msg) const;
 
@@ -138,6 +138,6 @@ namespace cwin::ui{
 
 		DWORD styles_ = (WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		DWORD extended_styles_ = 0u;
-		bool is_updating_ = false;
+		std::size_t updating_count_ = 0u;
 	};
 }

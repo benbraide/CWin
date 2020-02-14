@@ -30,6 +30,10 @@ namespace cwin::ui{
 
 		virtual void is_visible(const std::function<void(bool)> &callback) const;
 
+		virtual bool is_occluded() const;
+
+		virtual void is_occluded(const std::function<void(bool)> &callback) const;
+
 	protected:
 		friend class window_surface_manager;
 
@@ -46,6 +50,8 @@ namespace cwin::ui{
 		virtual void set_windows_visibility_(bool is_visible);
 
 		virtual bool is_visible_() const;
+
+		virtual bool is_occluded_() const;
 
 		bool visible_ = true;
 	};

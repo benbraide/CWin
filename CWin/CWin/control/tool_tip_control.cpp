@@ -1,5 +1,5 @@
 #include "../events/general_events.h"
-#include "../events/control_events/tool_tip_events.h"
+#include "../events/control_events.h"
 
 #include "tool_tip_control.h"
 

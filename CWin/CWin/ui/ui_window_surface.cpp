@@ -205,10 +205,16 @@ void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &c
 	if (handle_ == nullptr)
 		return;
 
-	if (!is_updating_){
-		is_updating_ = true;
-		SetWindowPos(handle_, nullptr, 0, 0, current_value.cx, current_value.cy, (SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE));
-		is_updating_ = false;
+	if (updating_count_ == 0u){
+		try{
+			++updating_count_;
+			SetWindowPos(handle_, nullptr, 0, 0, current_value.cx, current_value.cy, (SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE));
+			--updating_count_;
+		}
+		catch (...){
+			--updating_count_;
+			throw;
+		}
 	}
 
 	update_region_bound_(handle_bound_.rect_handle, get_current_size_());
@@ -219,16 +225,49 @@ void cwin::ui::window_surface::position_update_(const POINT &old_value, const PO
 	if (handle_ == nullptr)
 		return;
 
-	if (!is_updating_){
+	if (updating_count_ == 0u){
 		POINT window_relative_offset{};
 		if (auto window_ancestor = find_matching_surface_ancestor_<window_surface>(&window_relative_offset); window_ancestor != nullptr)
 			window_ancestor->offset_point_to_window(window_relative_offset);
 
-		is_updating_ = true;
-		SetWindowPos(handle_, nullptr, (current_value.x + window_relative_offset.x), (current_value.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
-		is_updating_ = false;
+		try{
+			++updating_count_;
+			SetWindowPos(handle_, nullptr, (current_value.x + window_relative_offset.x), (current_value.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
+			--updating_count_;
+		}
+		catch (...){
+			--updating_count_;
+			throw;
+		}
 	}
 	
+	update_bounds_();
+}
+
+void cwin::ui::window_surface::update_window_relative_position_(){
+	auto position = get_current_position_();
+	traverse_matching_ancestors_<surface>([&](surface &ancestor){
+		ancestor.offset_point_to_window(position);
+		if (auto window_ancestor = dynamic_cast<window_surface *>(&ancestor); window_ancestor != nullptr)
+			return false;
+
+		auto &current_position = ancestor.get_current_position();
+		position.x += current_position.x;
+		position.y += current_position.y;
+
+		return true;
+	});
+
+	try{
+		++updating_count_;
+		SetWindowPos(handle_, nullptr, position.x, position.y, 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
+		--updating_count_;
+	}
+	catch (...){
+		--updating_count_;
+		throw;
+	}
+
 	update_bounds_();
 }
 
@@ -367,19 +406,23 @@ void cwin::ui::window_surface::redraw_(const RECT &region){
 }
 
 void cwin::ui::window_surface::show_(){
-	if (handle_ == nullptr && (styles_ & WS_VISIBLE) == 0u){
-		styles_ |= WS_VISIBLE;
+	if (visible_)
+		return;
+
+	visible_ = true;
+	if (handle_ == nullptr)
 		events_.trigger<events::show>(nullptr, 0u);
-	}
 	else if (handle_ != nullptr)
 		ShowWindow(handle_, SW_SHOW);
 }
 
 void cwin::ui::window_surface::hide_(){
-	if (handle_ == nullptr && (styles_ & WS_VISIBLE) != 0u){
-		styles_ &= ~WS_VISIBLE;
+	if (!visible_)
+		return;
+
+	visible_ = false;
+	if (handle_ == nullptr)
 		events_.trigger<events::hide>(nullptr, 0u);
-	}
 	else if (handle_ != nullptr)
 		ShowWindow(handle_, SW_HIDE);
 }
@@ -389,10 +432,6 @@ void cwin::ui::window_surface::set_windows_visibility_(bool is_visible){
 		show_();
 	else//Hide
 		hide_();
-}
-
-bool cwin::ui::window_surface::is_visible_() const{
-	return ((handle_ == nullptr) ? ((get_computed_styles_() & WS_VISIBLE) != 0u) : (IsWindowVisible(handle_) != FALSE));
 }
 
 bool cwin::ui::window_surface::is_dialog_message_(MSG &msg) const{
@@ -416,11 +455,11 @@ DWORD cwin::ui::window_surface::get_computed_styles_() const{
 }
 
 DWORD cwin::ui::window_surface::get_blacklisted_styles_() const{
-	return 0u;
+	return WS_VISIBLE;
 }
 
 DWORD cwin::ui::window_surface::get_persistent_styles_() const{
-	return 0u;
+	return (visible_? WS_VISIBLE : 0u);
 }
 
 void cwin::ui::window_surface::set_extended_styles_(DWORD value){

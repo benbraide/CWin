@@ -226,7 +226,7 @@ namespace cwin::hook{
 		hook_type *find_first_hook_() const{
 			for (auto hk : hooks_){
 				if (&typeid(*hk) == &typeid(hook_type))
-					return hk.get();
+					return dynamic_cast<hook_type *>(hk.get());
 			}
 
 			return nullptr;

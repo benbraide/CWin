@@ -109,6 +109,8 @@ namespace cwin::ui{
 
 		virtual void current_hit_test(const POINT &value, const std::function<void(UINT)> &callback) const;
 
+		virtual void update_window_relative_position();
+
 		virtual void update_bounds();
 
 		virtual const handle_bound_info &get_bound() const;

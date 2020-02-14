@@ -1,5 +1,7 @@
 #include "child_window.h"
 
+cwin::window::child::child() = default;
+
 cwin::window::child::child(ui::surface &parent)
 	: child(parent, static_cast<std::size_t>(-1)){}
 

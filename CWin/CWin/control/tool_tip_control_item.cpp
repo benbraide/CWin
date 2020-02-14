@@ -2,7 +2,7 @@
 #include "../ui/ui_non_window_surface.h"
 
 #include "../events/general_events.h"
-#include "../events/control_events/tool_tip_events.h"
+#include "../events/control_events.h"
 
 #include "tool_tip_control.h"
 

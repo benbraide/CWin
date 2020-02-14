@@ -116,11 +116,6 @@ void cwin::menu::item::create_(){
 
 	UINT index = 0u;
 	object_ancestor->traverse_matching_offspring<item>([&](item &offspring){
-		if (active_index_ == static_cast<UINT>(-1) && offspring.is_created_()){
-			++index;
-			return;
-		}
-
 		if (&offspring == this){//Insert
 			MENUITEMINFOW info{
 				sizeof(MENUITEMINFOW),
@@ -143,6 +138,8 @@ void cwin::menu::item::create_(){
 			else//Error
 				throw ui::exception::action_failed();
 		}
+		else if (active_index_ == static_cast<UINT>(-1) && offspring.is_created_())
+			++index;
 		else
 			offspring.update_active_index_(active_index_, true);
 	});

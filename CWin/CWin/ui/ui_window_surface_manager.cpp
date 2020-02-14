@@ -162,7 +162,7 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		target.destroy();
 		return 0;
 	case WM_WINDOWPOSCHANGED:
-		if (!target.is_updating_)
+		if (target.updating_count_ == 0u)
 			position_changed_(target, *reinterpret_cast<WINDOWPOS *>(lparam));
 		break;
 	case WM_SHOWWINDOW:
@@ -273,19 +273,25 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 }
 
 void cwin::ui::window_surface_manager::position_changed_(window_surface &target, WINDOWPOS &info){
-	target.is_updating_ = true;
-	if ((info.flags & SWP_NOMOVE) == 0u){
-		POINT offset{};
-		if (auto window_ancestor = target.find_matching_surface_ancestor_<window_surface>(&offset); window_ancestor != nullptr)
-			window_ancestor->offset_point_to_window_(offset);
+	try{
+		++target.updating_count_;
+		if ((info.flags & SWP_NOMOVE) == 0u){
+			POINT offset{};
+			if (auto window_ancestor = target.find_matching_surface_ancestor_<window_surface>(&offset); window_ancestor != nullptr)
+				window_ancestor->offset_point_to_window_(offset);
 
-		target.set_position_(POINT{ (info.x - offset.x), (info.y - offset.y) }, false);
+			target.set_position_(POINT{ (info.x - offset.x), (info.y - offset.y) }, false);
+		}
+
+		if ((info.flags & SWP_NOSIZE) == 0u)
+			target.set_size_(SIZE{ info.cx, info.cy }, false);
+
+		--target.updating_count_;
 	}
-
-	if ((info.flags & SWP_NOSIZE) == 0u)
-		target.set_size_(SIZE{ info.cx, info.cy }, false);
-
-	target.is_updating_ = false;
+	catch (...){
+		--target.updating_count_;
+		throw;
+	}
 }
 
 void cwin::ui::window_surface_manager::before_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
@@ -455,7 +461,7 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 	auto pos = GetMessagePos();
 	POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
 
-	if (auto hit_target = target.current_hit_test_(position); hit_target != HTNOWHERE){
+	if (auto hit_target = (target.is_occluded_() ? HTNOWHERE : target.current_hit_test_(position)); hit_target != HTNOWHERE){
 		if (hit_target == HTCLIENT){//Check if mouse is inside a window offspring
 			auto is_inside_offspring = false;
 			target.traverse_matching_offspring_<window_surface>([&](window_surface &offspring){

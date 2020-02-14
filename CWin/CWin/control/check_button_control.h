@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../events/control_events/button_events.h"
+#include "../events/control_events.h"
 
 #include "control_with_text.h"
 

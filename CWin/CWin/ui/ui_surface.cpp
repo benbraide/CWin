@@ -351,8 +351,14 @@ void cwin::ui::surface::current_hit_test(const POINT &value, const std::function
 	});
 }
 
+void cwin::ui::surface::update_window_relative_position(){
+	post_or_execute_task([=]{
+		update_window_relative_position_();
+	});
+}
+
 void cwin::ui::surface::update_bounds(){
-	execute_task([&]{
+	post_or_execute_task([=]{
 		update_bounds_();
 	});
 }
