@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../hook/hook_target.h"
+#include "../thread/thread_item.h"
 
 #include "ui_exception.h"
 
 namespace cwin::ui{
 	class tree;
 
-	class object : public hook::target{
+	class object : public thread::item{
 	public:
 		object();
 

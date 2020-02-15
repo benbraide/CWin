@@ -4,7 +4,8 @@
 
 cwin::non_window::object::object(){
 	auto window_color = GetSysColor(COLOR_WINDOW);
-	insert_hook_<hook::color_background>(D2D1::ColorF(
+	insert_object<hook::color_background>(
+		nullptr, D2D1::ColorF(
 		(GetRValue(window_color) / 255.0f),	//Red
 		(GetGValue(window_color) / 255.0f),	//Green
 		(GetBValue(window_color) / 255.0f),	//Blue
@@ -16,18 +17,12 @@ cwin::non_window::object::object(tree &parent)
 	: object(parent, static_cast<std::size_t>(-1)){}
 
 cwin::non_window::object::object(tree &parent, std::size_t index)
-	: non_window_surface(parent, index){
-	auto window_color = GetSysColor(COLOR_WINDOW);
-	insert_hook_<hook::color_background>(D2D1::ColorF(
-		(GetRValue(window_color) / 255.0f),	//Red
-		(GetGValue(window_color) / 255.0f),	//Green
-		(GetBValue(window_color) / 255.0f),	//Blue
-		1.0f								//Alpha
-	));
+	: object(){
+	index_ = index;
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
 }
 
 cwin::non_window::object::~object() = default;
-
-bool cwin::non_window::object::removing_hook_(hook::object &value){
-	return (non_window_surface::removing_hook_(value) && dynamic_cast<hook::non_window::handle *>(&value) == nullptr);
-}

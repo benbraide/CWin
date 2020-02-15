@@ -3,7 +3,7 @@
 #include "radio_check_button_control_group.h"
 
 cwin::control::radio_group::radio_group(){
-	insert_hook_<hook::contain>();
+	insert_object<hook::contain>(nullptr);
 }
 
 cwin::control::radio_group::radio_group(tree &parent)
@@ -23,7 +23,7 @@ cwin::control::radio_group::~radio_group(){
 }
 
 bool cwin::control::radio_group::inserting_child_(ui::object &child){
-	return (dynamic_cast<check_button *>(&child) != nullptr);
+	return (dynamic_cast<check_button *>(&child) != nullptr || dynamic_cast<hook::object *>(&child) != nullptr);
 }
 
 void cwin::control::radio_group::create_(){

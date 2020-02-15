@@ -8,10 +8,11 @@
 #include "ui_window_surface.h"
 
 cwin::ui::window_surface::window_surface(){
-	insert_hook_<hook::io>();
+	insert_object<hook::io>(nullptr);
 
 	auto window_color = GetSysColor(COLOR_WINDOW);
-	insert_hook_<hook::color_background>(D2D1::ColorF(
+	insert_object<hook::color_background>(
+		nullptr, D2D1::ColorF(
 		(GetRValue(window_color) / 255.0f),	//Red
 		(GetGValue(window_color) / 255.0f),	//Green
 		(GetBValue(window_color) / 255.0f),	//Blue
@@ -23,16 +24,12 @@ cwin::ui::window_surface::window_surface(tree &parent)
 	: window_surface(parent, static_cast<std::size_t>(-1)){}
 
 cwin::ui::window_surface::window_surface(tree &parent, std::size_t index)
-	: visible_surface(parent, index){
-	insert_hook_<hook::io>();
-
-	auto window_color = GetSysColor(COLOR_WINDOW);
-	insert_hook_<hook::color_background>(D2D1::ColorF(
-		(GetRValue(window_color) / 255.0f),	//Red
-		(GetGValue(window_color) / 255.0f),	//Green
-		(GetBValue(window_color) / 255.0f),	//Blue
-		1.0f								//Alpha
-	));
+	: window_surface(){
+	index_ = index;
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
 }
 
 cwin::ui::window_surface::~window_surface(){

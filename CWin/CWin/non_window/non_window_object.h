@@ -13,8 +13,5 @@ namespace cwin::non_window{
 		object(tree &parent, std::size_t index);
 
 		virtual ~object();
-
-	protected:
-		virtual bool removing_hook_(hook::object &value) override;
 	};
 }

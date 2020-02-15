@@ -3,7 +3,7 @@
 #include "../events/io_events.h"
 #include "../events/interrupt_events.h"
 
-#include "hook_target.h"
+#include "hook_object.h"
 
 namespace cwin::ui{
 	class visible_surface;
@@ -15,7 +15,7 @@ namespace cwin::hook{
 	public:
 		using mouse_button_type = events::io::mouse_button::button_type;
 
-		explicit io(ui::visible_surface &target);
+		explicit io(ui::visible_surface &parent);
 
 		virtual ~io();
 
@@ -26,8 +26,6 @@ namespace cwin::hook{
 		static events::interrupt::mouse_button::button_type get_mouse_button(mouse_button_type btn);
 
 	protected:
-		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
-
 		virtual void mouse_cursor_(UINT hit_target, events::interrupt::mouse_cursor &e);
 
 		virtual void mouse_leave_();
@@ -79,21 +77,23 @@ namespace cwin::hook{
 
 	class client_drag : public io{
 	public:
-		explicit client_drag(ui::visible_surface &target);
+		explicit client_drag(ui::visible_surface &parent);
 
 		virtual ~client_drag();
 
 	protected:
 		virtual void after_mouse_drag_(const SIZE &delta) override;
 	};
+}
 
+namespace cwin::ui{
 	template <>
-	struct target_type<io>{
-		using value = ui::visible_surface;
+	struct parent_type<hook::io>{
+		using value = visible_surface;
 	};
 
 	template <>
-	struct target_type<client_drag>{
-		using value = ui::visible_surface;
+	struct parent_type<hook::client_drag>{
+		using value = visible_surface;
 	};
 }

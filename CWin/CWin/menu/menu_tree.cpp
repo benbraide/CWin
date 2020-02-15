@@ -1,3 +1,5 @@
+#include "../hook/hook_object.h"
+
 #include "link_menu_item.h"
 #include "menu_tree.h"
 
@@ -28,7 +30,7 @@ void cwin::menu::tree::get_types(std::size_t index, const std::function<void(UIN
 }
 
 bool cwin::menu::tree::inserting_child_(object &child){
-	return (dynamic_cast<menu::item *>(&child) != nullptr || dynamic_cast<menu::tree *>(&child) != nullptr);
+	return (dynamic_cast<menu::item *>(&child) != nullptr || dynamic_cast<menu::tree *>(&child) != nullptr || dynamic_cast<hook::object *>(&child) != nullptr);
 }
 
 bool cwin::menu::tree::traverse_offspring_(const std::function<bool(object &)> &callback) const{

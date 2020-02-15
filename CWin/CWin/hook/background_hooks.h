@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hook_target.h"
+#include "hook_object.h"
 
 namespace cwin::ui{
 	class visible_surface;
@@ -11,21 +11,19 @@ namespace cwin::ui{
 namespace cwin::hook{
 	class background : public object{
 	public:
-		explicit background(ui::visible_surface &target);
+		explicit background(ui::visible_surface &parent);
 
 		virtual ~background();
 
 	protected:
-		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
-
 		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const = 0;
 	};
 
 	class color_background : public background{
 	public:
-		explicit color_background(ui::visible_surface &target);
+		explicit color_background(ui::visible_surface &parent);
 
-		color_background(ui::visible_surface &target, const D2D1_COLOR_F &value);
+		color_background(ui::visible_surface &parent, const D2D1_COLOR_F &value);
 
 		virtual ~color_background();
 
@@ -59,9 +57,9 @@ namespace cwin::hook{
 
 	class caption : public object{
 	public:
-		explicit caption(ui::non_window_surface &target);
+		explicit caption(ui::non_window_surface &parent);
 
-		caption(ui::non_window_surface &target, const std::wstring &value);
+		caption(ui::non_window_surface &parent, const std::wstring &value);
 
 		virtual ~caption();
 
@@ -72,20 +70,20 @@ namespace cwin::hook{
 		virtual void get_value(const std::function<void(const std::wstring &)> &callback) const;
 
 	protected:
-		virtual resolution_type resolve_conflict_(relationship_type relationship) const override;
-
 		virtual void set_value_(const std::wstring &value);
 
 		std::wstring value_;
 	};
+}
 
+namespace cwin::ui{
 	template <>
-	struct target_type<color_background>{
-		using value = ui::visible_surface;
+	struct parent_type<hook::color_background>{
+		using value = visible_surface;
 	};
 
 	template <>
-	struct target_type<caption>{
-		using value = ui::non_window_surface;
+	struct parent_type<hook::caption>{
+		using value = non_window_surface;
 	};
 }

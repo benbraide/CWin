@@ -2,8 +2,9 @@
 
 #include "../thread/thread_exception.h"
 #include "../utility/animation_timing.h"
+#include "../ui/ui_tree.h"
 
-#include "hook_target.h"
+#include "hook_object.h"
 
 namespace cwin::hook{
 	class animation_helper{
@@ -23,27 +24,27 @@ namespace cwin::hook{
 		using easing_type = std::function<float(float)>;
 		using duration_type = std::chrono::nanoseconds;
 
-		explicit animation(hook::target &target)
-			: animation(target, utility::animation_timing::linear::ease, std::chrono::milliseconds(500)){}
+		explicit animation(ui::tree &parent)
+			: animation(parent, utility::animation_timing::linear::ease, std::chrono::milliseconds(500)){}
 
-		animation(hook::target &target, const easing_type &easing)
-			: animation(target, easing, std::chrono::milliseconds(500)){}
+		animation(ui::tree &parent, const easing_type &easing)
+			: animation(parent, easing, std::chrono::milliseconds(500)){}
 
-		animation(hook::target &target, const duration_type &duration)
-			: animation(target, utility::animation_timing::linear::ease, duration){}
+		animation(ui::tree &parent, const duration_type &duration)
+			: animation(parent, utility::animation_timing::linear::ease, duration){}
 
-		animation(hook::target &target, const easing_type &easing, const duration_type &duration)
-			: object(target), easing_(easing), duration_(duration){
-			target.get_events().bind([=](m_change_interrupt_type &e){
+		animation(ui::tree &parent, const easing_type &easing, const duration_type &duration)
+			: object(parent), easing_(easing), duration_(duration){
+			parent.get_events().bind([=](m_change_interrupt_type &e){
 				e.prevent_default();
 				set_value_(e.get_old_value(), e.get_value(), e.get_updater());
 			}, get_talk_id());
 
-			target.get_events().bind([=](m_request_interrupt_type &e){
+			parent.get_events().bind([=](m_request_interrupt_type &e){
 				return &current_value_;
 			}, get_talk_id());
 
-			if (auto value = reinterpret_cast<value_type *>(trigger_then_report_result_<m_init_interrupt_type>(0u)); value != nullptr)
+			if (auto value = reinterpret_cast<value_type *>(events_.trigger_then_report_result<m_init_interrupt_type>(0u)); value != nullptr)
 				current_value_ = *value;
 		}
 
@@ -129,10 +130,6 @@ namespace cwin::hook{
 		}
 
 	protected:
-		virtual resolution_type resolve_conflict_(relationship_type relationship) const override{
-			return resolution_type::replace;
-		}
-
 		virtual void set_value_(const m_value_type &old_value, const m_value_type &value, const callback_type &callback){
 			if (!is_enabled_ || callback == nullptr){//Animation disabled
 				current_value_ = value;

@@ -3,30 +3,26 @@
 
 #include "non_window_handle_hooks.h"
 
-cwin::hook::non_window::handle::handle(ui::non_window_surface &target)
-	: object(target){
-	target_.get_events().bind([=](events::interrupt::resize_non_client_handle &e){
+cwin::hook::non_window::handle::handle(ui::non_window_surface &parent)
+	: object(parent){
+	parent.get_events().bind([=](events::interrupt::resize_non_client_handle &e){
 		e.set_value(resize_value_(e.get_value(), e.get_size()));
 	}, get_talk_id());
 }
 
 cwin::hook::non_window::handle::~handle() = default;
 
-cwin::hook::object::resolution_type cwin::hook::non_window::handle::resolve_conflict_(relationship_type relationship) const{
-	return resolution_type::discard;
-}
-
 void cwin::hook::non_window::handle::destroy_value_(HRGN value) const{
 	DeleteObject(value);
 }
 
-cwin::hook::non_window::client_handle::client_handle(ui::non_window_surface &target)
-	: object(target){
-	target_.get_events().bind([=](events::interrupt::resize_client_handle &e){
+cwin::hook::non_window::client_handle::client_handle(ui::non_window_surface &parent)
+	: object(parent){
+	parent.get_events().bind([=](events::interrupt::resize_client_handle &e){
 		e.set_value(resize_value_(e.get_value(), e.get_size()));
 	}, get_talk_id());
 
-	target_.get_events().bind([=](events::interrupt::is_big_border_handle &e){
+	parent.get_events().bind([=](events::interrupt::is_big_border_handle &e){
 		return is_big_border_();
 	}, get_talk_id());
 }
@@ -43,10 +39,6 @@ void cwin::hook::non_window::client_handle::is_big_border(const std::function<vo
 	post_or_execute_task([=]{
 		callback(is_big_border_());
 	});
-}
-
-cwin::hook::object::resolution_type cwin::hook::non_window::client_handle::resolve_conflict_(relationship_type relationship) const{
-	return resolution_type::discard;
 }
 
 void cwin::hook::non_window::client_handle::destroy_value_(HRGN value) const{

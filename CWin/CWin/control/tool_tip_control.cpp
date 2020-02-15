@@ -1,3 +1,4 @@
+#include "../hook/hook_object.h"
 #include "../events/general_events.h"
 #include "../events/control_events.h"
 
@@ -9,7 +10,7 @@ cwin::control::tool_tip::tool_tip()
 cwin::control::tool_tip::~tool_tip() = default;
 
 bool cwin::control::tool_tip::inserting_child_(ui::object &child){
-	return (dynamic_cast<tool_tip_item *>(&child) != nullptr);
+	return (dynamic_cast<tool_tip_item *>(&child) != nullptr || dynamic_cast<hook::object *>(&child) != nullptr);
 }
 
 bool cwin::control::tool_tip::is_top_level_() const{

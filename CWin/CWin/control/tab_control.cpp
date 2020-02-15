@@ -11,8 +11,8 @@ cwin::control::tab::tab(tree &parent)
 
 cwin::control::tab::tab(tree &parent, std::size_t index)
 	: object(parent, index, WC_TABCONTROLW, ICC_TAB_CLASSES){
-	insert_hook_<hook::placement>(hook::placement::alignment_type::top_left);
-	insert_hook_<hook::fill>();
+	insert_object<hook::placement>(nullptr, hook::placement::alignment_type::top_left);
+	insert_object<hook::fill>(nullptr);
 }
 
 cwin::control::tab::~tab() = default;
@@ -46,7 +46,7 @@ void cwin::control::tab::after_destroy_(){
 }
 
 bool cwin::control::tab::inserting_child_(ui::object &child){
-	return (dynamic_cast<tab_item *>(&child) != nullptr);
+	return (dynamic_cast<tab_item *>(&child) != nullptr || dynamic_cast<hook::object *>(&child) != nullptr);
 }
 
 SIZE cwin::control::tab::compute_client_size_() const{

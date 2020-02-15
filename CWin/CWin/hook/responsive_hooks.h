@@ -2,7 +2,7 @@
 
 #include <variant>
 
-#include "../ui/ui_tree.h"
+#include "hook_object.h"
 
 namespace cwin::ui{
 	class surface;
@@ -11,7 +11,7 @@ namespace cwin::ui{
 namespace cwin::hook{
 	class parent_size : public object{
 	public:
-		parent_size(ui::surface &target, const std::function<void()> &callback);
+		parent_size(ui::surface &parent, const std::function<void()> &callback);
 
 		virtual ~parent_size();
 
@@ -23,7 +23,7 @@ namespace cwin::hook{
 
 	class children_dimension : public object{
 	public:
-		children_dimension(ui::surface &target, const std::function<void()> &callback);
+		children_dimension(ui::surface &parent, const std::function<void()> &callback);
 
 		virtual ~children_dimension();
 
@@ -47,11 +47,11 @@ namespace cwin::hook{
 			bottom_right,
 		};
 
-		explicit placement(ui::surface &target);
+		explicit placement(ui::surface &parent);
 
-		placement(ui::surface &target, alignment_type alignment);
+		placement(ui::surface &parent, alignment_type alignment);
 
-		placement(ui::surface &target, alignment_type alignment, const POINT &offset);
+		placement(ui::surface &parent, alignment_type alignment, const POINT &offset);
 
 		virtual ~placement();
 
@@ -107,23 +107,23 @@ namespace cwin::hook{
 			std::size_t index_;
 		};
 
-		relative_placement(ui::surface &target, ui::surface &source);
+		relative_placement(ui::surface &parent, ui::surface &source);
 
-		relative_placement(ui::surface &target, ui::surface &source, alignment_type alignment, alignment_type source_alignment);
+		relative_placement(ui::surface &parent, ui::surface &source, alignment_type alignment, alignment_type source_alignment);
 
-		relative_placement(ui::surface &target, ui::surface &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset);
+		relative_placement(ui::surface &parent, ui::surface &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset);
 
-		relative_placement(ui::surface &target, sibling_type source);
+		relative_placement(ui::surface &parent, sibling_type source);
 
-		relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment);
+		relative_placement(ui::surface &parent, sibling_type source, alignment_type alignment, alignment_type source_alignment);
 
-		relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment, const POINT &offset);
+		relative_placement(ui::surface &parent, sibling_type source, alignment_type alignment, alignment_type source_alignment, const POINT &offset);
 
-		relative_placement(ui::surface &target, const sibling &source);
+		relative_placement(ui::surface &parent, const sibling &source);
 
-		relative_placement(ui::surface &target, const sibling &source, alignment_type alignment, alignment_type source_alignment);
+		relative_placement(ui::surface &parent, const sibling &source, alignment_type alignment, alignment_type source_alignment);
 
-		relative_placement(ui::surface &target, const sibling &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset);
+		relative_placement(ui::surface &parent, const sibling &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset);
 
 		virtual ~relative_placement();
 
@@ -170,11 +170,11 @@ namespace cwin::hook{
 
 	class fill : public parent_size{
 	public:
-		explicit fill(ui::surface &target);
+		explicit fill(ui::surface &parent);
 
-		fill(ui::surface &target, const SIZE &offset);
+		fill(ui::surface &parent, const SIZE &offset);
 
-		fill(ui::surface &target, const D2D1_SIZE_F &offset);
+		fill(ui::surface &parent, const D2D1_SIZE_F &offset);
 
 		virtual ~fill();
 
@@ -198,11 +198,11 @@ namespace cwin::hook{
 
 	class contain : public children_dimension{
 	public:
-		explicit contain(ui::surface &target);
+		explicit contain(ui::surface &parent);
 
-		contain(ui::surface &target, const SIZE &offset);
+		contain(ui::surface &parent, const SIZE &offset);
 
-		contain(ui::surface &target, const D2D1_SIZE_F &offset);
+		contain(ui::surface &parent, const D2D1_SIZE_F &offset);
 
 		virtual ~contain();
 
@@ -223,34 +223,36 @@ namespace cwin::hook{
 
 		std::variant<SIZE, D2D1_SIZE_F> offset_;
 	};
+}
 
+namespace cwin::ui{
 	template <>
-	struct target_type<parent_size>{
-		using value = ui::surface;
+	struct parent_type<hook::parent_size>{
+		using value = surface;
 	};
 
 	template <>
-	struct target_type<children_dimension>{
-		using value = ui::surface;
+	struct parent_type<hook::children_dimension>{
+		using value = surface;
 	};
 
 	template <>
-	struct target_type<placement>{
-		using value = ui::surface;
+	struct parent_type<hook::placement>{
+		using value = surface;
 	};
 
 	template <>
-	struct target_type<relative_placement>{
-		using value = ui::surface;
+	struct parent_type<hook::relative_placement>{
+		using value = surface;
 	};
 
 	template <>
-	struct target_type<fill>{
-		using value = ui::surface;
+	struct parent_type<hook::fill>{
+		using value = surface;
 	};
 
 	template <>
-	struct target_type<contain>{
-		using value = ui::surface;
+	struct parent_type<hook::contain>{
+		using value = surface;
 	};
 }

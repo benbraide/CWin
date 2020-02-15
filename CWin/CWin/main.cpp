@@ -50,7 +50,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	tool_tip.create();
 	window.insert_object([](cwin::menu::system_popup &popup){
-		popup.insert_object([](cwin::menu::system_separator &){});
+		popup.insert_object<cwin::menu::system_separator>(nullptr);
 
 		popup.insert_object([](cwin::menu::system_action_item &item){
 			item.set_text(L"Custom System Item");
@@ -60,7 +60,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			item.set_text(L"Custom System Check Item");
 		});
 		
-		popup.insert_object([](cwin::menu::system_separator &){});
+		popup.insert_object<cwin::menu::system_separator>(nullptr);
 		
 		popup.insert_object([](cwin::menu::system_radio_group &group){
 			group.insert_object([](cwin::menu::system_check_item &item){
@@ -72,7 +72,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			});
 		});
 
-		popup.insert_object([](cwin::menu::system_separator &){});
+		popup.insert_object<cwin::menu::system_separator>(nullptr);
 
 		popup.insert_object([](cwin::menu::system_link_item &link){
 			link.set_text(L"Custom System Link Item");
@@ -138,7 +138,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			page.set_caption(L"First Tab Page");
 
 			page.insert_object([&](cwin::control::push_button &ctrl){
-				ctrl.insert_hook<cwin::hook::client_drag>();
+				ctrl.insert_object<cwin::hook::client_drag>(nullptr);
 				ctrl.set_text(L"Button");
 				ctrl.set_position(POINT{ 30, 30 });
 
@@ -150,7 +150,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 			page.insert_object([](cwin::control::default_push_button &ctrl){
 				ctrl.set_text(L"Default Button");
-				ctrl.insert_hook<cwin::hook::relative_placement>(
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
 					cwin::hook::relative_placement::sibling_type::previous,				//Source
 					cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
 					cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
@@ -160,7 +161,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 			page.insert_object([](cwin::control::split_button &ctrl){
 				ctrl.set_text(L"Split Button");
-				ctrl.insert_hook<cwin::hook::relative_placement>(
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
 					cwin::hook::relative_placement::sibling_type::previous,				//Source
 					cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
 					cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
@@ -178,7 +180,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 			page.insert_object([](cwin::control::default_split_button &ctrl){
 				ctrl.set_text(L"Default Split Button");
-				ctrl.insert_hook<cwin::hook::relative_placement>(
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
 					cwin::hook::relative_placement::sibling_type::previous,				//Source
 					cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
 					cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
@@ -188,7 +191,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 			page.insert_object([](cwin::control::check_button &ctrl){
 				ctrl.set_text(L"Check Button");
-				ctrl.insert_hook<cwin::hook::relative_placement>(
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
 					cwin::hook::relative_placement::sibling(0),							//Source
 					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
 					cwin::hook::relative_placement::alignment_type::bottom_left,		//Source Alignment
@@ -197,7 +201,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			});
 
 			page.insert_object([](cwin::control::radio_group &grp){
-				grp.insert_hook<cwin::hook::relative_placement>(
+				grp.insert_object<cwin::hook::relative_placement>(
+					nullptr,
 					cwin::hook::relative_placement::sibling_type::previous,				//Source
 					cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
 					cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
@@ -211,7 +216,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 				grp.insert_object([](cwin::control::check_button &ctrl){
 					ctrl.set_text(L"Second Radio Button");
-					ctrl.insert_hook<cwin::hook::relative_placement>(
+					ctrl.insert_object<cwin::hook::relative_placement>(
+						nullptr,
 						cwin::hook::relative_placement::sibling_type::previous,				//Source
 						cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
 						cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment
@@ -222,7 +228,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 			page.insert_object([](cwin::control::three_state_check_button &ctrl){
 				ctrl.set_text(L"Three State Check Button");
-				ctrl.insert_hook<cwin::hook::relative_placement>(
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
 					cwin::hook::relative_placement::sibling_type::previous,				//Source
 					cwin::hook::relative_placement::alignment_type::bottom_left,		//Alignment
 					cwin::hook::relative_placement::alignment_type::bottom_right,		//Source Alignment

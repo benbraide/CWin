@@ -16,6 +16,15 @@ namespace cwin::ui{
 				tree_call_forwarder<return_type>::template call_insert_object(*this, utility::object_to_function_traits::get(callback), args...);
 			});
 		}
+		
+		template <typename object_type, typename... args_types>
+		void insert_object(std::nullptr_t, args_types &&... args){
+			execute_task([&]{
+				insert_object_<object_type>([&](object_type &){
+					return true;
+				}, args...);
+			});
+		}
 
 		virtual void insert_child(object &child);
 

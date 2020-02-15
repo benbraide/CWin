@@ -3,11 +3,11 @@
 
 #include "responsive_hooks.h"
 
-cwin::hook::parent_size::parent_size(ui::surface &target, const std::function<void()> &callback)
-	: object(target), callback_(callback){
-	bind_size_event_(target.get_parent(), nullptr);
-	target_.get_events().bind([this](events::after_parent_change &e){
-		if (auto surface_target = dynamic_cast<ui::surface *>(&target_); surface_target	!= nullptr)
+cwin::hook::parent_size::parent_size(ui::surface &parent, const std::function<void()> &callback)
+	: object(parent), callback_(callback){
+	bind_size_event_(parent.get_parent(), nullptr);
+	parent.get_events().bind([this](events::after_parent_change &e){
+		if (auto surface_target = dynamic_cast<ui::surface *>(parent_); surface_target	!= nullptr)
 			bind_size_event_(surface_target->get_parent(), e.get_old_value());
 
 		if (callback_ != nullptr)
@@ -37,19 +37,19 @@ void cwin::hook::parent_size::bind_size_event_(ui::tree *parent, ui::tree *previ
 	}
 }
 
-cwin::hook::children_dimension::children_dimension(ui::surface &target, const std::function<void()> &callback)
-	: object(target), callback_(callback){
-	target.traverse_matching_children<ui::surface>([this](ui::surface &child){
+cwin::hook::children_dimension::children_dimension(ui::surface &parent, const std::function<void()> &callback)
+	: object(parent), callback_(callback){
+	parent.traverse_matching_children<ui::surface>([this](ui::surface &child){
 		bind_dimension_events_(child);
 	});
 
-	target_.get_events().bind([this](events::after_child_insert &e){
+	parent.get_events().bind([this](events::after_child_insert &e){
 		bind_dimension_events_(e.get_target());
 		if (callback_ != nullptr)
 			callback_();
 	}, get_talk_id());
 
-	target_.get_events().bind([this](events::after_child_remove &e){
+	parent.get_events().bind([this](events::after_child_remove &e){
 		unbound_events_(e.get_target().get_talk_id());
 		if (callback_ != nullptr)
 			callback_();
@@ -75,15 +75,15 @@ void cwin::hook::children_dimension::bind_dimension_events_(events::target &chil
 	}, get_talk_id());
 }
 
-cwin::hook::placement::placement(ui::surface &target)
-	: placement(target, alignment_type::top_left, POINT{}){}
+cwin::hook::placement::placement(ui::surface &parent)
+	: placement(parent, alignment_type::top_left, POINT{}){}
 
-cwin::hook::placement::placement(ui::surface &target, alignment_type alignment)
-	: placement(target, alignment, POINT{}){}
+cwin::hook::placement::placement(ui::surface &parent, alignment_type alignment)
+	: placement(parent, alignment, POINT{}){}
 
-cwin::hook::placement::placement(ui::surface &target, alignment_type alignment, const POINT &offset)
-	: parent_size(target, nullptr), alignment_(alignment), offset_(offset){
-	target.get_events().bind([this](events::after_size_update &e){
+cwin::hook::placement::placement(ui::surface &parent, alignment_type alignment, const POINT &offset)
+	: parent_size(parent, nullptr), alignment_(alignment), offset_(offset){
+	parent.get_events().bind([this](events::after_size_update &e){
 		update_();
 	}, get_talk_id());
 
@@ -143,7 +143,7 @@ void cwin::hook::placement::set_offset_(const POINT &value){
 }
 
 void cwin::hook::placement::update_(){
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
+	auto surface_target = dynamic_cast<ui::surface *>(parent_);
 	if (surface_target == nullptr)
 		return;
 
@@ -195,15 +195,15 @@ void cwin::hook::placement::update_(){
 	surface_target->set_position(computed_offset);
 }
 
-cwin::hook::relative_placement::relative_placement(ui::surface &target, ui::surface &source)
-	: relative_placement(target, source, alignment_type::top_left, alignment_type::top_right, POINT{}){}
+cwin::hook::relative_placement::relative_placement(ui::surface &parent, ui::surface &source)
+	: relative_placement(parent, source, alignment_type::top_left, alignment_type::top_right, POINT{}){}
 
-cwin::hook::relative_placement::relative_placement(ui::surface &target, ui::surface &source, alignment_type alignment, alignment_type source_alignment)
-	: relative_placement(target, source, alignment, source_alignment, POINT{}){}
+cwin::hook::relative_placement::relative_placement(ui::surface &parent, ui::surface &source, alignment_type alignment, alignment_type source_alignment)
+	: relative_placement(parent, source, alignment, source_alignment, POINT{}){}
 
-cwin::hook::relative_placement::relative_placement(ui::surface &target, ui::surface &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset)
-	: object(target), source_(source), alignment_(alignment), source_alignment_(source_alignment), offset_(offset){
-	target.get_events().bind([this](events::after_size_update &e){
+cwin::hook::relative_placement::relative_placement(ui::surface &parent, ui::surface &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset)
+	: object(parent), source_(source), alignment_(alignment), source_alignment_(source_alignment), offset_(offset){
+	parent.get_events().bind([this](events::after_size_update &e){
 		update_();
 	}, get_talk_id());
 
@@ -218,23 +218,23 @@ cwin::hook::relative_placement::relative_placement(ui::surface &target, ui::surf
 	update_();
 }
 
-cwin::hook::relative_placement::relative_placement(ui::surface &target, sibling_type source)
-	: relative_placement(target, source, alignment_type::top_left, alignment_type::top_right, POINT{}){}
+cwin::hook::relative_placement::relative_placement(ui::surface &parent, sibling_type source)
+	: relative_placement(parent, source, alignment_type::top_left, alignment_type::top_right, POINT{}){}
 
-cwin::hook::relative_placement::relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment)
-	: relative_placement(target, source, alignment, source_alignment, POINT{}){}
+cwin::hook::relative_placement::relative_placement(ui::surface &parent, sibling_type source, alignment_type alignment, alignment_type source_alignment)
+	: relative_placement(parent, source, alignment, source_alignment, POINT{}){}
 
-cwin::hook::relative_placement::relative_placement(ui::surface &target, sibling_type source, alignment_type alignment, alignment_type source_alignment, const POINT &offset)
-	: relative_placement(target, get_sibling(target, source), alignment, source_alignment, offset){}
+cwin::hook::relative_placement::relative_placement(ui::surface &parent, sibling_type source, alignment_type alignment, alignment_type source_alignment, const POINT &offset)
+	: relative_placement(parent, get_sibling(parent, source), alignment, source_alignment, offset){}
 
-cwin::hook::relative_placement::relative_placement(ui::surface &target, const sibling &source)
-	: relative_placement(target, source, alignment_type::top_left, alignment_type::top_right, POINT{}){}
+cwin::hook::relative_placement::relative_placement(ui::surface &parent, const sibling &source)
+	: relative_placement(parent, source, alignment_type::top_left, alignment_type::top_right, POINT{}){}
 
-cwin::hook::relative_placement::relative_placement(ui::surface &target, const sibling &source, alignment_type alignment, alignment_type source_alignment)
-	: relative_placement(target, source, alignment, source_alignment, POINT{}){}
+cwin::hook::relative_placement::relative_placement(ui::surface &parent, const sibling &source, alignment_type alignment, alignment_type source_alignment)
+	: relative_placement(parent, source, alignment, source_alignment, POINT{}){}
 
-cwin::hook::relative_placement::relative_placement(ui::surface &target, const sibling &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset)
-	: relative_placement(target, source.get(target), alignment, source_alignment, offset){}
+cwin::hook::relative_placement::relative_placement(ui::surface &parent, const sibling &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset)
+	: relative_placement(parent, source.get(parent), alignment, source_alignment, offset){}
 
 cwin::hook::relative_placement::~relative_placement() = default;
 
@@ -353,7 +353,7 @@ POINT cwin::hook::relative_placement::compute_offset_(const SIZE &size, alignmen
 }
 
 void cwin::hook::relative_placement::update_(){
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
+	auto surface_target = dynamic_cast<ui::surface *>(parent_);
 	if (surface_target == nullptr)
 		return;
 
@@ -394,11 +394,11 @@ cwin::ui::surface &cwin::hook::relative_placement::sibling::get(ui::surface &tar
 	return *value;
 }
 
-cwin::hook::fill::fill(ui::surface &target)
-	: fill(target, SIZE{}){}
+cwin::hook::fill::fill(ui::surface &parent)
+	: fill(parent, SIZE{}){}
 
-cwin::hook::fill::fill(ui::surface &target, const SIZE &offset)
-	: parent_size(target, nullptr), offset_(offset){
+cwin::hook::fill::fill(ui::surface &parent, const SIZE &offset)
+	: parent_size(parent, nullptr), offset_(offset){
 	callback_ = [this](){
 		update_();
 	};
@@ -406,8 +406,8 @@ cwin::hook::fill::fill(ui::surface &target, const SIZE &offset)
 	update_();
 }
 
-cwin::hook::fill::fill(ui::surface &target, const D2D1_SIZE_F &offset)
-	: parent_size(target, nullptr), offset_(offset){
+cwin::hook::fill::fill(ui::surface &parent, const D2D1_SIZE_F &offset)
+	: parent_size(parent, nullptr), offset_(offset){
 	callback_ = [this](){
 		update_();
 	};
@@ -452,7 +452,7 @@ void cwin::hook::fill::set_offset_(const D2D1_SIZE_F &value){
 }
 
 void cwin::hook::fill::update_(){
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
+	auto surface_target = dynamic_cast<ui::surface *>(parent_);
 	if (surface_target == nullptr)
 		return;
 
@@ -477,11 +477,11 @@ void cwin::hook::fill::update_(){
 	surface_target->set_size(SIZE{ (parent_client_size.cx - offset.cx), (parent_client_size.cy - offset.cy) });
 }
 
-cwin::hook::contain::contain(ui::surface &target)
-	: contain(target, SIZE{}){}
+cwin::hook::contain::contain(ui::surface &parent)
+	: contain(parent, SIZE{}){}
 
-cwin::hook::contain::contain(ui::surface &target, const SIZE &offset)
-	: children_dimension(target, nullptr), offset_(offset){
+cwin::hook::contain::contain(ui::surface &parent, const SIZE &offset)
+	: children_dimension(parent, nullptr), offset_(offset){
 	callback_ = [this](){
 		update_();
 	};
@@ -489,8 +489,8 @@ cwin::hook::contain::contain(ui::surface &target, const SIZE &offset)
 	update_();
 }
 
-cwin::hook::contain::contain(ui::surface &target, const D2D1_SIZE_F &offset)
-	: children_dimension(target, nullptr), offset_(offset){
+cwin::hook::contain::contain(ui::surface &parent, const D2D1_SIZE_F &offset)
+	: children_dimension(parent, nullptr), offset_(offset){
 	callback_ = [this](){
 		update_();
 	};
@@ -535,7 +535,7 @@ void cwin::hook::contain::set_offset_(const D2D1_SIZE_F &value){
 }
 
 void cwin::hook::contain::update_(){
-	auto surface_target = dynamic_cast<ui::surface *>(&target_);
+	auto surface_target = dynamic_cast<ui::surface *>(parent_);
 	if (surface_target == nullptr)
 		return;
 

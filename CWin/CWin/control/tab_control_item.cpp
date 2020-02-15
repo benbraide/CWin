@@ -7,14 +7,30 @@ cwin::control::tab_item::tab_item(tab &parent)
 	: tab_item(parent, static_cast<std::size_t>(-1)){}
 
 cwin::control::tab_item::tab_item(tab &parent, std::size_t index){
-	index_ = index;
+	if ((index_ = index) != static_cast<std::size_t>(-1)){//Resolve index
+		std::size_t child_index = 0u, item_index = 0u;
+		parent.traverse_children([&](ui::object &child){
+			if (dynamic_cast<tab_item *>(&child) != nullptr){
+				if (index <= item_index){
+					index_ = child_index;
+					return false;
+				}
+
+				++item_index;
+			}
+
+			++child_index;
+			return true;
+		});
+	}
+
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error
 		throw thread::exception::context_mismatch();
 
-	insert_hook_<hook::placement>(hook::placement::alignment_type::top_left);
-	insert_hook_<hook::fill>();
+	insert_object<hook::placement>(nullptr, hook::placement::alignment_type::top_left);
+	insert_object<hook::fill>(nullptr);
 
 	bind_default_([=](events::control::get_tool_tip_text &){
 		return caption_;
