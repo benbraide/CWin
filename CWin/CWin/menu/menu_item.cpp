@@ -180,19 +180,21 @@ void cwin::menu::item::set_states_(UINT value){
 	auto was_enabled = ((get_computed_states_() & MFS_DISABLED) == 0u);
 
 	states_ = value;
+	auto computed_states = get_computed_states_();
+
 	if (auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr); object_ancestor != nullptr && is_created_()){
 		MENUITEMINFOW info{
 			sizeof(MENUITEMINFOW),
 			MIIM_STATE,
 			0,
-			get_computed_states_()
+			computed_states
 		};
 
 		if (SetMenuItemInfoW(object_ancestor->get_handle(), active_index_, TRUE, &info) == FALSE)
 			throw ui::exception::action_failed();
 	}
 
-	if (was_enabled != ((get_computed_states_() & MFS_DISABLED) == 0u)){//Enabled state changed
+	if (was_enabled != ((computed_states & MFS_DISABLED) == 0u)){//Enabled state changed
 		if (was_enabled)
 			events_.trigger<events::disable>(nullptr, 0u);
 		else//Enabled
