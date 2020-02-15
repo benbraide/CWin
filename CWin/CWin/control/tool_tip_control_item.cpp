@@ -212,7 +212,7 @@ void cwin::control::tool_tip_item::create_(){
 	HWND window_handle = nullptr;
 
 	if (auto window_target = dynamic_cast<ui::window_surface *>(&target_); window_target == nullptr){
-		target_.traverse_matching_ancestors<ui::visible_surface>([&](ui::visible_surface &ancestor){
+		target_.traverse_ancestors([&](ui::visible_surface &ancestor){
 			ancestor.offset_point_to_window(offset);
 			if (auto window_ancestor = dynamic_cast<ui::window_surface *>(&ancestor); window_ancestor != nullptr){
 				window_handle = window_ancestor->get_handle();
@@ -327,7 +327,7 @@ void cwin::control::tool_tip_item::update_dimension_(){
 	HWND window_handle = nullptr;
 
 	if (auto window_target = dynamic_cast<ui::window_surface *>(&target_); window_target == nullptr){
-		target_.traverse_matching_ancestors<ui::visible_surface>([&](ui::visible_surface &ancestor){
+		target_.traverse_ancestors([&](ui::visible_surface &ancestor){
 			ancestor.offset_point_to_window(offset);
 			if (auto window_ancestor = dynamic_cast<ui::window_surface *>(&ancestor); window_ancestor != nullptr){
 				window_handle = window_ancestor->get_handle();

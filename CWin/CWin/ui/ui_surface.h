@@ -185,15 +185,15 @@ namespace cwin::ui{
 		virtual UINT current_hit_test_(const POINT &value) const;
 
 		template <typename surface_type>
-		POINT compute_matching_surface_relative_offset_() const{
+		POINT compute_surface_relative_offset_() const{
 			POINT offset{};
-			return ((find_matching_surface_ancestor_<surface_type>(&offset) == nullptr) ? POINT{} : offset);
+			return ((find_surface_ancestor_<surface_type>(&offset) == nullptr) ? POINT{} : offset);
 		}
 
 		template <typename surface_type>
-		surface_type *find_matching_surface_ancestor_(POINT *offset) const{
+		surface_type *find_surface_ancestor_(POINT *offset) const{
 			surface_type *value = nullptr;
-			traverse_matching_ancestors_<surface>([&](surface &ancestor){
+			traverse_ancestors_<surface>([&](surface &ancestor){
 				if ((value = dynamic_cast<surface_type *>(&ancestor)) != nullptr)
 					return false;//Ancestor is a match
 

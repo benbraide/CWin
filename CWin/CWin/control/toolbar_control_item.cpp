@@ -95,7 +95,7 @@ void cwin::control::toolbar_item::changed_parent_(ui::tree *old_value){
 	}
 	catch (const ui::exception::not_supported &){
 		if (old_value != nullptr){
-			old_value->traverse_matching_offspring<toolbar_item>([&](toolbar_item &offspring){
+			old_value->traverse_offspring([&](toolbar_item &offspring){
 				offspring.update_active_index_(active_index_, false);
 			});
 		}
@@ -115,7 +115,7 @@ void cwin::control::toolbar_item::create_(){
 		throw ui::exception::not_supported();
 
 	int index = 0;
-	toolbar_ancestor->traverse_matching_offspring<toolbar_item>([&](toolbar_item &offspring){
+	toolbar_ancestor->traverse_offspring([&](toolbar_item &offspring){
 		if (&offspring == this){//Insert
 			/*MENUITEMINFOW info{
 				sizeof(MENUITEMINFOW),
@@ -156,7 +156,7 @@ void cwin::control::toolbar_item::destroy_(){
 	//if (toolbar_ancestor->is_created() && RemoveMenu(toolbar_ancestor->get_handle(), active_index_, MF_BYPOSITION) == FALSE)
 		//throw ui::exception::action_failed();
 
-	toolbar_ancestor->traverse_matching_offspring<toolbar_item>([&](toolbar_item &offspring){
+	toolbar_ancestor->traverse_offspring([&](toolbar_item &offspring){
 		offspring.update_active_index_(active_index_, false);
 	});
 

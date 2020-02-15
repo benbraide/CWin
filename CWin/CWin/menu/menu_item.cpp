@@ -94,9 +94,10 @@ void cwin::menu::item::changed_parent_(ui::tree *old_value){
 		destroy_();
 	}
 	catch (const ui::exception::not_supported &){
-		if (old_value != nullptr){
-			old_value->traverse_matching_offspring<item>([&](item &offspring){
+		if (auto old_tree_value = dynamic_cast<menu::tree *>(old_value); old_tree_value != nullptr){
+			old_tree_value->traverse_offspring_<item>([&](item &offspring){
 				offspring.update_active_index_(active_index_, false);
+				return true;
 			});
 		}
 
@@ -115,7 +116,7 @@ void cwin::menu::item::create_(){
 		throw ui::exception::not_supported();
 
 	UINT index = 0u;
-	object_ancestor->traverse_matching_offspring<item>([&](item &offspring){
+	object_ancestor->traverse_offspring_<item>([&](item &offspring){
 		if (&offspring == this){//Insert
 			MENUITEMINFOW info{
 				sizeof(MENUITEMINFOW),
@@ -142,6 +143,8 @@ void cwin::menu::item::create_(){
 			++index;
 		else
 			offspring.update_active_index_(active_index_, true);
+
+		return true;
 	});
 }
 
@@ -156,8 +159,9 @@ void cwin::menu::item::destroy_(){
 	if (object_ancestor->is_created() && RemoveMenu(object_ancestor->get_handle(), active_index_, MF_BYPOSITION) == FALSE)
 		throw ui::exception::action_failed();
 
-	object_ancestor->traverse_matching_offspring<item>([&](item &offspring){
+	object_ancestor->traverse_offspring_<item>([&](item &offspring){
 		offspring.update_active_index_(active_index_, false);
+		return true;
 	});
 
 	active_index_ = static_cast<UINT>(-1);

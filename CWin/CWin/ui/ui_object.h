@@ -5,7 +5,17 @@
 #include "ui_exception.h"
 
 namespace cwin::ui{
+	class object;
 	class tree;
+
+	class object_helper{
+	public:
+		static tree *get_ancestor(tree &parent);
+
+		static void traverse_children(tree &parent, const std::function<bool(object &)> &callback);
+
+		static void reverse_traverse_children(tree &parent, const std::function<bool(object &)> &callback);
+	};
 
 	class object : public thread::item{
 	public:
@@ -55,27 +65,11 @@ namespace cwin::ui{
 			});
 		}
 
-		template <typename target_type, typename callback_type>
-		void traverse_matching_ancestors(const callback_type &callback) const{
-			post_or_execute_task([=]{
-				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
-				call_forwarder<return_type>::template call_traverse_matching_ancestors<target_type>(*this, utility::object_to_function_traits::get(callback));
-			});
-		}
-		
 		template <typename callback_type>
 		void reverse_traverse_ancestors(const callback_type &callback) const{
 			post_or_execute_task([=]{
 				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
 				call_forwarder<return_type>::template call_reverse_traverse_ancestors(*this, utility::object_to_function_traits::get(callback));
-			});
-		}
-
-		template <typename target_type, typename callback_type>
-		void reverse_traverse_matching_ancestors(const callback_type &callback) const{
-			post_or_execute_task([=]{
-				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
-				call_forwarder<return_type>::template call_reverse_traverse_matching_ancestors<target_type>(*this, utility::object_to_function_traits::get(callback));
 			});
 		}
 
@@ -105,14 +99,6 @@ namespace cwin::ui{
 			});
 		}
 		
-		template <typename target_type, typename callback_type>
-		void traverse_matching_siblings(const callback_type &callback) const{
-			post_or_execute_task([=]{
-				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
-				call_forwarder<return_type>::template call_traverse_matching_siblings<target_type>(*this, utility::object_to_function_traits::get(callback));
-			});
-		}
-		
 		template <typename callback_type>
 		void reverse_traverse_siblings(const callback_type &callback) const{
 			post_or_execute_task([=]{
@@ -121,14 +107,6 @@ namespace cwin::ui{
 			});
 		}
 		
-		template <typename target_type, typename callback_type>
-		void reverse_traverse_matching_siblings(const callback_type &callback) const{
-			post_or_execute_task([=]{
-				using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
-				call_forwarder<return_type>::template call_reverse_traverse_matching_siblings<target_type>(*this, utility::object_to_function_traits::get(callback));
-			});
-		}
-
 		virtual void create();
 
 		virtual void destroy();
@@ -145,64 +123,36 @@ namespace cwin::ui{
 
 		template <>
 		struct call_forwarder<bool>{
-			static void call_traverse_ancestors(const object &target, const std::function<bool(tree &)> &callback){
+			template <typename tree_type>
+			static void call_traverse_ancestors(const object &target, const std::function<bool(tree_type &)> &callback){
 				target.traverse_ancestors_(callback);
 			}
 
-			template <typename target_type>
-			static void call_traverse_matching_ancestors(const object &target, const std::function<bool(target_type &)> &callback){
-				target.traverse_matching_ancestors_(callback);
-			}
-
-			static void call_traverse_siblings(const object &target, const std::function<bool(object &, bool)> &callback){
+			template <typename object_type>
+			static void call_traverse_siblings(const object &target, const std::function<bool(object_type &, bool)> &callback){
 				target.traverse_siblings_(callback);
 			}
 
-			static void call_traverse_siblings(const object &target, const std::function<bool(object &)> &callback){
-				call_traverse_siblings(target, [&](object &value, bool){
+			template <typename object_type>
+			static void call_traverse_siblings(const object &target, const std::function<bool(object_type &)> &callback){
+				call_traverse_siblings<object_type>(target, [&](object_type &value, bool){
 					return callback(value);
 				});
 			}
 
-			template <typename target_type>
-			static void call_traverse_matching_siblings(const object &target, const std::function<bool(target_type &, bool)> &callback){
-				target.traverse_matching_siblings_(callback);
-			}
-
-			template <typename target_type>
-			static void call_traverse_matching_siblings(const object &target, const std::function<bool(target_type &)> &callback){
-				call_traverse_matching_siblings<target_type>(target, [&](target_type &value, bool){
-					return callback(value);
-				});
-			}
-
-			static void call_reverse_traverse_ancestors(const object &target, const std::function<bool(tree &)> &callback){
+			template <typename tree_type>
+			static void call_reverse_traverse_ancestors(const object &target, const std::function<bool(tree_type &)> &callback){
 				target.reverse_traverse_ancestors_(callback);
 			}
 
-			template <typename target_type>
-			static void call_reverse_traverse_matching_ancestors(const object &target, const std::function<bool(target_type &)> &callback){
-				target.reverse_traverse_matching_ancestors_(callback);
-			}
-
-			static void call_reverse_traverse_siblings(const object &target, const std::function<bool(object &, bool)> &callback){
+			template <typename object_type>
+			static void call_reverse_traverse_siblings(const object &target, const std::function<bool(object_type &, bool)> &callback){
 				target.reverse_traverse_siblings_(callback);
 			}
 
-			static void call_reverse_traverse_siblings(const object &target, const std::function<bool(object &)> &callback){
-				call_reverse_traverse_siblings(target, [&](object &value, bool){
-					return callback(value);
-				});
-			}
-
-			template <typename target_type>
-			static void call_reverse_traverse_matching_siblings(const object &target, const std::function<bool(target_type &, bool)> &callback){
-				target.reverse_traverse_matching_siblings_(callback);
-			}
-
-			template <typename target_type>
-			static void call_reverse_traverse_matching_siblings(const object &target, const std::function<bool(target_type &)> &callback){
-				call_reverse_traverse_matching_siblings<target_type>(target, [&](target_type &value, bool){
+			template <typename object_type>
+			static void call_reverse_traverse_siblings(const object &target, const std::function<bool(object_type &)> &callback){
+				call_reverse_traverse_siblings<object_type>(target, [&](object_type &value, bool){
 					return callback(value);
 				});
 			}
@@ -210,91 +160,49 @@ namespace cwin::ui{
 
 		template <>
 		struct call_forwarder<void>{
-			static void call_traverse_ancestors(const object &target, bool is_similar, const std::function<void(tree &)> &callback){
-				call_forwarder<bool>::call_traverse_ancestors(target, [&](tree &value){
+			template <typename tree_type>
+			static void call_traverse_ancestors(const object &target, const std::function<void(tree_type &)> &callback){
+				call_forwarder<bool>::call_traverse_ancestors<tree_type>(target, [&](tree_type &value){
 					callback(value);
 					return true;
 				});
 			}
 
-			template <typename target_type>
-			static void call_traverse_matching_ancestors(const object &target, const std::function<void(target_type &)> &callback){
-				call_forwarder<bool>::call_traverse_matching_ancestors<target_type>(target, [&](target_type &value){
-					callback(value);
-					return true;
-				});
-			}
-
-			static void call_traverse_siblings(const object &target, bool is_similar, const std::function<void(object &, bool)> &callback){
-				call_forwarder<bool>::call_traverse_siblings(target, [&](object &value, bool is_before){
+			template <typename object_type>
+			static void call_traverse_siblings(const object &target, const std::function<void(object_type &, bool)> &callback){
+				call_forwarder<bool>::call_traverse_siblings<object_type>(target, [&](object_type &value, bool is_before){
 					callback(value, is_before);
 					return true;
 				});
 			}
 
-			static void call_traverse_siblings(const object &target, bool is_similar, const std::function<void(object &)> &callback){
-				call_forwarder<bool>::call_traverse_siblings(target, [&](object &value, bool){
+			template <typename object_type>
+			static void call_traverse_siblings(const object &target, const std::function<void(object_type &)> &callback){
+				call_forwarder<bool>::call_traverse_siblings<object_type>(target, [&](object_type &value, bool){
 					callback(value);
 					return true;
 				});
 			}
 
-			template <typename target_type>
-			static void call_traverse_matching_siblings(const object &target, const std::function<void(target_type &, bool)> &callback){
-				call_forwarder<bool>::call_traverse_matching_siblings<target_type>(target, [&](target_type &value, bool is_before){
+			template <typename tree_type>
+			static void call_reverse_traverse_ancestors(const object &target, const std::function<void(tree_type &)> &callback){
+				call_forwarder<bool>::call_reverse_traverse_ancestors<tree_type>(target, [&](tree_type &value){
+					callback(value);
+					return true;
+				});
+			}
+
+			template <typename object_type>
+			static void call_reverse_traverse_siblings(const object &target, const std::function<void(object_type &, bool)> &callback){
+				call_forwarder<bool>::call_reverse_traverse_siblings<object_type>(target, [&](object_type &value, bool is_before){
 					callback(value, is_before);
 					return true;
 				});
 			}
 
-			template <typename target_type>
-			static void call_traverse_matching_siblings(const object &target, const std::function<void(target_type &)> &callback){
-				call_forwarder<bool>::call_traverse_matching_siblings<target_type>(target, [&](target_type &value, bool){
-					callback(value);
-					return true;
-				});
-			}
-
-			static void call_reverse_traverse_ancestors(const object &target, bool is_similar, const std::function<void(tree &)> &callback){
-				call_forwarder<bool>::call_reverse_traverse_ancestors(target, [&](tree &value){
-					callback(value);
-					return true;
-				});
-			}
-
-			template <typename target_type>
-			static void call_reverse_traverse_matching_ancestors(const object &target, const std::function<void(target_type &)> &callback){
-				call_forwarder<bool>::call_reverse_traverse_matching_ancestors<target_type>(target, [&](target_type &value){
-					callback(value);
-					return true;
-				});
-			}
-
-			static void call_reverse_traverse_siblings(const object &target, bool is_similar, const std::function<void(object &, bool)> &callback){
-				call_forwarder<bool>::call_reverse_traverse_siblings(target, [&](object &value, bool is_before){
-					callback(value, is_before);
-					return true;
-				});
-			}
-
-			static void call_reverse_traverse_siblings(const object &target, bool is_similar, const std::function<void(object &)> &callback){
-				call_forwarder<bool>::call_reverse_traverse_siblings(target, [&](object &value, bool){
-					callback(value);
-					return true;
-				});
-			}
-
-			template <typename target_type>
-			static void call_reverse_traverse_matching_siblings(const object &target, const std::function<void(target_type &, bool)> &callback){
-				call_forwarder<bool>::call_reverse_traverse_matching_siblings<target_type>(target, [&](target_type &value, bool is_before){
-					callback(value, is_before);
-					return true;
-				});
-			}
-
-			template <typename target_type>
-			static void call_reverse_traverse_matching_siblings(const object &target, const std::function<void(target_type &)> &callback){
-				call_forwarder<bool>::call_reverse_traverse_matching_siblings<target_type>(target, [&](target_type &value, bool){
+			template <typename object_type>
+			static void call_reverse_traverse_siblings(const object &target, const std::function<void(object_type &)> &callback){
+				call_forwarder<bool>::call_reverse_traverse_siblings<object_type>(target, [&](object_type &value, bool){
 					callback(value);
 					return true;
 				});
@@ -318,7 +226,7 @@ namespace cwin::ui{
 		template <typename target_type>
 		target_type *get_matching_ancestor_(const std::function<bool(target_type &)> &filter_callback) const{
 			target_type *value = nullptr;
-			traverse_matching_ancestors_<target_type>([&](target_type &val){
+			traverse_ancestors_<target_type>([&](target_type &val){
 				if (filter_callback != nullptr && !filter_callback(val))
 					return true;
 				value = &val;
@@ -328,26 +236,26 @@ namespace cwin::ui{
 			return value;
 		}
 
-		void traverse_ancestors_(const std::function<bool(tree &)> &callback) const;
-
-		template <typename target_type>
-		void traverse_matching_ancestors_(const std::function<bool(target_type &)> &callback) const{
-			traverse_ancestors_([&](tree &value){
-				if (auto target_value = dynamic_cast<target_type *>(&value); target_value != nullptr)
-					return callback(*target_value);
-				return true;
-			});
+		template <typename tree_type>
+		void traverse_ancestors_(const std::function<bool(tree_type &)> &callback) const{
+			for (auto ancestor = parent_; ancestor != nullptr; ancestor = object_helper::get_ancestor(*ancestor)){
+				if (auto target_ancestor = dynamic_cast<tree_type *>(ancestor); target_ancestor != nullptr && !callback(*target_ancestor))
+					break;
+			}
 		}
-		
-		void reverse_traverse_ancestors_(const std::function<bool(tree &)> &callback) const;
 
-		template <typename target_type>
-		void reverse_traverse_matching_ancestors_(const std::function<bool(target_type &)> &callback) const{
-			reverse_traverse_ancestors_([&](tree &value){
-				if (auto target_value = dynamic_cast<target_type *>(&value); target_value != nullptr)
-					return callback(*target_value);
-				return true;
-			});
+		template <typename tree_type>
+		void reverse_traverse_ancestors_(const std::function<bool(tree_type &)> &callback) const{
+			std::list<tree_type *> ancestors;
+			for (auto ancestor = parent_; ancestor != nullptr; ancestor = object_helper::get_ancestor(*ancestor)){
+				if (auto target_ancestor = dynamic_cast<tree_type *>(ancestor); target_ancestor != nullptr)
+					ancestors.push_front(target_ancestor);
+			}
+
+			for (auto ancestor : ancestors){
+				if (!callback(*ancestor))
+					break;
+			}
 		}
 
 		virtual bool is_ancestor_(const tree &target) const;
@@ -364,24 +272,40 @@ namespace cwin::ui{
 
 		virtual object *get_next_sibling_() const;
 
-		void traverse_siblings_(const std::function<bool(object &, bool)> &callback) const;
+		template <typename object_type>
+		void traverse_siblings_(const std::function<bool(object_type &, bool)> &callback) const{
+			if (parent_ == nullptr)
+				return;//No siblings
 
-		template <typename target_type>
-		void traverse_matching_siblings_(const std::function<bool(target_type &, bool)> &callback) const{
-			traverse_siblings_([&](object &value, bool is_before){
-				if (auto target_value = dynamic_cast<target_type *>(&value); target_value != nullptr)
-					return callback(*target_value, is_before);
+			auto is_before = true;
+			object_helper::traverse_children(*parent_, [&](object &child){
+				if (&child == this){
+					is_before = false;
+					return true;
+				}
+
+				if (auto target_child = dynamic_cast<object_type *>(&child); target_child != nullptr && !callback(*target_child, is_before))
+					return false;
+
 				return true;
 			});
 		}
 
-		void reverse_traverse_siblings_(const std::function<bool(object &, bool)> &callback) const;
+		template <typename object_type>
+		void reverse_traverse_siblings_(const std::function<bool(object_type &, bool)> &callback) const{
+			if (parent_ == nullptr)
+				return;//No siblings
 
-		template <typename target_type>
-		void reverse_traverse_matching_siblings_(const std::function<bool(target_type &, bool)> &callback) const{
-			reverse_traverse_siblings_([&](object &value, bool is_before){
-				if (auto target_value = dynamic_cast<target_type *>(&value); target_value != nullptr)
-					return callback(*target_value, is_before);
+			auto is_before = false;
+			object_helper::reverse_traverse_children(*parent_, [&](object &child){
+				if (&child == this){
+					is_before = true;
+					return true;
+				}
+
+				if (auto target_child = dynamic_cast<object_type *>(&child); target_child != nullptr && !callback(*target_child, is_before))
+					return false;
+
 				return true;
 			});
 		}

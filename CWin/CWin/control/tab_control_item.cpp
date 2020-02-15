@@ -7,23 +7,7 @@ cwin::control::tab_item::tab_item(tab &parent)
 	: tab_item(parent, static_cast<std::size_t>(-1)){}
 
 cwin::control::tab_item::tab_item(tab &parent, std::size_t index){
-	if ((index_ = index) != static_cast<std::size_t>(-1)){//Resolve index
-		std::size_t child_index = 0u, item_index = 0u;
-		parent.traverse_children([&](ui::object &child){
-			if (dynamic_cast<tab_item *>(&child) != nullptr){
-				if (index <= item_index){
-					index_ = child_index;
-					return false;
-				}
-
-				++item_index;
-			}
-
-			++child_index;
-			return true;
-		});
-	}
-
+	index_ = parent.resolve_child_index<tab_item>(index);
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error
@@ -63,7 +47,7 @@ void cwin::control::tab_item::changed_parent_(ui::tree *old_value){
 	}
 	catch (const ui::exception::not_supported &){
 		if (old_value != nullptr){
-			old_value->traverse_matching_children<tab_item>([&](tab_item &child){
+			old_value->traverse_children([&](tab_item &child){
 				child.update_active_index_(active_index_, false);
 			});
 		}
@@ -85,7 +69,7 @@ void cwin::control::tab_item::after_create_(){
 	}
 
 	int index = 0;
-	tab_parent->traverse_matching_children<tab_item>([&](tab_item &child){
+	tab_parent->traverse_children([&](tab_item &child){
 		if (&child == this){//Insert
 			TCITEMW info{
 				(TCIF_TEXT | TCIF_IMAGE | TCIF_PARAM),
@@ -179,7 +163,7 @@ void cwin::control::tab_item::after_destroy_(){
 		TabCtrl_DeleteItem(tab_parent->handle_, active_index_);
 
 	active_index_ = -1;
-	tab_parent->traverse_matching_children<tab_item>([&](tab_item &child){
+	tab_parent->traverse_children([&](tab_item &child){
 		child.update_active_index_(active_index_, false);
 	});
 

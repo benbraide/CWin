@@ -128,7 +128,7 @@ LRESULT cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, LPA
 		return result;
 
 	if (!menu_target->get_events().trigger_then_report_prevented_default<events::menu::init>(0u)){
-		menu_target->traverse_matching_offspring<menu::item>([&](menu::item &offspring){
+		menu_target->traverse_offspring([&](menu::item &offspring){
 			events::menu::init_item e(*menu_target, offspring);
 			menu_target->get_events().trigger(e, 0u);
 			if (!e.prevented_default()){//Update state
@@ -165,7 +165,7 @@ void cwin::menu::manager::select_(ui::window_surface &target, HMENU handle, std:
 		return;
 
 	item *target_item = nullptr;
-	menu_target->traverse_matching_offspring<item>([&](item &offspring){
+	menu_target->traverse_offspring([&](item &offspring){
 		if (offspring.get_active_index() != index)
 			return true;
 

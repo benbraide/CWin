@@ -55,7 +55,7 @@ void cwin::grid::object::refresh_(){
 	auto client_size = compute_current_client_size_();
 	auto fixed_height = 0, shared_count = 0;
 
-	traverse_matching_children_<row>([&](row &child){
+	traverse_children_<row>([&](row &child){
 		if (child.is_fixed_()){
 			rows.push_back(row_info{
 				&child,

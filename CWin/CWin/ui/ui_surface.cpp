@@ -473,7 +473,7 @@ bool cwin::ui::surface::before_position_change_(const POINT &old_value, const PO
 void cwin::ui::surface::after_position_change_(const POINT &old_value, const POINT &current_value){}
 
 void cwin::ui::surface::position_update_(const POINT &old_value, const POINT &current_value){
-	traverse_matching_children_<surface>([&](surface &child){
+	traverse_children_<surface>([&](surface &child){
 		try{
 			child.update_window_relative_position_();
 		}

@@ -39,7 +39,7 @@ void cwin::hook::parent_size::bind_size_event_(ui::tree *parent, ui::tree *previ
 
 cwin::hook::children_dimension::children_dimension(ui::surface &parent, const std::function<void()> &callback)
 	: object(parent), callback_(callback){
-	parent.traverse_matching_children<ui::surface>([this](ui::surface &child){
+	parent.traverse_children([this](ui::surface &child){
 		bind_dimension_events_(child);
 	});
 
@@ -378,7 +378,7 @@ cwin::ui::surface &cwin::hook::relative_placement::sibling::get(ui::surface &tar
 	auto index = index_;
 	ui::surface *value = nullptr;
 
-	target.traverse_matching_siblings<ui::surface>([&](ui::surface &sibling){
+	target.traverse_siblings([&](ui::surface &sibling){
 		if (index == 0u){
 			value = &sibling;
 			return false;
@@ -540,7 +540,7 @@ void cwin::hook::contain::update_(){
 		return;
 
 	RECT union_rect{};
-	surface_target->traverse_matching_children<ui::surface>([&](ui::surface &child){
+	surface_target->traverse_children([&](ui::surface &child){
 		auto child_dimension = child.compute_current_dimension();
 		UnionRect(&union_rect, &child_dimension, &union_rect);
 	});

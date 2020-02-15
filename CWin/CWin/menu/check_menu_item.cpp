@@ -147,7 +147,7 @@ void cwin::menu::check_item::check_(){
 
 	events_.trigger<events::menu::check>(nullptr, 0u);
 	if (is_radio_()){//Remove checks from siblings
-		traverse_matching_siblings_<check_item>([](check_item &offspring, bool){
+		traverse_siblings_<check_item>([](check_item &offspring, bool){
 			offspring.uncheck_(true);
 			return true;
 		});

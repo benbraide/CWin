@@ -216,7 +216,7 @@ void cwin::hook::io::mouse_move_(){
 	ui::visible_surface *mouse_over = nullptr;
 
 	if (mouse_press_ == nullptr){
-		visible_target->reverse_traverse_matching_children<ui::visible_surface>([&](ui::visible_surface &child){//Find child under mouse
+		visible_target->reverse_traverse_children([&](ui::visible_surface &child){//Find child under mouse
 			if (!child.is_created() || !child.is_visible() || dynamic_cast<ui::window_surface *>(&child) != nullptr)
 				return true;//Exclude window and hidden surfaces
 
@@ -245,7 +245,7 @@ void cwin::hook::io::mouse_move_(){
 	
 	if (mouse_over_ != nullptr){
 		if (hit_target == HTCLIENT){//Client
-			parent_->get_events().trigger<events::interrupt::mouse_move>(nullptr, 0u);
+			mouse_over_->get_events().trigger<events::interrupt::mouse_move>(nullptr, 0u);
 			if (dynamic_cast<ui::window_surface *>(parent_) != nullptr){
 
 			}

@@ -74,7 +74,7 @@ void cwin::ui::visible_surface::redraw_at_(HRGN region, POINT position){
 	if (!is_created_())
 		return;
 
-	auto visible_ancestor = find_matching_surface_ancestor_<visible_surface>(&position);
+	auto visible_ancestor = find_surface_ancestor_<visible_surface>(&position);
 	if (visible_ancestor == nullptr)
 		return;
 
@@ -122,7 +122,7 @@ void cwin::ui::visible_surface::hide_(){
 }
 
 void cwin::ui::visible_surface::set_windows_visibility_(bool is_visible){
-	traverse_matching_children_<visible_surface>([&](visible_surface &child){
+	traverse_children_<visible_surface>([&](visible_surface &child){
 		child.set_windows_visibility_(is_visible);
 		return true;
 	});

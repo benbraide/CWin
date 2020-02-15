@@ -106,7 +106,7 @@ void cwin::control::tab::update_client_margin_(){
 	client_margin_.right = (dimension.right - adjusted_dimension.right);
 	client_margin_.bottom = (dimension.bottom - adjusted_dimension.bottom);
 
-	traverse_matching_children_<surface>([&](surface &child){
+	traverse_children_<surface>([&](surface &child){
 		try{
 			child.update_window_relative_position();
 		}
@@ -142,7 +142,7 @@ cwin::control::tab_item &cwin::control::tab::get_current_item_() const{
 		throw ui::exception::not_supported();
 
 	tab_item *current_item = nullptr;
-	traverse_matching_children_<tab_item>([&](tab_item &child){
+	traverse_children_<tab_item>([&](tab_item &child){
 		if (child.active_index_ == current_index){
 			current_item = &child;
 			return false;

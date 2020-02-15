@@ -2,6 +2,18 @@
 
 #include "ui_tree.h"
 
+cwin::ui::tree *cwin::ui::object_helper::get_ancestor(tree &parent){
+	return parent.get_parent();
+}
+
+void cwin::ui::object_helper::traverse_children(tree &parent, const std::function<bool(object &)> &callback){
+	parent.traverse_children(callback);
+}
+
+void cwin::ui::object_helper::reverse_traverse_children(tree &parent, const std::function<bool(object &)> &callback){
+	parent.reverse_traverse_children(callback);
+}
+
 cwin::ui::object::object() = default;
 
 cwin::ui::object::object(tree &parent)
@@ -130,7 +142,7 @@ void cwin::ui::object::create(){
 		if (is_created_())
 			return;
 
-		traverse_ancestors_([&](tree &ancestor){
+		traverse_ancestors_<tree>([&](tree &ancestor){
 			if (!ancestor.is_created_())
 				throw exception::not_supported();
 			return true;
@@ -212,24 +224,6 @@ cwin::ui::tree *cwin::ui::object::get_top_ancestor_() const{
 	return previous_ancestor;
 }
 
-void cwin::ui::object::traverse_ancestors_(const std::function<bool(tree &)> &callback) const{
-	for (auto ancestor = parent_; ancestor != nullptr; ancestor = ancestor->parent_){
-		if (!callback(*ancestor))
-			break;
-	}
-}
-
-void cwin::ui::object::reverse_traverse_ancestors_(const std::function<bool(tree &)> &callback) const{
-	std::list<tree *> ancestors;
-	for (auto ancestor = parent_; ancestor != nullptr; ancestor = ancestor->parent_)
-		ancestors.push_front(ancestor);
-
-	for (auto ancestor : ancestors){
-		if (!callback(*ancestor))
-			break;
-	}
-}
-
 bool cwin::ui::object::is_ancestor_(const tree &target) const{
 	for (auto ancestor = parent_; ancestor != nullptr; ancestor = ancestor->parent_){
 		if (ancestor == &target)
@@ -271,32 +265,6 @@ cwin::ui::object *cwin::ui::object::get_previous_sibling_() const{
 
 cwin::ui::object *cwin::ui::object::get_next_sibling_() const{
 	return ((parent_ == nullptr) ? nullptr : parent_->get_child_at_(parent_->find_child_(*this) + 1u));
-}
-
-void cwin::ui::object::traverse_siblings_(const std::function<bool(object &, bool)> &callback) const{
-	if (parent_ == nullptr || parent_->children_.empty())
-		return;//No siblings
-
-	auto is_before = true;
-	for (auto sibling : parent_->children_){
-		if (sibling == this)
-			is_before = false;
-		else if (!callback(*sibling, is_before))
-			break;
-	}
-}
-
-void cwin::ui::object::reverse_traverse_siblings_(const std::function<bool(object &, bool)> &callback) const{
-	if (parent_ == nullptr || parent_->children_.empty())
-		return;//No siblings
-
-	auto is_before = false;
-	for (auto sibling = parent_->children_.rbegin(); sibling != parent_->children_.rend(); ++sibling){
-		if (*sibling == this)
-			is_before = true;
-		else if (!callback(**sibling, is_before))
-			break;
-	}
 }
 
 void cwin::ui::object::create_(){

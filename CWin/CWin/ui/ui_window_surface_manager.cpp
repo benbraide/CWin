@@ -77,7 +77,7 @@ HWND cwin::ui::window_surface_manager::create(window_surface &owner, const wchar
 	auto position = owner.get_current_position();
 
 	HWND ancestor_handle_value = nullptr;
-	owner.traverse_matching_ancestors<surface>([&](surface &ancestor){
+	owner.traverse_ancestors_<surface>([&](surface &ancestor){
 		if (!ancestor.is_created())
 			throw ui::exception::not_supported();
 
@@ -277,7 +277,7 @@ void cwin::ui::window_surface_manager::position_changed_(window_surface &target,
 		++target.updating_count_;
 		if ((info.flags & SWP_NOMOVE) == 0u){
 			POINT offset{};
-			if (auto window_ancestor = target.find_matching_surface_ancestor_<window_surface>(&offset); window_ancestor != nullptr)
+			if (auto window_ancestor = target.find_surface_ancestor_<window_surface>(&offset); window_ancestor != nullptr)
 				window_ancestor->offset_point_to_window_(offset);
 
 			target.set_position_(POINT{ (info.x - offset.x), (info.y - offset.y) }, false);
@@ -324,7 +324,7 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		SaveDC(paint_info_.hdc);
 		target.offset_point_to_window_(offset);
 
-		target.reverse_traverse_matching_children_<visible_surface>([&](visible_surface &child){//Exclude children
+		target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){//Exclude children
 			exclude_from_paint_(child, offset);
 			return true;
 		});
@@ -345,7 +345,7 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 	}
 
 	target.offset_point_to_window_(offset);
-	target.reverse_traverse_matching_children_<visible_surface>([&](visible_surface &child){
+	target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){
 		if (dynamic_cast<window_surface *>(&child) != nullptr || !child.is_created() || !child.is_visible_())
 			return true;
 
@@ -427,7 +427,7 @@ void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &targ
 
 	if (auto non_window_target = dynamic_cast<non_window_surface *>(&target); non_window_target == nullptr || non_window_target->handle_ == nullptr){
 		target.offset_point_to_window_(offset);
-		target.reverse_traverse_matching_children_<visible_surface>([&](visible_surface &child){//Exclude children
+		target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){//Exclude children
 			exclude_from_paint_(child, offset);
 			return true;
 		});
@@ -464,14 +464,14 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 	if (auto hit_target = (target.is_occluded_() ? HTNOWHERE : target.current_hit_test_(position)); hit_target != HTNOWHERE){
 		if (hit_target == HTCLIENT){//Check if mouse is inside a window offspring
 			auto is_inside_offspring = false;
-			target.traverse_matching_offspring_<window_surface>([&](window_surface &offspring){
+			target.traverse_offspring_<window_surface>([&](window_surface &offspring){
 				if (target.current_hit_test_(position) != HTNOWHERE){
 					is_inside_offspring = true;
 					return false;
 				}
 
 				return true;
-				});
+			});
 
 			if (!is_inside_offspring){//Moved between client and non-client
 				track_info_.dwFlags = TME_LEAVE;

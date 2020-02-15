@@ -3,6 +3,11 @@
 #include "link_menu_item.h"
 #include "menu_tree.h"
 
+cwin::menu::tree *cwin::menu::tree_helper::get_popup(item &item){
+	auto link_item = dynamic_cast<menu::link_item *>(&item);
+	return ((link_item == nullptr) ? nullptr : link_item->get_popup());
+}
+
 cwin::menu::tree::~tree() = default;
 
 UINT cwin::menu::tree::get_states(std::size_t index) const{
@@ -31,35 +36,6 @@ void cwin::menu::tree::get_types(std::size_t index, const std::function<void(UIN
 
 bool cwin::menu::tree::inserting_child_(object &child){
 	return (dynamic_cast<menu::item *>(&child) != nullptr || dynamic_cast<menu::tree *>(&child) != nullptr || dynamic_cast<hook::object *>(&child) != nullptr);
-}
-
-bool cwin::menu::tree::traverse_offspring_(const std::function<bool(object &)> &callback) const{
-	return ui::tree::traverse_offspring_([&](object &offspring){
-		if (!callback(offspring))
-			return false;
-
-		auto link_offspring = dynamic_cast<link_item *>(&offspring);
-		if (link_offspring == nullptr)
-			return true;
-
-		if (auto popup_target = link_offspring->get_popup(); popup_target != nullptr && !popup_target->traverse_offspring_(callback))
-			return false;
-
-		return true;
-	});
-}
-
-bool cwin::menu::tree::reverse_traverse_offspring_(const std::function<bool(object &)> &callback) const{
-	return ui::tree::reverse_traverse_offspring_([&](object &offspring){
-		auto link_offspring = dynamic_cast<link_item *>(&offspring);
-		if (link_offspring == nullptr)
-			return true;
-
-		if (auto popup_target = link_offspring->get_popup(); popup_target != nullptr && !popup_target->reverse_traverse_offspring_(callback))
-			return false;
-
-		return callback(offspring);
-	});
 }
 
 UINT cwin::menu::tree::get_states_(std::size_t index) const{

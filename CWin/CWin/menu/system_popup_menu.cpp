@@ -83,7 +83,7 @@ void cwin::menu::system_popup::destroy_(){
 
 cwin::menu::system_item *cwin::menu::system_popup::find_(UINT id) const{
 	system_item *found = nullptr;
-	traverse_matching_offspring_<system_item>([&](system_item &offspring){
+	traverse_items_<system_item>([&](system_item &offspring){
 		if (offspring.id_ != id)
 			return true;
 

@@ -93,7 +93,7 @@ void cwin::grid::row::update_dimension_(const SIZE &size, const POINT &position)
 	auto client_size = compute_current_client_size_();
 	auto fixed_width = 0, shared_count = 0;
 
-	traverse_matching_children_<column>([&](column &child){
+	traverse_children_<column>([&](column &child){
 		if (child.is_fixed_()){
 			columns.push_back(column_info{
 				&child,

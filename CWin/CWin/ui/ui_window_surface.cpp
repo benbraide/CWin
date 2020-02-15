@@ -224,7 +224,7 @@ void cwin::ui::window_surface::position_update_(const POINT &old_value, const PO
 
 	if (updating_count_ == 0u){
 		POINT window_relative_offset{};
-		if (auto window_ancestor = find_matching_surface_ancestor_<window_surface>(&window_relative_offset); window_ancestor != nullptr)
+		if (auto window_ancestor = find_surface_ancestor_<window_surface>(&window_relative_offset); window_ancestor != nullptr)
 			window_ancestor->offset_point_to_window(window_relative_offset);
 
 		try{
@@ -243,7 +243,7 @@ void cwin::ui::window_surface::position_update_(const POINT &old_value, const PO
 
 void cwin::ui::window_surface::update_window_relative_position_(){
 	auto position = get_current_position_();
-	traverse_matching_ancestors_<surface>([&](surface &ancestor){
+	traverse_ancestors_<surface>([&](surface &ancestor){
 		ancestor.offset_point_to_window(position);
 		if (auto window_ancestor = dynamic_cast<window_surface *>(&ancestor); window_ancestor != nullptr)
 			return false;

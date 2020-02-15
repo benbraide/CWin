@@ -50,7 +50,7 @@ void cwin::ui::non_window_surface::create_(){
 	if (handle_ != nullptr)
 		return;
 
-	traverse_matching_ancestors_<surface>([](surface &ancestor){
+	traverse_ancestors_<surface>([](surface &ancestor){
 		if (!ancestor.is_created())
 			throw ui::exception::not_supported();
 
@@ -285,7 +285,7 @@ void cwin::ui::non_window_surface::update_bounds_(){
 	}
 
 	events_.trigger<events::after_bounds_change>(nullptr, 0u);
-	traverse_matching_children_<surface>([&](surface &child){
+	traverse_children_<surface>([&](surface &child){
 		child.update_bounds();
 		return true;
 	});
