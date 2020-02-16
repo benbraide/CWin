@@ -21,9 +21,9 @@ namespace cwin::audio{
 
 		pcm_source();
 
-		explicit pcm_source(ui::window_surface &parent);
+		explicit pcm_source(ui::tree &parent);
 
-		pcm_source(ui::window_surface &parent, const std::string &path);
+		pcm_source(ui::tree &parent, const std::string &path);
 
 		virtual ~pcm_source();
 
@@ -34,15 +34,17 @@ namespace cwin::audio{
 
 		virtual bool is_created_() const override;
 
-		virtual void seek_(std::size_t offset) override;
-
 		virtual void seek_(const std::chrono::nanoseconds &offset) override;
 
 		virtual void seek_(float offset) override;
 
 		virtual std::shared_ptr<buffer> get_buffer_() override;
 
+		virtual std::shared_ptr<buffer> get_reverse_buffer_() override;
+
 		virtual const WAVEFORMATEX &get_format_() const override;
+
+		virtual std::chrono::nanoseconds compute_duration_() const override;
 
 		std::size_t data_offset_ = 0u;
 		std::size_t data_size_ = 0u;
@@ -57,12 +59,5 @@ namespace cwin::audio{
 
 		WAVEFORMATEX format_{};
 		boost::iostreams::mapped_file_source file_;
-	};
-}
-
-namespace cwin::ui{
-	template <>
-	struct parent_type<audio::pcm_source>{
-		using value = window_surface;
 	};
 }

@@ -38,8 +38,19 @@ std::shared_ptr<cwin::audio::buffer> cwin::events::audio::get_buffer::get_value(
 	return value_;
 }
 
-cwin::events::audio::seek::seek(events::target &target, std::size_t offset)
-	: object(target), offset_(offset){}
+cwin::events::audio::get_reverse_buffer::~get_reverse_buffer() = default;
+
+void cwin::events::audio::get_reverse_buffer::set_value(std::shared_ptr<cwin::audio::buffer> value){
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	value_ = value;
+}
+
+std::shared_ptr<cwin::audio::buffer> cwin::events::audio::get_reverse_buffer::get_value() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return value_;
+}
 
 cwin::events::audio::seek::seek(events::target &target, const std::chrono::nanoseconds &offset)
 	: object(target), offset_(offset){}

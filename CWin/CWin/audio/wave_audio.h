@@ -12,6 +12,8 @@ namespace cwin::audio{
 		static const WAVEFORMATEX &get_format(wave &target, audio::source *source);
 
 		static std::shared_ptr<buffer> get_buffer(wave &target, audio::source *source);
+
+		static std::shared_ptr<buffer> get_reverse_buffer(wave &target, audio::source *source);
 	};
 
 	class wave : public ui::object{
@@ -55,8 +57,6 @@ namespace cwin::audio{
 
 		virtual void is_paused(const std::function<void(bool)> &callback) const;
 
-		virtual void seek(std::size_t offset);
-
 		virtual void seek(const std::chrono::nanoseconds &offset);
 
 		virtual void seek(float offset);
@@ -67,6 +67,10 @@ namespace cwin::audio{
 		virtual void destroy_() override;
 
 		virtual bool is_created_() const override;
+
+		virtual void initialize_pool_();
+
+		virtual void write_pool_();
 
 		virtual void start_();
 

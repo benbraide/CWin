@@ -42,11 +42,23 @@ namespace cwin::events::audio{
 		std::shared_ptr<cwin::audio::buffer> value_;
 	};
 
+	class get_reverse_buffer : public object{
+	public:
+		using object::object;
+
+		virtual ~get_reverse_buffer();
+
+		virtual void set_value(std::shared_ptr<cwin::audio::buffer> value);
+
+		virtual std::shared_ptr<cwin::audio::buffer> get_value() const;
+
+	protected:
+		std::shared_ptr<cwin::audio::buffer> value_;
+	};
+
 	class seek : public object{
 	public:
-		using variant_type = std::variant<std::size_t, std::chrono::nanoseconds, float>;
-
-		seek(events::target &target, std::size_t offset);
+		using variant_type = std::variant<std::chrono::nanoseconds, float>;
 
 		seek(events::target &target, const std::chrono::nanoseconds &offset);
 

@@ -38,6 +38,20 @@ std::shared_ptr<cwin::audio::buffer> cwin::audio::wave_helper::get_buffer(wave &
 	return (e.prevented_default() ? nullptr : e.get_value());
 }
 
+std::shared_ptr<cwin::audio::buffer> cwin::audio::wave_helper::get_reverse_buffer(wave &target, audio::source *source){
+	if (source != nullptr)
+		return source->get_reverse_buffer();
+
+	auto target_parent = target.get_parent();
+	if (target_parent == nullptr)
+		throw ui::exception::not_supported();
+
+	events::audio::get_reverse_buffer e(target);
+	target_parent->get_events().trigger(e, 0u);
+
+	return (e.prevented_default() ? nullptr : e.get_value());
+}
+
 cwin::audio::wave::wave(){
 	bind_default_([=](events::audio::after_buffer_write &e){
 		after_write_(e.get_value());
@@ -58,8 +72,13 @@ cwin::audio::wave::wave(ui::tree &parent)
 
 	source_ = reinterpret_cast<audio::source *>(parent.get_events().trigger_then_report_result<events::audio::get_source>(0u));
 	parent.get_events().bind([=](events::audio::seek &){
-		if (handle_ != nullptr)
-			waveOutReset(handle_);
+		if (handle_ != nullptr && options_.is_set(option_type::start)){
+			thread_.get_queue().post_task([=]{
+				start_();
+			});
+		}
+
+		stop_();
 	}, get_talk_id());
 
 	parent.get_events().bind([=](events::audio::after_buffer_write &e){
@@ -127,18 +146,6 @@ bool cwin::audio::wave::is_paused() const{
 void cwin::audio::wave::is_paused(const std::function<void(bool)> &callback) const{
 	post_or_execute_task([=]{
 		callback(options_.is_set(option_type::pause));
-	});
-}
-
-void cwin::audio::wave::seek(std::size_t offset){
-	post_or_execute_task([=]{
-		if (handle_ != nullptr)
-			waveOutReset(handle_);
-
-		if (source_ != nullptr)
-			source_->seek(offset);
-		else if (parent_ != nullptr)
-			parent_->get_events().trigger<events::audio::seek>(nullptr, 0u, offset);
 	});
 }
 
@@ -210,10 +217,7 @@ bool cwin::audio::wave::is_created_() const{
 	return (handle_ != nullptr);
 }
 
-void cwin::audio::wave::start_(){
-	if (handle_ == nullptr || options_.is_set(option_type::start))
-		return;
-
+void cwin::audio::wave::initialize_pool_(){
 	headers_.resize(4u);
 	for (auto &header : headers_){//Fill initial buffer
 		header.details = WAVEHDR{};
@@ -239,16 +243,9 @@ void cwin::audio::wave::start_(){
 			throw ui::exception::action_failed();
 		}
 	}
+}
 
-	if ((headers_[0].details.dwFlags & WHDR_PREPARED) == 0u){
-		if (parent_ != nullptr)
-			parent_->get_events().trigger<events::audio::eof>(nullptr, 0u);
-		return;//Buffer is empty
-	}
-
-	write_count_ = 0u;
-	options_.set(option_type::start);
-
+void cwin::audio::wave::write_pool_(){
 	for (auto &header : headers_){
 		if ((header.details.dwFlags & WHDR_PREPARED) == 0u)
 			break;
@@ -269,6 +266,23 @@ void cwin::audio::wave::start_(){
 		else//Successful write
 			++write_count_;
 	}
+}
+
+void cwin::audio::wave::start_(){
+	if (handle_ == nullptr || options_.is_set(option_type::start))
+		return;
+
+	initialize_pool_();
+	if ((headers_[0].details.dwFlags & WHDR_PREPARED) == 0u){
+		if (parent_ != nullptr)
+			parent_->get_events().trigger<events::audio::eof>(nullptr, 0u);
+		return;//Buffer is empty
+	}
+
+	write_count_ = 0u;
+	options_.set(option_type::start);
+
+	write_pool_();
 }
 
 void cwin::audio::wave::stop_(){
@@ -303,7 +317,7 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 	if (0u < write_count_)
 		--write_count_;
 
-	if (handle_ == nullptr)
+	if (handle_ == nullptr || (value.dwFlags & WHDR_DONE) == 0u)
 		return;
 
 	header_info *header = nullptr;
@@ -311,12 +325,12 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 		header = it->second;
 
 	if (header == nullptr){
-		if (waveOutUnprepareHeader(handle_, &value, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
+		if ((value.dwFlags & WHDR_PREPARED) != 0u && waveOutUnprepareHeader(handle_, &value, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
 			throw ui::exception::action_failed();
 		return;
 	}
 
-	if (waveOutUnprepareHeader(handle_, &header->details, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
+	if ((header->details.dwFlags & WHDR_PREPARED) != 0u && waveOutUnprepareHeader(handle_, &header->details, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
 		throw ui::exception::action_failed();
 
 	header->details = WAVEHDR{};
