@@ -36,6 +36,9 @@
 #include "control/tool_tip_control.h"
 #include "control/tab_control.h"
 
+#include "audio/pcm_audio_source.h"
+#include "audio/wave_audio.h"
+
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
 	cwin::control::tool_tip tool_tip;
@@ -81,6 +84,15 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				item.set_text(L"Custom System Action Sub Item");
 			});
 		});
+	});
+
+	window.insert_object([](cwin::audio::pcm_source &src){
+
+	}, "C:\\Users\\benpl\\Documents\\enya.wav");
+
+	window.insert_object([](cwin::audio::wave &wav){
+		wav.create();
+		wav.start();
 	});
 
 	/*window.insert_object([](cwin::menu::library_popup &popup){

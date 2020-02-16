@@ -1,4 +1,5 @@
 #include "../app/app_object.h"
+#include "../events/audio_events.h"
 
 cwin::thread::object::object()
 	: queue_(*this), window_manager_(*this), menu_manager_(*this), id_(GetCurrentThreadId()){
@@ -170,6 +171,16 @@ int cwin::thread::object::run(){
 			if (msg.hwnd == nullptr || !window_manager_.is_dialog_message_(msg)){
 				TranslateMessage(&msg);
 				DispatchMessageW(&msg);
+
+				if (msg.hwnd == nullptr){//Thread message
+					switch (msg.message){
+					case MM_WOM_DONE:
+						wave_write_done_(*reinterpret_cast<WAVEHDR *>(msg.lParam));
+						break;
+					default:
+						break;
+					}
+				}
 			}
 		}
 		catch (const exception::thread_exit &){
@@ -323,7 +334,7 @@ WNDPROC cwin::thread::object::get_message_entry(){
 void cwin::thread::object::add_item_(item &item){
 	if (&item.get_thread() != this)
 		throw exception::context_mismatch();
-	items_.push_back(item_info{ &item });
+	items_[item.get_talk_id()] = (item_info{ &item });
 }
 
 void cwin::thread::object::remove_item_(item &item){
@@ -333,14 +344,11 @@ void cwin::thread::object::remove_item_(item &item){
 	if (items_.empty())
 		return;
 
-	auto it = std::find_if(items_.begin(), items_.end(), [&](const item_info &info){
-		return (info.value == &item);
-	});
-
+	auto it = items_.find(item.get_talk_id());
 	if (it == items_.end())//Item not found
 		return;
 
-	auto owned_timers = std::move(it->owned_timers);
+	auto owned_timers = std::move(it->second.owned_timers);
 	for (auto timer_id : owned_timers)//Remove all timers
 		remove_timer_(timer_id, nullptr);
 
@@ -351,11 +359,8 @@ cwin::thread::item *cwin::thread::object::find_item_(unsigned __int64 talk_id) c
 	if (items_.empty())
 		return nullptr;
 
-	auto it = std::find_if(items_.begin(), items_.end(), [&](const item_info &item){
-		return (item.value->get_talk_id() == talk_id);
-	});
-
-	return ((it == items_.end()) ? nullptr : it->value);
+	auto it = items_.find(talk_id);
+	return ((it == items_.end()) ? nullptr : it->second.value);
 }
 
 void cwin::thread::object::add_outbound_event_(unsigned __int64 talk_id, events::target &target, events::manager::key_type key, unsigned __int64 event_id){
@@ -387,12 +392,9 @@ void cwin::thread::object::add_timer_(const std::chrono::milliseconds &duration,
 	if (auto id = SetTimer(nullptr, 0, static_cast<UINT>(duration.count()), timer_entry_); id != static_cast<UINT_PTR>(0)){
 		timers_[id] = callback;
 		if (owner != nullptr){
-			auto it = std::find_if(items_.begin(), items_.end(), [&](const item_info &info){
-				return (info.value == owner);
-			});
-
+			auto it = items_.find(owner->get_talk_id());
 			if (it != items_.end())
-				it->owned_timers.push_back(id);
+				it->second.owned_timers.push_back(id);
 		}
 	}
 	else//Error
@@ -414,15 +416,21 @@ void cwin::thread::object::remove_timer_(unsigned __int64 id, const item *owner)
 	if (owner == nullptr)
 		return;
 
-	auto it = std::find_if(items_.begin(), items_.end(), [&](const item_info &info){
-		return (info.value == owner);
-	});
-
+	auto it = items_.find(owner->get_talk_id());
 	if (it == items_.end())
 		return;
 
-	if (auto id_it = std::find(it->owned_timers.begin(), it->owned_timers.end(), id); id_it != it->owned_timers.end())
-		it->owned_timers.erase(id_it);//Remove reference
+	if (auto id_it = std::find(it->second.owned_timers.begin(), it->second.owned_timers.end(), id); id_it != it->second.owned_timers.end())
+		it->second.owned_timers.erase(id_it);//Remove reference
+}
+
+void cwin::thread::object::wave_write_done_(WAVEHDR &value){
+	auto target_talk_id = static_cast<unsigned __int64>(value.dwUser);
+	if (target_talk_id == 0u || queue_.is_blacklisted(target_talk_id))
+		return;
+
+	if (auto item = find_item_(target_talk_id); item != nullptr)
+		item->get_events().trigger<events::audio::after_buffer_write>(nullptr, 0u, value);
 }
 
 WNDPROC cwin::thread::object::get_class_entry_(const std::wstring &class_name) const{

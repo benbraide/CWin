@@ -156,6 +156,8 @@ namespace cwin::thread{
 
 		void remove_timer_(unsigned __int64 id, const item *owner);
 
+		void wave_write_done_(WAVEHDR &value);
+
 		WNDPROC get_class_entry_(const std::wstring &class_name) const;
 
 		void run_animation_loop_();
@@ -190,7 +192,7 @@ namespace cwin::thread{
 		mutable D2D1_POINT_2F dpi_scale_{};
 
 		HWND message_hwnd_ = nullptr;
-		std::list<item_info> items_;
+		std::unordered_map<unsigned __int64, item_info> items_;
 		std::unordered_map<unsigned __int64, std::list<bound_event_info>> bound_events_;
 
 		DWORD control_ids_ = 0;

@@ -8,7 +8,7 @@ cwin::menu::item::item(tree &parent)
 	: item(parent, static_cast<std::size_t>(-1)){}
 
 cwin::menu::item::item(tree &parent, std::size_t index){
-	index_ = index;
+	index_ = parent.resolve_child_index<item>(index);
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error
