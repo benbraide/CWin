@@ -6,9 +6,9 @@
 cwin::audio::source::source() = default;
 
 cwin::audio::source::source(ui::tree &parent)
-	: source(parent, ""){}
+	: source(parent, L""){}
 
-cwin::audio::source::source(ui::tree &parent, const std::string &path)
+cwin::audio::source::source(ui::tree &parent, const std::wstring &path)
 	: path_(path){
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
@@ -55,7 +55,7 @@ cwin::audio::source::source(ui::tree &parent, const std::string &path)
 
 cwin::audio::source::~source() = default;
 
-void cwin::audio::source::set_path(const std::string &value){
+void cwin::audio::source::set_path(const std::wstring &value){
 	post_or_execute_task([=]{
 		if (!is_created_())
 			path_ = value;

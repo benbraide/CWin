@@ -6,9 +6,9 @@
 cwin::audio::pcm_source::pcm_source() = default;
 
 cwin::audio::pcm_source::pcm_source(ui::tree &parent)
-	: pcm_source(parent, ""){}
+	: pcm_source(parent, L""){}
 
-cwin::audio::pcm_source::pcm_source(ui::tree &parent, const std::string &path)
+cwin::audio::pcm_source::pcm_source(ui::tree &parent, const std::wstring &path)
 	: source(parent, path){}
 
 cwin::audio::pcm_source::~pcm_source(){
@@ -19,7 +19,13 @@ void cwin::audio::pcm_source::create_(){
 	if (file_.is_open())
 		return;
 
-	file_.open(path_);
+	std::string path;
+	path.reserve(path_.size());
+
+	for (auto &c : path_)//Convert to narrow
+		path.push_back(static_cast<char>(c));
+
+	file_.open(path);
 	if (!file_.is_open())
 		throw ui::exception::action_failed();
 
@@ -54,7 +60,7 @@ void cwin::audio::pcm_source::create_(){
 	}
 
 	offset_ = 0u;
-	if (format_.wFormatTag != 1u || data_offset_ == 0u || data_size_ == 0u){//Error
+	if (format_.wFormatTag != WAVE_FORMAT_PCM || data_offset_ == 0u || data_size_ == 0u){//Error
 		destroy_();
 		throw ui::exception::not_supported();
 	}
@@ -104,7 +110,7 @@ void cwin::audio::pcm_source::seek_(float offset){
 
 std::shared_ptr<cwin::audio::buffer> cwin::audio::pcm_source::get_buffer_(){
 	if (!is_created_())
-		return nullptr;
+		throw ui::exception::not_supported();
 
 	auto remaining_size = (data_size_ - offset_);
 	if (remaining_size < format_.nBlockAlign)
@@ -146,6 +152,6 @@ std::chrono::nanoseconds cwin::audio::pcm_source::compute_duration_() const{
 	if (!is_created_())
 		return std::chrono::nanoseconds(0);
 
-	auto duration_in_seconds = ((data_size_ * 8.0) / ((format_.nSamplesPerSec * format_.nChannels * format_.wBitsPerSample)));
+	auto duration_in_seconds = ((data_size_ * 8.0) / ((format_.nSamplesPerSec * format_.nChannels) * format_.wBitsPerSample));
 	return std::chrono::nanoseconds(static_cast<unsigned __int64>(duration_in_seconds * 1000000000));
 }

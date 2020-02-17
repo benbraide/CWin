@@ -54,6 +54,8 @@ namespace cwin::thread{
 
 		bool is_context() const;
 
+		item *find_item(unsigned __int64 talk_id) const;
+
 		int run();
 
 		void stop(int exit_code);
@@ -155,8 +157,6 @@ namespace cwin::thread{
 		void add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner);
 
 		void remove_timer_(unsigned __int64 id, const item *owner);
-
-		void wave_write_done_(WAVEHDR &value);
 
 		WNDPROC get_class_entry_(const std::wstring &class_name) const;
 

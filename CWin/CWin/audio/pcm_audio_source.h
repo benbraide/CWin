@@ -23,7 +23,7 @@ namespace cwin::audio{
 
 		explicit pcm_source(ui::tree &parent);
 
-		pcm_source(ui::tree &parent, const std::string &path);
+		pcm_source(ui::tree &parent, const std::wstring &path);
 
 		virtual ~pcm_source();
 

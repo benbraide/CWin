@@ -22,18 +22,10 @@ namespace cwin::audio{
 		std::size_t size_ = 0u;
 	};
 
-	class reverse_pcm_buffer : public buffer{
+	class reverse_pcm_buffer : public pcm_buffer{
 	public:
 		reverse_pcm_buffer(std::size_t size, const char *source, const WAVEFORMATEX &format);
 
 		virtual ~reverse_pcm_buffer();
-
-		virtual char *get_data() const override;
-
-		virtual std::size_t get_size() const override;
-
-	protected:
-		std::unique_ptr<char[]> data_;
-		std::size_t size_ = 0u;
 	};
 }

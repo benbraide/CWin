@@ -84,13 +84,14 @@ namespace cwin::audio{
 
 		virtual void after_write_(WAVEHDR &value);
 
+		static void CALLBACK callback_(HWAVEOUT handle, UINT code, DWORD_PTR user_data, DWORD_PTR param1, DWORD_PTR param2);
+
 		HWAVEOUT handle_ = nullptr;
 		audio::source *source_ = nullptr;
 
 		std::vector<header_info> headers_;
-		std::unordered_map<WAVEHDR *, header_info *> headers_map_;
+		std::size_t write_count_ = 0u;
 
 		utility::small_options options_;
-		std::size_t write_count_ = 0u;
 	};
 }

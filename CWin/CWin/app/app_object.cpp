@@ -21,6 +21,23 @@ cwin::thread::object &cwin::app::object::get_thread(){
 	return *thread_;
 }
 
+cwin::thread::object *cwin::app::object::find_thread(DWORD id){
+	std::lock_guard<std::mutex> guard(lock_);
+	auto it = threads_.find(id);
+	return ((it == threads_.end()) ? nullptr : it->second);
+}
+
+cwin::thread::object *cwin::app::object::find_owner_thread(unsigned __int64 talk_id){
+	std::lock_guard<std::mutex> guard(lock_);
+
+	for (auto &thread : threads_){
+		if (thread.second->find_item_(talk_id) != nullptr)
+			return thread.second;
+	}
+
+	return nullptr;
+}
+
 DWORD cwin::app::object::thread_id_ = GetCurrentThreadId();
 
 ATOM cwin::app::object::class_id_ = 0u;

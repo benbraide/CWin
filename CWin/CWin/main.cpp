@@ -37,6 +37,7 @@
 #include "control/tab_control.h"
 
 #include "audio/pcm_audio_source.h"
+#include "audio/asf_audio_source.h"
 #include "audio/wave_audio.h"
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
@@ -86,9 +87,17 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 		});
 	});
 
-	window.insert_object([](cwin::audio::pcm_source &src){
+	//window.insert_object([](cwin::audio::pcm_source &src){
 
-	}, "C:\\Users\\benpl\\Documents\\enya.wav");
+	//}, L"C:\\Users\\benpl\\Documents\\enya.wav");
+	
+	window.insert_object([](cwin::audio::asf_source &src){
+
+	}, L"C:\\Users\\benpl\\Documents\\KDWoju.mp3");
+	
+	//window.insert_object([](cwin::audio::asf_source &src){
+
+	//}, L"C:\\Users\\benpl\\Documents\\ADBIML.asf");
 
 	window.insert_object([](cwin::audio::wave &wav){
 		wav.create();

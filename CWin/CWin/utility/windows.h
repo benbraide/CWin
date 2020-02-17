@@ -7,9 +7,6 @@
 #include <Windows.h>
 #include <Windowsx.h>
 
-#include <windows.h>
-#include <windowsx.h>
-
 #include <Uxtheme.h>
 #include <Vsstyle.h>
 #include <Vssym32.h>
@@ -24,6 +21,8 @@
 #include <d2d1helper.h>
 #include <d2d1_2helper.h>
 #include <dwrite_2.h>
+
+#include <wrl.h>
 
 #pragma comment(lib, "d2d1.lib")
 #pragma comment(lib, "dwrite.lib")

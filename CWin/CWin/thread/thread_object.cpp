@@ -135,6 +135,12 @@ bool cwin::thread::object::is_context() const{
 	return (GetCurrentThreadId() == id_);
 }
 
+cwin::thread::item *cwin::thread::object::find_item(unsigned __int64 talk_id) const{
+	if (!is_context())
+		throw exception::outside_context();
+	return find_item_(talk_id);
+}
+
 int cwin::thread::object::run(){
 	if (!is_context())
 		throw exception::outside_context();
@@ -171,16 +177,6 @@ int cwin::thread::object::run(){
 			if (msg.hwnd == nullptr || !window_manager_.is_dialog_message_(msg)){
 				TranslateMessage(&msg);
 				DispatchMessageW(&msg);
-
-				if (msg.hwnd == nullptr){//Thread message
-					switch (msg.message){
-					case MM_WOM_DONE:
-						wave_write_done_(*reinterpret_cast<WAVEHDR *>(msg.lParam));
-						break;
-					default:
-						break;
-					}
-				}
 			}
 		}
 		catch (const exception::thread_exit &){
@@ -422,15 +418,6 @@ void cwin::thread::object::remove_timer_(unsigned __int64 id, const item *owner)
 
 	if (auto id_it = std::find(it->second.owned_timers.begin(), it->second.owned_timers.end(), id); id_it != it->second.owned_timers.end())
 		it->second.owned_timers.erase(id_it);//Remove reference
-}
-
-void cwin::thread::object::wave_write_done_(WAVEHDR &value){
-	auto target_talk_id = static_cast<unsigned __int64>(value.dwUser);
-	if (target_talk_id == 0u || queue_.is_blacklisted(target_talk_id))
-		return;
-
-	if (auto item = find_item_(target_talk_id); item != nullptr)
-		item->get_events().trigger<events::audio::after_buffer_write>(nullptr, 0u, value);
 }
 
 WNDPROC cwin::thread::object::get_class_entry_(const std::wstring &class_name) const{

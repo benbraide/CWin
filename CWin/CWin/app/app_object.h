@@ -18,6 +18,10 @@ namespace cwin::app{
 
 		static thread::object &get_thread();
 
+		static thread::object *find_thread(DWORD id);
+
+		static thread::object *find_owner_thread(unsigned __int64 talk_id);
+
 	private:
 		friend class thread::object;
 

@@ -13,11 +13,11 @@ namespace cwin::audio{
 
 		source(ui::tree &parent);
 
-		source(ui::tree &parent, const std::string &path);
+		source(ui::tree &parent, const std::wstring &path);
 
 		virtual ~source();
 
-		virtual void set_path(const std::string &value);
+		virtual void set_path(const std::wstring &value);
 
 		virtual void seek(const std::chrono::nanoseconds &offset);
 
@@ -52,6 +52,6 @@ namespace cwin::audio{
 
 		virtual std::chrono::nanoseconds compute_duration_() const = 0;
 
-		std::string path_;
+		std::wstring path_;
 	};
 }

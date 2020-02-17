@@ -20,7 +20,7 @@ std::size_t cwin::audio::pcm_buffer::get_size() const{
 }
 
 cwin::audio::reverse_pcm_buffer::reverse_pcm_buffer(std::size_t size, const char *source, const WAVEFORMATEX &format)
-	: data_(std::make_unique<char[]>(size)), size_(size){
+	: pcm_buffer(size){
 	if (source != nullptr){
 		auto begin = data_.get();
 		auto bytes_per_sample = (format.wBitsPerSample / 8u);
@@ -35,11 +35,3 @@ cwin::audio::reverse_pcm_buffer::reverse_pcm_buffer(std::size_t size, const char
 }
 
 cwin::audio::reverse_pcm_buffer::~reverse_pcm_buffer() = default;
-
-char *cwin::audio::reverse_pcm_buffer::get_data() const{
-	return data_.get();
-}
-
-std::size_t cwin::audio::reverse_pcm_buffer::get_size() const{
-	return size_;
-}

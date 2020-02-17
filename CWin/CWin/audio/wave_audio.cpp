@@ -1,3 +1,4 @@
+#include "../app/app_object.h"
 #include "../thread/thread_object.h"
 #include "../events/audio_events.h"
 
@@ -181,9 +182,9 @@ void cwin::audio::wave::create_(){
 		&handle_,
 		wave_helper::get_device_id(*this),
 		&wave_helper::get_format(*this, source_),
-		thread_.get_id(),
-		reinterpret_cast<DWORD_PTR>(this),
-		(CALLBACK_THREAD | WAVE_MAPPED_DEFAULT_COMMUNICATION_DEVICE)
+		reinterpret_cast<DWORD_PTR>(&callback_),
+		static_cast<DWORD_PTR>(get_talk_id()),
+		(CALLBACK_FUNCTION | WAVE_MAPPED_DEFAULT_COMMUNICATION_DEVICE)
 	);
 
 	if (result != MMSYSERR_NOERROR || handle_ == nullptr)
@@ -204,8 +205,6 @@ void cwin::audio::wave::destroy_(){
 	}
 
 	headers_.clear();
-	headers_map_.clear();
-
 	waveOutClose(handle_);
 	handle_ = nullptr;
 
@@ -225,10 +224,9 @@ void cwin::audio::wave::initialize_pool_(){
 			break;//EOF
 
 		header.details.dwBufferLength = static_cast<DWORD>(header.buffer->get_size());
-		header.details.dwUser = static_cast<DWORD_PTR>(get_talk_id());
+		header.details.dwUser = reinterpret_cast<DWORD_PTR>(&header);
 		header.details.lpData = header.buffer->get_data();
 
-		headers_map_[&header.details] = &header;
 		if (waveOutPrepareHeader(handle_, &header.details, sizeof(WAVEHDR)) != MMSYSERR_NOERROR){
 			for (auto &inner_header : headers_){
 				if ((inner_header.details.dwFlags & WHDR_PREPARED) != 0u)
@@ -238,8 +236,6 @@ void cwin::audio::wave::initialize_pool_(){
 			}
 
 			headers_.clear();
-			headers_map_.clear();
-
 			throw ui::exception::action_failed();
 		}
 	}
@@ -259,8 +255,6 @@ void cwin::audio::wave::write_pool_(){
 			}
 
 			headers_.clear();
-			headers_map_.clear();
-
 			throw ui::exception::action_failed();
 		}
 		else//Successful write
@@ -320,10 +314,7 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 	if (handle_ == nullptr || (value.dwFlags & WHDR_DONE) == 0u)
 		return;
 
-	header_info *header = nullptr;
-	if (auto it = headers_map_.find(&value); it != headers_map_.end())
-		header = it->second;
-
+	auto header = reinterpret_cast<header_info *>(value.dwUser);
 	if (header == nullptr){
 		if ((value.dwFlags & WHDR_PREPARED) != 0u && waveOutUnprepareHeader(handle_, &value, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
 			throw ui::exception::action_failed();
@@ -336,10 +327,8 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 	header->details = WAVEHDR{};
 	if (!options_.is_set(option_type::start)){//Stopped
 		header->buffer.reset();
-		if (write_count_ == 0u){
+		if (write_count_ == 0u)
 			headers_.clear();
-			headers_map_.clear();
-		}
 
 		return;
 	}
@@ -351,7 +340,7 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 	}
 
 	header->details.dwBufferLength = static_cast<DWORD>(header->buffer->get_size());
-	header->details.dwUser = static_cast<DWORD_PTR>(get_talk_id());
+	header->details.dwUser = reinterpret_cast<DWORD_PTR>(header);
 	header->details.lpData = header->buffer->get_data();
 
 	if (waveOutPrepareHeader(handle_, &header->details, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
@@ -361,4 +350,24 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 		++write_count_;
 	else//Error
 		throw ui::exception::action_failed();
+}
+
+void CALLBACK cwin::audio::wave::callback_(HWAVEOUT handle, UINT code, DWORD_PTR user_data, DWORD_PTR param1, DWORD_PTR param2){
+	switch (code){
+	case WOM_DONE:
+		break;
+	default:
+		return;
+	}
+
+	auto talk_id = static_cast<unsigned __int64>(user_data);
+	auto thread = app::object::find_owner_thread(talk_id);
+
+	if (thread == nullptr)
+		return;
+
+	thread->get_queue().post_task([talk_id, value = reinterpret_cast<WAVEHDR *>(param1)]{
+		if (auto item = app::object::get_thread().find_item(talk_id); item != nullptr)
+			item->get_events().trigger<events::audio::after_buffer_write>(nullptr, 0u, *value);
+	}, talk_id, thread::queue::highest_task_priority);
 }
