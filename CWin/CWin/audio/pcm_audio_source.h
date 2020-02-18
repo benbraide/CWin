@@ -46,6 +46,8 @@ namespace cwin::audio{
 
 		virtual std::chrono::nanoseconds compute_duration_() const override;
 
+		virtual std::chrono::nanoseconds compute_progress_() const override;
+
 		std::size_t data_offset_ = 0u;
 		std::size_t data_size_ = 0u;
 

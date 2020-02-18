@@ -38,6 +38,18 @@ cwin::thread::object *cwin::app::object::find_owner_thread(unsigned __int64 talk
 	return nullptr;
 }
 
+cwin::thread::item *cwin::app::object::find_thread_item(unsigned __int64 talk_id){
+	std::lock_guard<std::mutex> guard(lock_);
+
+	thread::item *item = nullptr;
+	for (auto &thread : threads_){
+		if ((item = thread.second->find_item_(talk_id)) != nullptr)
+			return item;
+	}
+
+	return nullptr;
+}
+
 DWORD cwin::app::object::thread_id_ = GetCurrentThreadId();
 
 ATOM cwin::app::object::class_id_ = 0u;

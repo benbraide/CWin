@@ -39,6 +39,10 @@ namespace cwin::audio{
 
 		virtual void compute_duration(const std::function<void(const std::chrono::nanoseconds &)> &callback) const;
 
+		virtual std::chrono::nanoseconds compute_progress() const;
+
+		virtual void compute_progress(const std::function<void(const std::chrono::nanoseconds &)> &callback) const;
+
 	protected:
 		virtual void seek_(const std::chrono::nanoseconds &offset) = 0;
 
@@ -51,6 +55,8 @@ namespace cwin::audio{
 		virtual const WAVEFORMATEX &get_format_() const = 0;
 
 		virtual std::chrono::nanoseconds compute_duration_() const = 0;
+
+		virtual std::chrono::nanoseconds compute_progress_() const = 0;
 
 		std::wstring path_;
 	};

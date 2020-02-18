@@ -101,6 +101,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	window.insert_object([](cwin::audio::wave &wav){
 		wav.create();
+		//wav.set_speed(0.75f);
 		wav.start();
 	});
 

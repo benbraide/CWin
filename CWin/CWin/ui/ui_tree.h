@@ -42,22 +42,16 @@ namespace cwin::ui{
 
 		template <typename object_type>
 		std::size_t resolve_child_index(std::size_t value) const{
-			if (value == static_cast<std::size_t>(-1))
-				return value;
-
-			std::size_t child_index = 0u, item_index = 0u;
-			traverse_children([&](object &child){
-				if (dynamic_cast<object_type *>(&child) != nullptr){
-					if (value <= item_index)
-						return false;
-					++item_index;
-				}
-
-				++child_index;
-				return true;
+			return execute_task([&]{
+				return resolve_child_index_<object_type>(value);
 			});
-
-			return child_index;
+		}
+		
+		template <typename object_type>
+		void resolve_child_index(std::size_t value, const std::function<void(std::size_t)> &callback) const{
+			post_or_execute_task([=]{
+				callback(resolve_child_index_<object_type>(value));
+			});
 		}
 
 		template <typename callback_type>
@@ -237,6 +231,25 @@ namespace cwin::ui{
 		virtual std::size_t find_child_(const object &child) const;
 
 		virtual object *get_child_at_(std::size_t index) const;
+
+		template <typename object_type>
+		std::size_t resolve_child_index_(std::size_t value) const{
+			if (children_.empty() || children_.size() <= value)
+				return value;
+
+			std::size_t child_index = 0u, item_index = 0u;
+			for (auto child : children_){
+				if (dynamic_cast<object_type *>(child) != nullptr){
+					if (value <= item_index)
+						break;
+					++item_index;
+				}
+
+				++child_index;
+			}
+
+			return child_index;
+		}
 
 		template <typename object_type>
 		void traverse_children_(const std::function<bool(object_type &)> &callback) const{

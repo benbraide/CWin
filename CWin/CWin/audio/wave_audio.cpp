@@ -1,16 +1,15 @@
 #include "../app/app_object.h"
 #include "../thread/thread_object.h"
-#include "../events/audio_events.h"
 
 #include "wave_audio.h"
 
-UINT cwin::audio::wave_helper::get_device_id(wave &target){
+UINT cwin::audio::wave_helper::get_device_id(const wave &target){
 	if (auto target_parent = target.get_parent(); target_parent != nullptr)
-		return static_cast<UINT>(target_parent->get_events().trigger_then_report_result<events::audio::get_device_id>(0u));
+		return static_cast<UINT>(target_parent->get_events().trigger_then_report_result<events::audio::get_device_id>(0u, const_cast<wave &>(target)));
 	return WAVE_MAPPER;
 }
 
-const WAVEFORMATEX &cwin::audio::wave_helper::get_format(wave &target, audio::source *source){
+const WAVEFORMATEX &cwin::audio::wave_helper::get_format(const wave &target, audio::source *source){
 	if (source != nullptr)
 		return source->get_format();
 
@@ -18,72 +17,144 @@ const WAVEFORMATEX &cwin::audio::wave_helper::get_format(wave &target, audio::so
 	if (target_parent == nullptr)
 		throw ui::exception::not_supported();
 
-	auto value = reinterpret_cast<WAVEFORMATEX *>(target_parent->get_events().trigger_then_report_result<events::audio::get_format>(0u));
+	auto value = reinterpret_cast<WAVEFORMATEX *>(target_parent->get_events().trigger_then_report_result<events::audio::get_format>(0u, const_cast<wave &>(target)));
 	if (value == nullptr)
 		throw ui::exception::not_supported();
 
 	return *value;
 }
 
-std::shared_ptr<cwin::audio::buffer> cwin::audio::wave_helper::get_buffer(wave &target, audio::source *source){
+std::shared_ptr<cwin::audio::buffer> cwin::audio::wave_helper::get_buffer(wave &target, audio::source *source, bool is_reversed){
 	if (source != nullptr)
-		return source->get_buffer();
+		return (is_reversed ? source->get_reverse_buffer() : source->get_buffer());
 
 	auto target_parent = target.get_parent();
 	if (target_parent == nullptr)
 		throw ui::exception::not_supported();
 
-	events::audio::get_buffer e(target);
+	if (is_reversed){
+		events::audio::get_reverse_buffer e(*target_parent, target);
+		target_parent->get_events().trigger(e, 0u);
+
+		return (e.prevented_default() ? nullptr : e.get_value());
+	}
+
+	events::audio::get_buffer e(*target_parent, target);
 	target_parent->get_events().trigger(e, 0u);
 
 	return (e.prevented_default() ? nullptr : e.get_value());
 }
 
-std::shared_ptr<cwin::audio::buffer> cwin::audio::wave_helper::get_reverse_buffer(wave &target, audio::source *source){
-	if (source != nullptr)
-		return source->get_reverse_buffer();
+void cwin::audio::wave_helper::seek(wave &target, audio::source *source, const events::audio::seek::variant_type &offset){
+	if (source != nullptr){
+		if (std::holds_alternative<std::chrono::nanoseconds>(offset))
+			source->seek(std::get<std::chrono::nanoseconds>(offset));
+		else if (std::holds_alternative<float>(offset))
+			source->seek(std::get<float>(offset));
+		else
+			throw ui::exception::not_supported();
+
+		return;
+	}
 
 	auto target_parent = target.get_parent();
 	if (target_parent == nullptr)
 		throw ui::exception::not_supported();
 
-	events::audio::get_reverse_buffer e(target);
-	target_parent->get_events().trigger(e, 0u);
-
-	return (e.prevented_default() ? nullptr : e.get_value());
+	if (std::holds_alternative<std::chrono::nanoseconds>(offset))
+		target_parent->get_events().trigger<events::audio::seek>(nullptr, 0u, target, std::get<std::chrono::nanoseconds>(offset));
+	else if (std::holds_alternative<float>(offset))
+		target_parent->get_events().trigger<events::audio::seek>(nullptr, 0u, target, std::get<float>(offset));
+	else
+		throw ui::exception::not_supported();
 }
 
-cwin::audio::wave::wave(){
-	bind_default_([=](events::audio::after_buffer_write &e){
-		after_write_(e.get_value());
-	});
+std::chrono::nanoseconds cwin::audio::wave_helper::compute_progress(const wave &target, audio::source *source){
+	if (source != nullptr)
+		return source->compute_progress();
+
+	auto target_parent = target.get_parent();
+	if (target_parent == nullptr)
+		return std::chrono::nanoseconds(0);
+
+	return std::chrono::nanoseconds(target_parent->get_events().trigger_then_report_result<events::audio::compute_progress>(0u, const_cast<wave &>(target)));
 }
+
+DWORD cwin::audio::wave_helper::pack_float(float value){
+	WORD integral_part = static_cast<WORD>(static_cast<DWORD>(value));
+	WORD fractional_part = static_cast<WORD>((value - integral_part) * std::numeric_limits<WORD>::max());
+	return static_cast<DWORD>(MAKELONG(fractional_part, integral_part)); (65535 / 2);
+}
+
+float cwin::audio::wave_helper::unpack_float(DWORD value){
+	auto integral_part = HIWORD(value);
+	auto fractional_part = LOWORD(value);
+	return ((static_cast<float>(fractional_part) / std::numeric_limits<WORD>::max()) + integral_part);
+}
+
+cwin::audio::wave::wave() = default;
 
 cwin::audio::wave::wave(audio::source &source)
-	: wave(){
-	source_ = &source;
-}
+	: source_(&source){}
 
-cwin::audio::wave::wave(ui::tree &parent)
-	: wave(){
+cwin::audio::wave::wave(ui::tree &parent){
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error
 		throw thread::exception::context_mismatch();
 
-	source_ = reinterpret_cast<audio::source *>(parent.get_events().trigger_then_report_result<events::audio::get_source>(0u));
-	parent.get_events().bind([=](events::audio::seek &){
-		if (handle_ != nullptr && options_.is_set(option_type::start)){
-			thread_.get_queue().post_task([=]{
-				start_();
-			});
-		}
-
+	source_ = reinterpret_cast<audio::source *>(parent.get_events().trigger_then_report_result<events::audio::get_source>(0u, *this));
+	parent.get_events().bind([=](events::audio::start &){
+		start_();
+	}, get_talk_id());
+	
+	parent.get_events().bind([=](events::audio::stop &){
 		stop_();
 	}, get_talk_id());
+	
+	parent.get_events().bind([=](events::audio::pause &){
+		pause_();
+	}, get_talk_id());
+	
+	parent.get_events().bind([=](events::audio::resume &){
+		resume_();
+	}, get_talk_id());
+	
+	parent.get_events().bind([=](events::audio::toggle_pause &){
+		toggle_pause_();
+	}, get_talk_id());
 
-	parent.get_events().bind([=](events::audio::after_buffer_write &e){
-		after_write_(e.get_value());
+	parent.get_events().bind([=](events::audio::seek &e){
+		if (&e.get_target() == this)
+			return;
+
+		post_task([=]{//Allow source to handle event
+			if (handle_ != nullptr && state_.is_set(option_type::start)){
+				seek_time_ = wave_helper::compute_progress(*this, source_);
+				progress_ = 0u;
+				flush_();
+			}
+		});
+	}, get_talk_id());
+	
+	parent.get_events().bind([=](events::audio::set_volume &e){
+		set_volume_(e.get_left(), e.get_right());
+		e.set_result(get_volume_());
+	}, get_talk_id());
+	
+	parent.get_events().bind([=](events::audio::set_speed &e){
+		set_speed_(e.get_value());
+		e.set_result(wave_helper::pack_float(get_speed_()));
+	}, get_talk_id());
+	
+	parent.get_events().bind([=](events::audio::set_pitch &e){
+		set_pitch_(e.get_value());
+		e.set_result(wave_helper::pack_float(get_pitch_()));
+	}, get_talk_id());
+	
+	parent.get_events().bind([=](events::audio::compute_progress &e){
+		if (&e.get_target() != this)
+			e.set_result(compute_progress_().count());
 	}, get_talk_id());
 }
 
@@ -108,6 +179,18 @@ void cwin::audio::wave::stop(){
 	});
 }
 
+bool cwin::audio::wave::is_stopped() const{
+	return execute_task([&]{
+		return !state_.is_set(option_type::start);
+	});
+}
+
+void cwin::audio::wave::is_stopped(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(!state_.is_set(option_type::start));
+	});
+}
+
 void cwin::audio::wave::pause(){
 	post_or_execute_task([=]{
 		pause_();
@@ -126,51 +209,145 @@ void cwin::audio::wave::toggle_pause(){
 	});
 }
 
-bool cwin::audio::wave::is_stopped() const{
-	return execute_task([&]{
-		return !options_.is_set(option_type::start);
-	});
-}
-
-void cwin::audio::wave::is_stopped(const std::function<void(bool)> &callback) const{
-	post_or_execute_task([=]{
-		callback(!options_.is_set(option_type::start));
-	});
-}
-
 bool cwin::audio::wave::is_paused() const{
 	return execute_task([&]{
-		return options_.is_set(option_type::pause);
+		return state_.is_set(option_type::pause);
 	});
 }
 
 void cwin::audio::wave::is_paused(const std::function<void(bool)> &callback) const{
 	post_or_execute_task([=]{
-		callback(options_.is_set(option_type::pause));
+		callback(state_.is_set(option_type::pause));
 	});
 }
 
 void cwin::audio::wave::seek(const std::chrono::nanoseconds &offset){
 	post_or_execute_task([=]{
-		if (handle_ != nullptr)
-			waveOutReset(handle_);
-
-		if (source_ != nullptr)
-			source_->seek(offset);
-		else if (parent_ != nullptr)
-			parent_->get_events().trigger<events::audio::seek>(nullptr, 0u, offset);
+		seek_(offset);
 	});
 }
 
 void cwin::audio::wave::seek(float offset){
 	post_or_execute_task([=]{
-		if (handle_ != nullptr)
-			waveOutReset(handle_);
+		seek_(offset);
+	});
+}
 
-		if (source_ != nullptr)
-			source_->seek(offset);
-		else if (parent_ != nullptr)
-			parent_->get_events().trigger<events::audio::seek>(nullptr, 0u, offset);
+void cwin::audio::wave::set_volume(WORD value){
+	set_volume(value, value);
+}
+
+void cwin::audio::wave::set_volume(WORD left, WORD right){
+	post_or_execute_task([=]{
+		set_volume_(left, right);
+	});
+}
+
+DWORD cwin::audio::wave::get_volume() const{
+	return execute_task([&]{
+		return get_volume_();
+	});
+}
+
+void cwin::audio::wave::get_volume(const std::function<void(DWORD)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_volume_());
+	});
+}
+
+WORD cwin::audio::wave::get_left_volume() const{
+	return execute_task([&]{
+		return get_left_volume_();
+	});
+}
+
+void cwin::audio::wave::get_left_volume(const std::function<void(WORD)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_left_volume_());
+	});
+}
+
+WORD cwin::audio::wave::get_right_volume() const{
+	return execute_task([&]{
+		return get_right_volume_();
+	});
+}
+
+void cwin::audio::wave::get_right_volume(const std::function<void(WORD)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_right_volume_());
+	});
+}
+
+void cwin::audio::wave::set_speed(float value){
+	post_or_execute_task([=]{
+		set_speed_(value);
+	});
+}
+
+float cwin::audio::wave::get_speed() const{
+	return execute_task([&]{
+		return get_speed_();
+	});
+}
+
+void cwin::audio::wave::get_speed(const std::function<void(float)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_speed_());
+	});
+}
+
+void cwin::audio::wave::set_pitch(float value){
+	post_or_execute_task([=]{
+		set_pitch_(value);
+	});
+}
+
+float cwin::audio::wave::get_pitch() const{
+	return execute_task([&]{
+		return get_pitch_();
+	});
+}
+
+void cwin::audio::wave::get_pitch(const std::function<void(float)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_pitch_());
+	});
+}
+
+void cwin::audio::wave::enable_reverse(){
+	post_or_execute_task([=]{
+		enable_reverse_();
+	});
+}
+
+void cwin::audio::wave::disable_reverse(){
+	post_or_execute_task([=]{
+		disable_reverse_();
+	});
+}
+
+bool cwin::audio::wave::is_reversed() const{
+	return execute_task([&]{
+		return state_.is_set(option_type::reverse);
+	});
+}
+
+void cwin::audio::wave::is_reversed(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(state_.is_set(option_type::reverse));
+	});
+}
+
+std::chrono::nanoseconds cwin::audio::wave::compute_progress() const{
+	return execute_task([&]{
+		return compute_progress_();
+	});
+}
+
+void cwin::audio::wave::compute_progress(const std::function<void(const std::chrono::nanoseconds &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(compute_progress_());
 	});
 }
 
@@ -189,6 +366,23 @@ void cwin::audio::wave::create_(){
 
 	if (result != MMSYSERR_NOERROR || handle_ == nullptr)
 		throw ui::exception::action_failed();
+
+	WAVEOUTCAPSW info{};
+	waveOutGetDevCapsW(reinterpret_cast<UINT_PTR>(handle_), &info, sizeof(WAVEOUTCAPSW));
+
+	if ((info.dwSupport & WAVECAPS_VOLUME) != 0u)
+		state_.set(option_type::volume_control);
+
+	if ((info.dwSupport & WAVECAPS_LRVOLUME) != 0u)
+		state_.set(option_type::lr_volume);
+
+	if ((info.dwSupport & WAVECAPS_PLAYBACKRATE) != 0u)
+		state_.set(option_type::speed_control);
+
+	if ((info.dwSupport & WAVECAPS_PITCH) != 0u)
+		state_.set(option_type::pitch_control);
+
+	waveOutGetVolume(handle_, &initial_volume_);
 }
 
 void cwin::audio::wave::destroy_(){
@@ -204,11 +398,14 @@ void cwin::audio::wave::destroy_(){
 			throw ui::exception::action_failed();
 	}
 
-	headers_.clear();
-	waveOutClose(handle_);
-	handle_ = nullptr;
+	waveOutSetVolume(handle_, initial_volume_);//Restore volume
+	if (waveOutClose(handle_) != MMSYSERR_NOERROR)
+		throw ui::exception::action_failed();
 
-	options_.clear_all();
+	handle_ = nullptr;
+	headers_.clear();
+
+	state_.clear_all();
 	write_count_ = 0u;
 }
 
@@ -220,7 +417,7 @@ void cwin::audio::wave::initialize_pool_(){
 	headers_.resize(4u);
 	for (auto &header : headers_){//Fill initial buffer
 		header.details = WAVEHDR{};
-		if ((header.buffer = wave_helper::get_buffer(*this, source_)) == nullptr)
+		if ((header.buffer = wave_helper::get_buffer(*this, source_, state_.is_set(option_type::reverse))) == nullptr)
 			break;//EOF
 
 		header.details.dwBufferLength = static_cast<DWORD>(header.buffer->get_size());
@@ -262,54 +459,230 @@ void cwin::audio::wave::write_pool_(){
 	}
 }
 
+void cwin::audio::wave::flush_(){
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	if (!state_.is_set(option_type::start))
+		return;
+
+	if (waveOutReset(handle_) == MMSYSERR_NOERROR){
+		initialize_pool_();
+		if ((headers_[0].details.dwFlags & WHDR_PREPARED) == 0u){//Buffer is empty
+			if (parent_ != nullptr)
+				parent_->get_events().trigger<events::audio::eof>(nullptr, 0u, *this);
+			state_.clear(option_type::start);
+		}
+		else
+			write_pool_();
+	}
+	else//Error
+		throw ui::exception::action_failed();
+}
+
 void cwin::audio::wave::start_(){
-	if (handle_ == nullptr || options_.is_set(option_type::start))
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	if (state_.is_set(option_type::start))
 		return;
 
 	initialize_pool_();
-	if ((headers_[0].details.dwFlags & WHDR_PREPARED) == 0u){
+	if ((headers_[0].details.dwFlags & WHDR_PREPARED) == 0u){//Buffer is empty
 		if (parent_ != nullptr)
-			parent_->get_events().trigger<events::audio::eof>(nullptr, 0u);
-		return;//Buffer is empty
+			parent_->get_events().trigger<events::audio::eof>(nullptr, 0u, *this);
+		return;
 	}
 
+	progress_ = 0u;
+	seek_time_ = std::chrono::nanoseconds(0);
 	write_count_ = 0u;
-	options_.set(option_type::start);
+
+	state_.set(option_type::start);
+	if (parent_ != nullptr)
+		parent_->get_events().trigger<events::audio::started>(nullptr, 0u, *this);
 
 	write_pool_();
 }
 
 void cwin::audio::wave::stop_(){
-	if (handle_ != nullptr && options_.is_set(option_type::start)){
-		waveOutReset(handle_);
-		options_.clear(option_type::start);
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	if (!state_.is_set(option_type::start))
+		return;
+
+	resume_();
+	if (waveOutReset(handle_) == MMSYSERR_NOERROR){
+		state_.clear(option_type::start);
+		if (parent_ != nullptr)
+			parent_->get_events().trigger<events::audio::stopped>(nullptr, 0u, *this);
 	}
+	else//Error
+		throw ui::exception::action_failed();
 }
 
 void cwin::audio::wave::pause_(){
-	if (handle_ != nullptr && options_.is_set(option_type::start) && !options_.is_set(option_type::pause)){
-		waveOutPause(handle_);
-		options_.set(option_type::pause);
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	if (!state_.is_set(option_type::start) || state_.is_set(option_type::pause))
+		return;
+
+	if (waveOutPause(handle_) == MMSYSERR_NOERROR){
+		state_.set(option_type::pause);
+		if (parent_ != nullptr)
+			parent_->get_events().trigger<events::audio::stopped>(nullptr, 0u, *this);
 	}
+	else//Error
+		throw ui::exception::action_failed();
 }
 
 void cwin::audio::wave::resume_(){
-	if (handle_ != nullptr && options_.is_set(option_type::pause)){
-		waveOutRestart(handle_);
-		options_.clear(option_type::pause);
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	if (!state_.is_set(option_type::pause))
+		return;
+
+	if (waveOutRestart(handle_) == MMSYSERR_NOERROR){
+		state_.clear(option_type::pause);
+		if (parent_ != nullptr)
+			parent_->get_events().trigger<events::audio::resumed>(nullptr, 0u, *this);
 	}
+	else//Error
+		throw ui::exception::action_failed();
 }
 
 void cwin::audio::wave::toggle_pause_(){
-	if (options_.is_set(option_type::pause))
+	if (state_.is_set(option_type::pause))
 		resume_();
 	else
 		pause_();
 }
 
+void cwin::audio::wave::seek_(const events::audio::seek::variant_type &offset){
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	wave_helper::seek(*this, source_, offset);
+	seek_time_ = wave_helper::compute_progress(*this, source_);
+
+	progress_ = 0u;
+	flush_();
+}
+
+void cwin::audio::wave::set_volume_(WORD left, WORD right){
+	if (handle_ == nullptr || 100u < left || 100u < right || !state_.is_set(option_type::volume_control))
+		throw ui::exception::not_supported();
+
+	auto left_value = static_cast<WORD>((left / 100.0f) * std::numeric_limits<WORD>::max());
+	auto right_value = static_cast<WORD>((right / 100.0f) * std::numeric_limits<WORD>::max());
+
+	if (waveOutSetVolume(handle_, static_cast<DWORD>(MAKELONG(left_value, right_value))) != MMSYSERR_NOERROR)
+		throw ui::exception::action_failed();
+}
+
+DWORD cwin::audio::wave::get_volume_() const{
+	if (!state_.is_set(option_type::volume_control))
+		return get_left_volume_();
+	return static_cast<DWORD>(MAKELONG(get_left_volume_(), get_right_volume_()));
+}
+
+WORD cwin::audio::wave::get_left_volume_() const{
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	DWORD value = 0u;
+	if (waveOutGetVolume(handle_, &value) != MMSYSERR_NOERROR)
+		throw ui::exception::action_failed();
+
+	return static_cast<WORD>((LOWORD(value) * 100u) / std::numeric_limits<WORD>::max());
+}
+
+WORD cwin::audio::wave::get_right_volume_() const{
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	DWORD value = 0u;
+	if (waveOutGetVolume(handle_, &value) != MMSYSERR_NOERROR)
+		throw ui::exception::action_failed();
+
+	return static_cast<WORD>((HIWORD(value) * 100u) / std::numeric_limits<WORD>::max());
+}
+
+void cwin::audio::wave::set_speed_(float value){
+	if (handle_ == nullptr || !state_.is_set(option_type::speed_control))
+		throw ui::exception::not_supported();
+
+	if (waveOutSetPlaybackRate(handle_, wave_helper::pack_float(value)) != MMSYSERR_NOERROR)
+		throw ui::exception::action_failed();
+}
+
+float cwin::audio::wave::get_speed_() const{
+	if (handle_ == nullptr || !state_.is_set(option_type::speed_control))
+		throw ui::exception::not_supported();
+
+	DWORD value = 0u;
+	if (waveOutGetPlaybackRate(handle_, &value) != MMSYSERR_NOERROR)
+		throw ui::exception::action_failed();
+
+	return wave_helper::unpack_float(value);
+}
+
+void cwin::audio::wave::set_pitch_(float value){
+	if (handle_ == nullptr || !state_.is_set(option_type::pitch_control))
+		throw ui::exception::not_supported();
+
+	if (waveOutSetPitch(handle_, wave_helper::pack_float(value)) != MMSYSERR_NOERROR)
+		throw ui::exception::action_failed();
+}
+
+float cwin::audio::wave::get_pitch_() const{
+	if (handle_ == nullptr || !state_.is_set(option_type::pitch_control))
+		throw ui::exception::not_supported();
+
+	DWORD value = 0u;
+	if (waveOutGetPitch(handle_, &value) != MMSYSERR_NOERROR)
+		throw ui::exception::action_failed();
+
+	return wave_helper::unpack_float(value);
+}
+
+void cwin::audio::wave::enable_reverse_(){
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	state_.set(option_type::reverse);
+	if (state_.is_set(option_type::start))
+		flush_();
+}
+
+void cwin::audio::wave::disable_reverse_(){
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	state_.clear(option_type::reverse);
+	if (state_.is_set(option_type::start))
+		flush_();
+}
+
+std::chrono::nanoseconds cwin::audio::wave::compute_progress_() const{
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	auto &format = wave_helper::get_format(*this, source_);
+	auto duration_in_seconds = ((progress_ * 8.0) / ((format.nSamplesPerSec * format.nChannels) * format.wBitsPerSample));
+
+	return std::chrono::nanoseconds(seek_time_.count() + static_cast<unsigned __int64>(duration_in_seconds * 1000000000));
+}
+
 void cwin::audio::wave::after_write_(WAVEHDR &value){
-	if (0u < write_count_)
-		--write_count_;
+	progress_ += value.dwBufferLength;
+	if (0u < write_count_){
+		if (headers_.size() < write_count_--)
+			return;//Stream flushed
+	}
 
 	if (handle_ == nullptr || (value.dwFlags & WHDR_DONE) == 0u)
 		return;
@@ -325,7 +698,7 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 		throw ui::exception::action_failed();
 
 	header->details = WAVEHDR{};
-	if (!options_.is_set(option_type::start)){//Stopped
+	if (!state_.is_set(option_type::start)){//Stopped
 		header->buffer.reset();
 		if (write_count_ == 0u)
 			headers_.clear();
@@ -333,9 +706,16 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 		return;
 	}
 
-	if ((header->buffer = wave_helper::get_buffer(*this, source_)) == nullptr){//EOF
-		if (write_count_ == 0u && parent_ != nullptr)
-			parent_->get_events().trigger<events::audio::eof>(nullptr, 0u);
+	if (parent_ != nullptr)
+		parent_->get_events().trigger<events::audio::after_buffer_done>(nullptr, 0u, *this);
+
+	if ((header->buffer = wave_helper::get_buffer(*this, source_, state_.is_set(option_type::reverse))) == nullptr){//EOF
+		if (write_count_ == 0u){
+			if (parent_ != nullptr)
+				parent_->get_events().trigger<events::audio::eof>(nullptr, 0u, *this);
+			state_.clear(option_type::start);
+		}
+
 		return;
 	}
 
@@ -360,14 +740,9 @@ void CALLBACK cwin::audio::wave::callback_(HWAVEOUT handle, UINT code, DWORD_PTR
 		return;
 	}
 
-	auto talk_id = static_cast<unsigned __int64>(user_data);
-	auto thread = app::object::find_owner_thread(talk_id);
-
-	if (thread == nullptr)
-		return;
-
-	thread->get_queue().post_task([talk_id, value = reinterpret_cast<WAVEHDR *>(param1)]{
-		if (auto item = app::object::get_thread().find_item(talk_id); item != nullptr)
-			item->get_events().trigger<events::audio::after_buffer_write>(nullptr, 0u, *value);
-	}, talk_id, thread::queue::highest_task_priority);
+	if (auto item = dynamic_cast<wave *>(app::object::find_thread_item(static_cast<unsigned __int64>(user_data))); item != nullptr){
+		item->post_task([item, value = reinterpret_cast<WAVEHDR *>(param1)]{
+			item->after_write_(*value);
+		});
+	}
 }

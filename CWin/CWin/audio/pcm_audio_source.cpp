@@ -155,3 +155,11 @@ std::chrono::nanoseconds cwin::audio::pcm_source::compute_duration_() const{
 	auto duration_in_seconds = ((data_size_ * 8.0) / ((format_.nSamplesPerSec * format_.nChannels) * format_.wBitsPerSample));
 	return std::chrono::nanoseconds(static_cast<unsigned __int64>(duration_in_seconds * 1000000000));
 }
+
+std::chrono::nanoseconds cwin::audio::pcm_source::compute_progress_() const{
+	if (!is_created_())
+		return std::chrono::nanoseconds(0);
+
+	auto duration_in_seconds = ((offset_ * 8.0) / ((format_.nSamplesPerSec * format_.nChannels) * format_.wBitsPerSample));
+	return std::chrono::nanoseconds(static_cast<unsigned __int64>(duration_in_seconds * 1000000000));
+}

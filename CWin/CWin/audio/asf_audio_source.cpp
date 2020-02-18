@@ -119,6 +119,7 @@ void cwin::audio::asf_source::create_(){
 			if (store != nullptr)
 				store->Release();
 
+			last_sample_duration_ = 0u;
 			last_sample_time_ = first_sample_time_;
 			reader_->SetRange(first_sample_time_, 0u);
 		}
@@ -140,6 +141,7 @@ void cwin::audio::asf_source::destroy_(){
 
 	format_ = WAVEFORMATEX{};
 	first_sample_time_ = last_sample_time_ = 0u;
+	last_sample_duration_ = 0u;
 }
 
 bool cwin::audio::asf_source::is_created_() const{
@@ -158,19 +160,19 @@ void cwin::audio::asf_source::seek_(const std::chrono::nanoseconds &offset){
 		throw ui::exception::action_failed();
 
 	INSSBuffer *store = nullptr;
-	QWORD sample_duration = 0u;
 	DWORD flags = 0u;
 
-	if (SUCCEEDED(reader_->GetNextSample(stream_number_, &store, &last_sample_time_, &sample_duration, &flags, nullptr, nullptr))){
+	if (SUCCEEDED(reader_->GetNextSample(stream_number_, &store, &last_sample_time_, &last_sample_duration_, &flags, nullptr, nullptr))){
 		if (store != nullptr)
 			store->Release();
 
+		last_sample_duration_ = 0u;
 		reader_->SetRange(last_sample_time_, 0u);
 	}
 }
 
 void cwin::audio::asf_source::seek_(float offset){
-	seek_(std::chrono::nanoseconds(static_cast<__int64>(duration_.count() * offset)));
+	seek_(std::chrono::nanoseconds(static_cast<__int64>(duration_.count() * static_cast<double>(offset))));
 }
 
 std::shared_ptr<cwin::audio::buffer> cwin::audio::asf_source::get_buffer_(){
@@ -178,10 +180,9 @@ std::shared_ptr<cwin::audio::buffer> cwin::audio::asf_source::get_buffer_(){
 		throw ui::exception::not_supported();
 
 	INSSBuffer *store = nullptr;
-	QWORD sample_duration = 0u;
 	DWORD flags = 0u;
 	
-	auto hr = reader_->GetNextSample(stream_number_, &store, &last_sample_time_, &sample_duration, &flags, nullptr, nullptr);
+	auto hr = reader_->GetNextSample(stream_number_, &store, &last_sample_time_, &last_sample_duration_, &flags, nullptr, nullptr);
 	if (hr == NS_E_NO_MORE_SAMPLES)
 		return nullptr;
 
@@ -200,7 +201,6 @@ std::shared_ptr<cwin::audio::buffer> cwin::audio::asf_source::get_reverse_buffer
 		return nullptr;
 
 	INSSBuffer *store = nullptr;
-	QWORD sample_duration = 0u;
 	DWORD flags = 0u;
 
 	auto last_sample_time = last_sample_time_;
@@ -209,7 +209,7 @@ std::shared_ptr<cwin::audio::buffer> cwin::audio::asf_source::get_reverse_buffer
 	if (!SUCCEEDED(reader_->SetRange((last_sample_time_ - offset_time), 0u)))
 		throw ui::exception::action_failed();
 
-	if (!SUCCEEDED(reader_->GetNextSample(stream_number_, &store, &last_sample_time_, &sample_duration, &flags, nullptr, nullptr)) || store == nullptr)
+	if (!SUCCEEDED(reader_->GetNextSample(stream_number_, &store, &last_sample_time_, &last_sample_duration_, &flags, nullptr, nullptr)) || store == nullptr)
 		throw ui::exception::action_failed();
 
 	if (last_sample_time < last_sample_time_)
@@ -227,4 +227,8 @@ const WAVEFORMATEX &cwin::audio::asf_source::get_format_() const{
 
 std::chrono::nanoseconds cwin::audio::asf_source::compute_duration_() const{
 	return duration_;
+}
+
+std::chrono::nanoseconds cwin::audio::asf_source::compute_progress_() const{
+	return std::chrono::nanoseconds((last_sample_time_ + last_sample_duration_) * 100u);
 }

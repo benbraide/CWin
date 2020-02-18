@@ -35,6 +35,8 @@ namespace cwin::audio{
 
 		virtual std::chrono::nanoseconds compute_duration_() const override;
 
+		virtual std::chrono::nanoseconds compute_progress_() const override;
+
 		IWMSyncReader *reader_ = nullptr;
 		WAVEFORMATEX format_{};
 
@@ -43,5 +45,6 @@ namespace cwin::audio{
 
 		QWORD first_sample_time_ = 0u;
 		QWORD last_sample_time_ = 0u;
+		QWORD last_sample_duration_ = 0u;
 	};
 }

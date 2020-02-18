@@ -352,7 +352,7 @@ void cwin::thread::object::remove_item_(item &item){
 }
 
 cwin::thread::item *cwin::thread::object::find_item_(unsigned __int64 talk_id) const{
-	if (items_.empty())
+	if (talk_id == 0u || items_.empty() || queue_.is_blacklisted(talk_id))
 		return nullptr;
 
 	auto it = items_.find(talk_id);

@@ -51,6 +51,11 @@ cwin::audio::source::source(ui::tree &parent, const std::wstring &path)
 		else
 			e.prevent_default();
 	}, get_talk_id());
+
+	parent.get_events().bind([=](events::audio::compute_progress &e){
+		if (e.get_result() == 0)
+			e.set_result(compute_progress_().count());
+	}, get_talk_id());
 }
 
 cwin::audio::source::~source() = default;
@@ -120,5 +125,17 @@ std::chrono::nanoseconds cwin::audio::source::compute_duration() const{
 void cwin::audio::source::compute_duration(const std::function<void(const std::chrono::nanoseconds &)> &callback) const{
 	post_or_execute_task([=]{
 		callback(compute_duration_());
+	});
+}
+
+std::chrono::nanoseconds cwin::audio::source::compute_progress() const{
+	return execute_task([&]{
+		return compute_progress_();
+	});
+}
+
+void cwin::audio::source::compute_progress(const std::function<void(const std::chrono::nanoseconds &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(compute_progress_());
 	});
 }
