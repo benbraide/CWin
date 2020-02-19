@@ -94,8 +94,12 @@ float cwin::audio::wave_helper::unpack_float(DWORD value){
 
 cwin::audio::wave::wave() = default;
 
-cwin::audio::wave::wave(audio::source &source)
-	: source_(&source){}
+cwin::audio::wave::wave(audio::source &source){
+	if (&source.get_thread() == &thread_)
+		source_ = &source;
+	else//Error
+		throw thread::exception::context_mismatch();
+}
 
 cwin::audio::wave::wave(ui::tree &parent){
 	source_ = reinterpret_cast<audio::source *>(parent.get_events().trigger_then_report_result<events::audio::get_source>(0u, *this));
@@ -168,7 +172,10 @@ cwin::audio::wave::wave(ui::tree &parent){
 
 cwin::audio::wave::wave(ui::tree &parent, audio::source &source)
 	: wave(parent){
-	source_ = &source;
+	if (&source.get_thread() == &thread_)
+		source_ = &source;
+	else//Error
+		throw thread::exception::context_mismatch();
 }
 
 cwin::audio::wave::~wave(){
