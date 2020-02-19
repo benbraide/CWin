@@ -15,8 +15,6 @@ namespace cwin::window{
 		child();
 
 		virtual bool changing_parent_(tree *value) override;
-
-		virtual bool is_dialog_message_(MSG &msg) const override;
 	};
 }
 

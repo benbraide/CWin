@@ -98,6 +98,20 @@ namespace cwin::events::audio{
 		virtual ~toggle_pause() = default;
 	};
 
+	class enable_reverse : public object{
+	public:
+		using object::object;
+
+		virtual ~enable_reverse() = default;
+	};
+
+	class disable_reverse : public object{
+	public:
+		using object::object;
+
+		virtual ~disable_reverse() = default;
+	};
+
 	class seek : public object{
 	public:
 		using variant_type = std::variant<std::chrono::nanoseconds, float>;

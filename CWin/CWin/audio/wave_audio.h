@@ -125,6 +125,8 @@ namespace cwin::audio{
 
 		virtual void write_pool_();
 
+		virtual void write_skipped_();
+
 		virtual void flush_();
 
 		virtual void start_();
@@ -168,10 +170,13 @@ namespace cwin::audio{
 		HWAVEOUT handle_ = nullptr;
 		audio::source *source_ = nullptr;
 
-		std::vector<header_info> headers_;
+		std::vector<header_info> pool_;
 		std::size_t write_count_ = 0u;
 
-		std::size_t progress_ = 0u;
+		std::size_t skip_index_ = static_cast<std::size_t>(-1);
+		std::size_t skip_count_ = 0u;
+
+		__int64 progress_ = 0;
 		std::chrono::nanoseconds seek_time_ = std::chrono::nanoseconds(0);
 
 		utility::small_options state_;

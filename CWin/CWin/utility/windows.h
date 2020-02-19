@@ -16,6 +16,7 @@
 
 #include <mmreg.h>
 #include <wmsdk.h>
+#include <msacm.h>
 
 #include <d2d1_2.h>
 #include <d2d1helper.h>
@@ -33,6 +34,7 @@
 #pragma comment(lib, "comctl32.lib")
 
 #pragma comment(lib, "winmm.lib")
+#pragma comment(lib, "Msacm32.lib")
 #pragma comment(lib, "wmvcore.lib")
 
 #pragma comment(lib, "Rpcrt4.lib")

@@ -16,7 +16,3 @@ bool cwin::window::child::changing_parent_(tree *value){
 
 	return object::changing_parent_(value);
 }
-
-bool cwin::window::child::is_dialog_message_(MSG &msg) const{
-	return false;
-}

@@ -98,12 +98,12 @@ cwin::audio::wave::wave(audio::source &source)
 	: source_(&source){}
 
 cwin::audio::wave::wave(ui::tree &parent){
+	source_ = reinterpret_cast<audio::source *>(parent.get_events().trigger_then_report_result<events::audio::get_source>(0u, *this));
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error
 		throw thread::exception::context_mismatch();
 
-	source_ = reinterpret_cast<audio::source *>(parent.get_events().trigger_then_report_result<events::audio::get_source>(0u, *this));
 	parent.get_events().bind([=](events::audio::start &){
 		start_();
 	}, get_talk_id());
@@ -122,6 +122,14 @@ cwin::audio::wave::wave(ui::tree &parent){
 	
 	parent.get_events().bind([=](events::audio::toggle_pause &){
 		toggle_pause_();
+	}, get_talk_id());
+	
+	parent.get_events().bind([=](events::audio::enable_reverse &){
+		enable_reverse_();
+	}, get_talk_id());
+	
+	parent.get_events().bind([=](events::audio::disable_reverse &){
+		disable_reverse_();
 	}, get_talk_id());
 
 	parent.get_events().bind([=](events::audio::seek &e){
@@ -390,7 +398,7 @@ void cwin::audio::wave::destroy_(){
 		return;
 
 	waveOutReset(handle_);
-	for (auto &header : headers_){
+	for (auto &header : pool_){
 		if ((header.details.dwFlags & WHDR_PREPARED) == 0u)
 			continue;
 
@@ -403,10 +411,13 @@ void cwin::audio::wave::destroy_(){
 		throw ui::exception::action_failed();
 
 	handle_ = nullptr;
-	headers_.clear();
+	pool_.clear();
 
 	state_.clear_all();
 	write_count_ = 0u;
+
+	skip_count_ = 0u;
+	skip_index_ = 0u;
 }
 
 bool cwin::audio::wave::is_created_() const{
@@ -414,48 +425,77 @@ bool cwin::audio::wave::is_created_() const{
 }
 
 void cwin::audio::wave::initialize_pool_(){
-	headers_.resize(4u);
-	for (auto &header : headers_){//Fill initial buffer
+	pool_.resize(4u);
+
+	for (auto &header : pool_){//Fill initial buffer
+		header.buffer = nullptr;
 		header.details = WAVEHDR{};
+
 		if ((header.buffer = wave_helper::get_buffer(*this, source_, state_.is_set(option_type::reverse))) == nullptr)
-			break;//EOF
+			continue;//EOF
 
 		header.details.dwBufferLength = static_cast<DWORD>(header.buffer->get_size());
 		header.details.dwUser = reinterpret_cast<DWORD_PTR>(&header);
 		header.details.lpData = header.buffer->get_data();
 
 		if (waveOutPrepareHeader(handle_, &header.details, sizeof(WAVEHDR)) != MMSYSERR_NOERROR){
-			for (auto &inner_header : headers_){
+			for (auto &inner_header : pool_){
 				if ((inner_header.details.dwFlags & WHDR_PREPARED) != 0u)
 					waveOutUnprepareHeader(handle_, &inner_header.details, sizeof(WAVEHDR));
 				else//Not prepared
 					break;
 			}
 
-			headers_.clear();
+			pool_.clear();
 			throw ui::exception::action_failed();
 		}
 	}
+	
+	skip_count_ = 0u;
+	skip_index_ = 0u;
 }
 
 void cwin::audio::wave::write_pool_(){
-	for (auto &header : headers_){
+	for (auto &header : pool_){
 		if ((header.details.dwFlags & WHDR_PREPARED) == 0u)
 			break;
 
 		if (waveOutWrite(handle_, &header.details, sizeof(WAVEHDR)) != MMSYSERR_NOERROR){
-			for (auto &inner_header : headers_){
+			for (auto &inner_header : pool_){
 				if ((inner_header.details.dwFlags & WHDR_PREPARED) != 0u)
 					waveOutUnprepareHeader(handle_, &inner_header.details, sizeof(WAVEHDR));
 				else//Not prepared
 					break;
 			}
 
-			headers_.clear();
+			pool_.clear();
 			throw ui::exception::action_failed();
 		}
 		else//Successful write
 			++write_count_;
+	}
+}
+
+void cwin::audio::wave::write_skipped_(){
+	if (skip_count_ == 0u || pool_.size() <= skip_index_)
+		return;
+
+	for (; 0u < skip_count_; ++skip_index_, --skip_count_){
+		pool_[skip_index_].details = WAVEHDR{};
+		if ((pool_[skip_index_].buffer = wave_helper::get_buffer(*this, source_, state_.is_set(option_type::reverse))) == nullptr)
+			break;
+
+		pool_[skip_index_].details.dwBufferLength = static_cast<DWORD>(pool_[skip_index_].buffer->get_size());
+		pool_[skip_index_].details.dwUser = reinterpret_cast<DWORD_PTR>(&pool_[skip_index_]);
+		pool_[skip_index_].details.lpData = pool_[skip_index_].buffer->get_data();
+
+		if (waveOutPrepareHeader(handle_, &pool_[skip_index_].details, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
+			throw ui::exception::action_failed();
+
+		if (waveOutWrite(handle_, &pool_[skip_index_].details, sizeof(WAVEHDR)) == MMSYSERR_NOERROR)
+			++write_count_;
+		else//Error
+			throw ui::exception::action_failed();
 	}
 }
 
@@ -468,7 +508,7 @@ void cwin::audio::wave::flush_(){
 
 	if (waveOutReset(handle_) == MMSYSERR_NOERROR){
 		initialize_pool_();
-		if ((headers_[0].details.dwFlags & WHDR_PREPARED) == 0u){//Buffer is empty
+		if ((pool_[0].details.dwFlags & WHDR_PREPARED) == 0u){//Buffer is empty
 			if (parent_ != nullptr)
 				parent_->get_events().trigger<events::audio::eof>(nullptr, 0u, *this);
 			state_.clear(option_type::start);
@@ -488,7 +528,7 @@ void cwin::audio::wave::start_(){
 		return;
 
 	initialize_pool_();
-	if ((headers_[0].details.dwFlags & WHDR_PREPARED) == 0u){//Buffer is empty
+	if ((pool_[0].details.dwFlags & WHDR_PREPARED) == 0u){//Buffer is empty
 		if (parent_ != nullptr)
 			parent_->get_events().trigger<events::audio::eof>(nullptr, 0u, *this);
 		return;
@@ -672,48 +712,58 @@ std::chrono::nanoseconds cwin::audio::wave::compute_progress_() const{
 		throw ui::exception::not_supported();
 
 	auto &format = wave_helper::get_format(*this, source_);
-	auto duration_in_seconds = ((progress_ * 8.0) / ((format.nSamplesPerSec * format.nChannels) * format.wBitsPerSample));
+	auto duration_in_seconds = ((progress_ * 8.0) / ((format.nSamplesPerSec * static_cast<__int64>(format.nChannels)) * format.wBitsPerSample));
 
-	return std::chrono::nanoseconds(seek_time_.count() + static_cast<unsigned __int64>(duration_in_seconds * 1000000000));
+	return std::chrono::nanoseconds(seek_time_.count() + static_cast<__int64>(duration_in_seconds * 1000000000));
 }
 
 void cwin::audio::wave::after_write_(WAVEHDR &value){
-	progress_ += value.dwBufferLength;
 	if (0u < write_count_){
-		if (headers_.size() < write_count_--)
+		if (pool_.size() < write_count_--)
 			return;//Stream flushed
 	}
 
 	if (handle_ == nullptr || (value.dwFlags & WHDR_DONE) == 0u)
 		return;
 
-	auto header = reinterpret_cast<header_info *>(value.dwUser);
-	if (header == nullptr){
-		if ((value.dwFlags & WHDR_PREPARED) != 0u && waveOutUnprepareHeader(handle_, &value, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
-			throw ui::exception::action_failed();
-		return;
-	}
-
-	if ((header->details.dwFlags & WHDR_PREPARED) != 0u && waveOutUnprepareHeader(handle_, &header->details, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
+	if ((value.dwFlags & WHDR_PREPARED) != 0u && waveOutUnprepareHeader(handle_, &value, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
 		throw ui::exception::action_failed();
 
-	header->details = WAVEHDR{};
-	if (!state_.is_set(option_type::start)){//Stopped
-		header->buffer.reset();
-		if (write_count_ == 0u)
-			headers_.clear();
-
+	auto header = reinterpret_cast<header_info *>(value.dwUser);
+	if (header == nullptr)
 		return;
-	}
+
+	header->buffer = nullptr;
+	header->details = WAVEHDR{};
+
+	if (!state_.is_set(option_type::start))//Stopped
+		return;
 
 	if (parent_ != nullptr)
 		parent_->get_events().trigger<events::audio::after_buffer_done>(nullptr, 0u, *this);
 
-	if ((header->buffer = wave_helper::get_buffer(*this, source_, state_.is_set(option_type::reverse))) == nullptr){//EOF
+	if (state_.is_set(option_type::reverse))
+		progress_ -= static_cast<__int64>(value.dwBufferLength);
+	else//Forward
+		progress_ += static_cast<__int64>(value.dwBufferLength);
+
+	write_skipped_();
+	if (0u < skip_count_ || (header->buffer = wave_helper::get_buffer(*this, source_, state_.is_set(option_type::reverse))) == nullptr){//EOF
 		if (write_count_ == 0u){
 			if (parent_ != nullptr)
 				parent_->get_events().trigger<events::audio::eof>(nullptr, 0u, *this);
+
 			state_.clear(option_type::start);
+			if (parent_ != nullptr)
+				parent_->get_events().trigger<events::audio::stopped>(nullptr, 0u, *this);
+		}
+		else if (skip_count_++ == 0u){
+			for (std::size_t index = 0u; index < pool_.size(); ++index){
+				if (&pool_[index] == header){
+					skip_index_ = index;
+					break;
+				}
+			}
 		}
 
 		return;
