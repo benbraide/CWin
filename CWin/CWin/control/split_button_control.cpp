@@ -18,12 +18,12 @@ cwin::control::split_button::split_button(tree &parent, std::size_t index)
 		if (popup_ == nullptr)
 			return;
 
-		auto position = compute_current_absolute_position_();
+		auto position = compute_absolute_position_();
 		TrackPopupMenu(
 			popup_->get_handle(),
 			(GetSystemMetrics(SM_MENUDROPALIGNMENT) | TPM_RIGHTBUTTON),
 			position.x,
-			(position.y + get_current_size_().cy),
+			(position.y + get_size_().cy),
 			0,
 			handle_,
 			nullptr

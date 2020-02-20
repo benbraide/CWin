@@ -90,7 +90,7 @@ void cwin::grid::row::update_dimension_(const SIZE &size, const POINT &position)
 	std::vector<column_info> columns;
 	columns.reserve(children_.size());
 
-	auto client_size = compute_current_client_size_();
+	auto client_size = compute_client_size_();
 	auto fixed_width = 0, shared_count = 0;
 
 	traverse_children_<column>([&](column &child){
@@ -158,7 +158,7 @@ void cwin::grid::fixed_row::size_update_(const SIZE &old_value, const SIZE &curr
 }
 
 int cwin::grid::fixed_row::compute_fixed_height_(int object_height) const{
-	return get_current_size_().cx;
+	return get_size_().cx;
 }
 
 bool cwin::grid::fixed_row::is_fixed_() const{

@@ -37,10 +37,6 @@ namespace cwin::ui{
 
 		virtual void get_size(const std::function<void(const SIZE &)> &callback) const;
 
-		virtual const SIZE &get_current_size() const;
-
-		virtual void get_current_size(const std::function<void(const SIZE &)> &callback) const;
-
 		virtual void set_position(const POINT &value);
 
 		virtual void set_x_position(int value);
@@ -53,41 +49,21 @@ namespace cwin::ui{
 
 		virtual void get_position(const std::function<void(const POINT &)> &callback) const;
 
-		virtual const POINT &get_current_position() const;
-
-		virtual void get_current_position(const std::function<void(const POINT &)> &callback) const;
-
 		virtual POINT compute_absolute_position() const;
 
 		virtual void compute_absolute_position(const std::function<void(const POINT &)> &callback) const;
-
-		virtual POINT compute_current_absolute_position() const;
-
-		virtual void compute_current_absolute_position(const std::function<void(const POINT &)> &callback) const;
 
 		virtual SIZE compute_client_size() const;
 
 		virtual void compute_client_size(const std::function<void(const SIZE &)> &callback) const;
 
-		virtual SIZE compute_current_client_size() const;
-
-		virtual void compute_current_client_size(const std::function<void(const SIZE &)> &callback) const;
-
 		virtual RECT compute_dimension() const;
 
 		virtual void compute_dimension(const std::function<void(const RECT &)> &callback) const;
 
-		virtual RECT compute_current_dimension() const;
-
-		virtual void compute_current_dimension(const std::function<void(const RECT &)> &callback) const;
-
 		virtual RECT compute_absolute_dimension() const;
 
 		virtual void compute_absolute_dimension(const std::function<void(const RECT &)> &callback) const;
-
-		virtual RECT compute_current_absolute_dimension() const;
-
-		virtual void compute_current_absolute_dimension(const std::function<void(const RECT &)> &callback) const;
 
 		virtual void compute_relative_to_absolute(POINT &value) const;
 
@@ -104,10 +80,6 @@ namespace cwin::ui{
 		virtual UINT hit_test(const POINT &value) const;
 
 		virtual void hit_test(const POINT &value, const std::function<void(UINT)> &callback) const;
-
-		virtual UINT current_hit_test(const POINT &value) const;
-
-		virtual void current_hit_test(const POINT &value, const std::function<void(UINT)> &callback) const;
 
 		virtual void update_window_relative_position();
 
@@ -134,7 +106,7 @@ namespace cwin::ui{
 
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value);
 
-		virtual const SIZE &get_current_size_() const;
+		virtual const SIZE &get_size_() const;
 
 		virtual void set_position_(const POINT &value);
 
@@ -150,23 +122,15 @@ namespace cwin::ui{
 
 		virtual void update_window_relative_position_();
 
-		virtual const POINT &get_current_position_() const;
+		virtual const POINT &get_position_() const;
 
 		virtual POINT compute_absolute_position_() const;
 
-		virtual POINT compute_current_absolute_position_() const;
-
 		virtual RECT compute_dimension_() const;
-
-		virtual RECT compute_current_dimension_() const;
 
 		virtual RECT compute_absolute_dimension_() const;
 
-		virtual RECT compute_current_absolute_dimension_() const;
-
 		virtual SIZE compute_client_size_() const;
-
-		virtual SIZE compute_current_client_size_() const;
 
 		virtual void compute_relative_to_absolute_(POINT &value) const;
 
@@ -181,8 +145,6 @@ namespace cwin::ui{
 		virtual void offset_point_from_window_(POINT &value) const;
 
 		virtual UINT hit_test_(const POINT &value) const;
-
-		virtual UINT current_hit_test_(const POINT &value) const;
 
 		template <typename surface_type>
 		POINT compute_surface_relative_offset_() const{
@@ -199,7 +161,7 @@ namespace cwin::ui{
 
 				if (offset != nullptr){
 					ancestor.offset_point_to_window_(*offset);
-					auto &current_position = ancestor.get_current_position_();
+					auto &current_position = ancestor.get_position_();
 
 					offset->x += current_position.x;
 					offset->y += current_position.y;

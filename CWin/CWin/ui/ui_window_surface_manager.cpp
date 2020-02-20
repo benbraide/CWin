@@ -73,8 +73,8 @@ HWND cwin::ui::window_surface_manager::create(window_surface &owner, const wchar
 	if (&owner.get_thread() != &thread_)
 		throw thread::exception::context_mismatch();
 
-	auto &size = owner.get_current_size();
-	auto position = owner.get_current_position();
+	auto &size = owner.get_size_();
+	auto position = owner.get_position_();
 
 	HWND ancestor_handle_value = nullptr;
 	owner.traverse_ancestors_<surface>([&](surface &ancestor){
@@ -87,7 +87,7 @@ HWND cwin::ui::window_surface_manager::create(window_surface &owner, const wchar
 			return false;
 		}
 
-		auto &current_position = ancestor.get_current_position();
+		auto &current_position = ancestor.get_position();
 		position.x += current_position.x;
 		position.y += current_position.y;
 
@@ -358,7 +358,7 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		if (dynamic_cast<window_surface *>(&child) != nullptr || !child.is_created() || !child.is_visible_())
 			return true;
 
-		auto &child_position = child.get_current_position();
+		auto &child_position = child.get_position();
 		POINT window_position{ (child_position.x + offset.x), (child_position.y + offset.y) };
 
 		paint_(child, message, 0, 0, window_position);
@@ -430,7 +430,7 @@ void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &targ
 	if (dynamic_cast<window_surface *>(&target) != nullptr || !target.is_created() || !target.is_visible_())
 		return;
 
-	auto &position = target.get_current_position();
+	auto &position = target.get_position();
 	offset.x += position.x;
 	offset.y += position.y;
 
@@ -471,11 +471,11 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 	auto pos = GetMessagePos();
 	POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
 
-	if (auto hit_target = (target.is_occluded_() ? HTNOWHERE : target.current_hit_test_(position)); hit_target != HTNOWHERE){
+	if (auto hit_target = (target.is_occluded_() ? HTNOWHERE : target.hit_test_(position)); hit_target != HTNOWHERE){
 		if (hit_target == HTCLIENT){//Check if mouse is inside a window offspring
 			auto is_inside_offspring = false;
 			target.traverse_offspring_<window_surface>([&](window_surface &offspring){
-				if (target.current_hit_test_(position) != HTNOWHERE){
+				if (target.hit_test_(position) != HTNOWHERE){
 					is_inside_offspring = true;
 					return false;
 				}
@@ -505,7 +505,7 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 			mouse_info_.target = nullptr;
 
 		for (auto window_ancestor = target.get_matching_ancestor<window_surface>(); window_ancestor != nullptr; window_ancestor = window_ancestor->get_matching_ancestor<window_surface>()){
-			if (window_ancestor->current_hit_test_(position) != HTNOWHERE)
+			if (window_ancestor->hit_test_(position) != HTNOWHERE)
 				break;
 			else//Outside ancestor
 				window_ancestor->get_events().trigger<events::interrupt::mouse_leave>(nullptr, 0u);

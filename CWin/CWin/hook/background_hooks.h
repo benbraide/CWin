@@ -33,10 +33,6 @@ namespace cwin::hook{
 
 		virtual void get_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const;
 
-		virtual const D2D1_COLOR_F &get_current_color() const;
-
-		virtual void get_current_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const;
-
 	protected:
 		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const override;
 
@@ -49,8 +45,6 @@ namespace cwin::hook{
 		virtual void color_update_(const D2D1_COLOR_F &old_value, const D2D1_COLOR_F &current_value);
 
 		virtual const D2D1_COLOR_F &get_color_() const;
-
-		virtual const D2D1_COLOR_F &get_current_color_() const;
 
 		D2D1_COLOR_F color_;
 	};

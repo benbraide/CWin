@@ -219,7 +219,7 @@ void cwin::control::tool_tip_item::create_(){
 				return false;
 			}
 
-			auto &ancestor_position = ancestor.get_current_position();
+			auto &ancestor_position = ancestor.get_position();
 			offset.x += ancestor_position.x;
 			offset.y += ancestor_position.y;
 
@@ -334,7 +334,7 @@ void cwin::control::tool_tip_item::update_dimension_(){
 				return false;
 			}
 
-			auto &ancestor_position = ancestor.get_current_position();
+			auto &ancestor_position = ancestor.get_position();
 			offset.x += ancestor_position.x;
 			offset.y += ancestor_position.y;
 

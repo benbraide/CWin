@@ -52,7 +52,7 @@ void cwin::grid::object::refresh_(){
 	std::vector<row_info> rows;
 	rows.reserve(children_.size());
 
-	auto client_size = compute_current_client_size_();
+	auto client_size = compute_client_size_();
 	auto fixed_height = 0, shared_count = 0;
 
 	traverse_children_<row>([&](row &child){

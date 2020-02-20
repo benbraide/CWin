@@ -165,7 +165,7 @@ void cwin::ui::window_surface::create_(){
 		throw ui::exception::action_failed();
 
 	handle_bound_.handle = CreateRectRgn(0, 0, 0, 0);
-	update_region_bound_(handle_bound_.rect_handle, get_current_size_());
+	update_region_bound_(handle_bound_.rect_handle, get_size_());
 	update_bounds_();
 }
 
@@ -214,7 +214,7 @@ void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &c
 		}
 	}
 
-	update_region_bound_(handle_bound_.rect_handle, get_current_size_());
+	update_region_bound_(handle_bound_.rect_handle, get_size_());
 	update_bounds_();
 }
 
@@ -242,13 +242,13 @@ void cwin::ui::window_surface::position_update_(const POINT &old_value, const PO
 }
 
 void cwin::ui::window_surface::update_window_relative_position_(){
-	auto position = get_current_position_();
+	auto position = get_position_();
 	traverse_ancestors_<surface>([&](surface &ancestor){
 		ancestor.offset_point_to_window(position);
 		if (auto window_ancestor = dynamic_cast<window_surface *>(&ancestor); window_ancestor != nullptr)
 			return false;
 
-		auto &current_position = ancestor.get_current_position();
+		auto &current_position = ancestor.get_position();
 		position.x += current_position.x;
 		position.y += current_position.y;
 
@@ -269,23 +269,13 @@ void cwin::ui::window_surface::update_window_relative_position_(){
 }
 
 SIZE cwin::ui::window_surface::compute_client_size_() const{
-	RECT rect{ 0, 0, size_.cx, size_.cy };
-	AdjustWindowRectEx(&rect, get_computed_styles_(), FALSE, get_computed_extended_styles_());
-
-	SIZE size{ (rect.right - rect.left), (rect.bottom - rect.top) };
-	SIZE size_delta{ (size.cx - size_.cx), (size.cy - size_.cy) };
-
-	return SIZE{ (size_.cx - (size_delta.cx + size_delta.cx)), (size_.cy - (size_delta.cy + size_delta.cy)) };
-}
-
-SIZE cwin::ui::window_surface::compute_current_client_size_() const{
 	if (handle_ != nullptr){
 		RECT client_rect{};
 		GetClientRect(handle_, &client_rect);
 		return SIZE{ (client_rect.right - client_rect.left), (client_rect.bottom - client_rect.top) };
 	}
 
-	auto &current_size = get_current_size_();
+	auto &current_size = get_size_();
 	RECT rect{ 0, 0, current_size.cx, current_size.cy };
 	AdjustWindowRectEx(&rect, get_computed_styles_(), FALSE, get_computed_extended_styles_());
 
@@ -323,9 +313,9 @@ void cwin::ui::window_surface::compute_absolute_to_relative_(RECT &value) const{
 		MapWindowPoints(HWND_DESKTOP, handle_, reinterpret_cast<POINT *>(&value), 2u);
 }
 
-UINT cwin::ui::window_surface::current_hit_test_(const POINT &value) const{
+UINT cwin::ui::window_surface::hit_test_(const POINT &value) const{
 	if (handle_ == nullptr)
-		return visible_surface::current_hit_test_(value);
+		return visible_surface::hit_test_(value);
 
 	RECT dimension{};
 	GetWindowRect(handle_, &dimension);
@@ -345,7 +335,7 @@ void cwin::ui::window_surface::update_bounds_(){
 
 	try{
 		auto &client_bound = get_ancestor_client_bound_(offset);
-		auto &current_position = get_current_position_();
+		auto &current_position = get_position_();
 
 		offset.x += current_position.x;
 		offset.y += current_position.y;

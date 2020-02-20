@@ -70,14 +70,14 @@ void cwin::events::non_client_paint::do_default_(){
 		return;
 
 	auto non_window_context = dynamic_cast<ui::non_window_surface *>(&context_);
-	if (non_window_context == nullptr || !non_window_context->is_created() || !non_window_context->is_visible())
+	if (non_window_context == nullptr || !non_window_context->is_created() || non_window_context->is_occluded())
 		return;
 
 	auto theme = thread_.get_theme();
 	if (theme == nullptr)
 		return;
 
-	auto &size = non_window_context->get_current_size();
+	auto &size = non_window_context->get_size();
 	auto &client_margin = non_window_context->get_client_margin();
 
 	events::interrupt::is_big_border_handle big_border_e(context_);

@@ -73,11 +73,6 @@ SIZE cwin::control::tab::compute_client_size_() const{
 	return SIZE{ (value.cx - (client_margin_.left + client_margin_.right)), (value.cy - (client_margin_.top + client_margin_.bottom)) };
 }
 
-SIZE cwin::control::tab::compute_current_client_size_() const{
-	auto value = object::compute_current_client_size_();
-	return SIZE{ (value.cx - (client_margin_.left + client_margin_.right)), (value.cy - (client_margin_.top + client_margin_.bottom)) };
-}
-
 void cwin::control::tab::offset_point_to_window_(POINT &value) const{
 	value.x += client_margin_.left;
 	value.y += client_margin_.top;
@@ -117,7 +112,7 @@ void cwin::control::tab::update_client_margin_(){
 		return true;
 	});
 
-	events_.trigger<events::after_size_update>(nullptr, 0u, get_current_size_());
+	events_.trigger<events::after_size_update>(nullptr, 0u, get_size_());
 }
 
 void cwin::control::tab::activate_current_item_() const{

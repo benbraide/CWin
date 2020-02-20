@@ -72,8 +72,6 @@ namespace cwin::ui{
 
 		virtual SIZE compute_client_size_() const override;
 
-		virtual SIZE compute_current_client_size_() const override;
-
 		virtual void compute_relative_to_absolute_(POINT &value) const override;
 
 		virtual void compute_relative_to_absolute_(RECT &value) const override;
@@ -82,7 +80,7 @@ namespace cwin::ui{
 
 		virtual void compute_absolute_to_relative_(RECT &value) const override;
 
-		virtual UINT current_hit_test_(const POINT &value) const override;
+		virtual UINT hit_test_(const POINT &value) const override;
 
 		virtual void update_bounds_() override;
 

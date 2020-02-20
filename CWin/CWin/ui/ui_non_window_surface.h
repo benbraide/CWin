@@ -41,13 +41,11 @@ namespace cwin::ui{
 
 		virtual SIZE compute_client_size_() const override;
 
-		virtual SIZE compute_current_client_size_() const override;
-
 		virtual void offset_point_to_window_(POINT &value) const override;
 
 		virtual void offset_point_from_window_(POINT &value) const override;
 
-		virtual UINT current_hit_test_(const POINT &value) const override;
+		virtual UINT hit_test_(const POINT &value) const override;
 
 		virtual void update_bounds_() override;
 

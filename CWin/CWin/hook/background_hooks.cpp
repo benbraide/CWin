@@ -60,23 +60,8 @@ void cwin::hook::color_background::get_color(const std::function<void(const D2D1
 	});
 }
 
-const D2D1_COLOR_F &cwin::hook::color_background::get_current_color() const{
-	return *execute_task([&]{
-		return &get_current_color_();
-	});
-}
-
-void cwin::hook::color_background::get_current_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const{
-	post_or_execute_task([=]{
-		callback(get_current_color_());
-	});
-}
-
 void cwin::hook::color_background::draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const{
-	render.Clear(get_current_color_());
-	/*auto brush = background::thread_.get_color_brush();
-	brush->SetColor(color_hook_.current_value_);
-	render.FillRectangle(area, brush);*/
+	render.Clear(get_color_());
 }
 
 void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value){
@@ -114,10 +99,6 @@ void cwin::hook::color_background::color_update_(const D2D1_COLOR_F &old_value, 
 }
 
 const D2D1_COLOR_F &cwin::hook::color_background::get_color_() const{
-	return color_;
-}
-
-const D2D1_COLOR_F &cwin::hook::color_background::get_current_color_() const{
 	auto value = reinterpret_cast<D2D1_COLOR_F *>(parent_->get_events().trigger_then_report_result<events::interrupt::color_request>(0u));
 	return ((value == nullptr) ? color_ : *value);
 }

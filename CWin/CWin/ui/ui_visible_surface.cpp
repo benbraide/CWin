@@ -61,7 +61,7 @@ void cwin::ui::visible_surface::is_occluded(const std::function<void(bool)> &cal
 }
 
 void cwin::ui::visible_surface::redraw_(HRGN region){
-	redraw_at_(region, get_current_position());
+	redraw_at_(region, get_position_());
 }
 
 void cwin::ui::visible_surface::redraw_(const RECT &region){

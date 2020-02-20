@@ -148,7 +148,7 @@ void cwin::hook::placement::update_(){
 		return;
 
 	SIZE parent_client_size{};
-	auto &target_size = surface_target->get_current_size();
+	auto &target_size = surface_target->get_size();
 
 	if (auto surface_parent = dynamic_cast<ui::surface *>(surface_target->get_parent()); surface_parent == nullptr){//Use desktop window
 		RECT dimension{};
@@ -156,7 +156,7 @@ void cwin::hook::placement::update_(){
 		parent_client_size = SIZE{ (dimension.right - dimension.left), (dimension.bottom - dimension.top) };
 	}
 	else//Use parent client
-		parent_client_size = surface_parent->compute_current_client_size();
+		parent_client_size = surface_parent->compute_client_size();
 
 	auto computed_offset = offset_;
 	switch (alignment_){
@@ -361,10 +361,10 @@ void cwin::hook::relative_placement::update_(){
 	if (surface_source == nullptr)
 		return;
 
-	auto target_offset = compute_offset_(surface_target->get_current_size(), alignment_);
-	auto source_offset = compute_offset_(surface_source->get_current_size(), source_alignment_);
+	auto target_offset = compute_offset_(surface_target->get_size(), alignment_);
+	auto source_offset = compute_offset_(surface_source->get_size(), source_alignment_);
 
-	auto &source_position = surface_source->get_current_position();
+	auto &source_position = surface_source->get_position();
 	surface_target->set_position(POINT{
 		(source_position.x + source_offset.x + offset_.x - target_offset.x),
 		(source_position.y + source_offset.y + offset_.y - target_offset.y)
@@ -463,7 +463,7 @@ void cwin::hook::fill::update_(){
 		parent_client_size = SIZE{ (dimension.right - dimension.left), (dimension.bottom - dimension.top) };
 	}
 	else//Use parent client
-		parent_client_size = surface_parent->compute_current_client_size();
+		parent_client_size = surface_parent->compute_client_size();
 
 	SIZE offset{};
 	if (std::holds_alternative<D2D1_SIZE_F>(offset_)){//Proportional offset
@@ -541,12 +541,12 @@ void cwin::hook::contain::update_(){
 
 	RECT union_rect{};
 	surface_target->traverse_children([&](ui::surface &child){
-		auto child_dimension = child.compute_current_dimension();
+		auto child_dimension = child.compute_dimension();
 		UnionRect(&union_rect, &child_dimension, &union_rect);
 	});
 
-	auto &target_size = surface_target->get_current_size();
-	auto target_client_size = surface_target->compute_current_client_size();
+	auto &target_size = surface_target->get_size();
+	auto target_client_size = surface_target->compute_client_size();
 
 	SIZE target_client_size_delta{ (target_size.cx - target_client_size.cx), (target_size.cy - target_client_size.cy) };
 	SIZE content_size{

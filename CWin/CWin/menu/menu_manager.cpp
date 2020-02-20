@@ -62,7 +62,7 @@ LRESULT cwin::menu::manager::dispatch_(ui::window_surface &target, UINT message,
 }
 
 bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, ui::window_surface_manager::mouse_info &mouse_info){
-	if ((position.x != -1 || position.y != -1) && target.current_hit_test(position) != HTCLIENT)//Non-client area
+	if ((position.x != -1 || position.y != -1) && target.hit_test(position) != HTCLIENT)//Non-client area
 		return false;
 
 	ui::visible_surface *top_moused = nullptr;

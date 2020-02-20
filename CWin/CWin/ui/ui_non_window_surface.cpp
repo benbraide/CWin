@@ -60,7 +60,7 @@ void cwin::ui::non_window_surface::create_(){
 		return true;
 	});
 
-	auto &current_size = get_current_size_();
+	auto &current_size = get_size_();
 	if ((handle_ = reinterpret_cast<HRGN>(events_.trigger_then_report_result<events::interrupt::resize_non_client_handle>(0u, handle_, current_size))) == nullptr)
 		throw exception::action_failed();
 
@@ -180,18 +180,7 @@ void cwin::ui::non_window_surface::position_update_(const POINT &old_value, cons
 }
 
 SIZE cwin::ui::non_window_surface::compute_client_size_() const{
-	auto size = size_;
-	if (client_handle_ != nullptr){
-		auto &client_handle_margin = get_client_margin_();
-		size.cx -= (client_handle_margin.left + client_handle_margin.right);
-		size.cy -= (client_handle_margin.top + client_handle_margin.bottom);
-	}
-
-	return size;
-}
-
-SIZE cwin::ui::non_window_surface::compute_current_client_size_() const{
-	auto size = get_current_size_();
+	auto size = get_size_();
 	if (client_handle_ != nullptr){
 		auto &client_handle_margin = get_client_margin_();
 		size.cx -= (client_handle_margin.left + client_handle_margin.right);
@@ -219,11 +208,11 @@ void cwin::ui::non_window_surface::offset_point_from_window_(POINT &value) const
 	}
 }
 
-UINT cwin::ui::non_window_surface::current_hit_test_(const POINT &value) const{
+UINT cwin::ui::non_window_surface::hit_test_(const POINT &value) const{
 	if (handle_ == nullptr)
-		return visible_surface::current_hit_test_(value);
+		return visible_surface::hit_test_(value);
 
-	auto position = compute_current_absolute_position_();
+	auto position = compute_absolute_position_();
 	utility::rgn::move(handle_bound_.handle, POINT{ (position.x + handle_bound_.offset.x), (position.y + handle_bound_.offset.y) });
 
 	if (!utility::rgn::hit_test(handle_bound_.handle, value))
@@ -252,7 +241,7 @@ void cwin::ui::non_window_surface::update_bounds_(){
 	auto destination_rgn = thread_.get_rgn();
 	try{
 		auto &client_bound = get_ancestor_client_bound_(offset);
-		auto &current_position = get_current_position_();
+		auto &current_position = get_position_();
 
 		offset.x += current_position.x;
 		offset.y += current_position.y;
@@ -306,7 +295,7 @@ UINT cwin::ui::non_window_surface::non_client_hit_test_(const POINT &value) cons
 	if (PtInRect(&dimension, value) != FALSE)
 		return HTTOPLEFT;
 
-	auto &size = get_current_size_();
+	auto &size = get_size_();
 	dimension = RECT{
 		client_handle_margin.left,
 		0,

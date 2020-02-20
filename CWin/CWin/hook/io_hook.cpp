@@ -136,7 +136,7 @@ void cwin::hook::io::mouse_cursor_(UINT hit_target, events::interrupt::mouse_cur
 
 	auto is_dragging_non_client = (is_dragging_non_client_ && non_client_target_ != HTNOWHERE);
 	if (!is_dragging_non_client && mouse_over_ != nullptr && hit_target == HTCLIENT){
-		if (mouse_over_->get_events().trigger_then_report_prevented_default<events::interrupt::mouse_cursor>(0u, mouse_over_->current_hit_test(position))){//Handled
+		if (mouse_over_->get_events().trigger_then_report_prevented_default<events::interrupt::mouse_cursor>(0u, mouse_over_->hit_test(position))){//Handled
 			e.prevent_default();
 			return;
 		}
@@ -220,7 +220,7 @@ void cwin::hook::io::mouse_move_(){
 			if (!child.is_created() || !child.is_visible() || dynamic_cast<ui::window_surface *>(&child) != nullptr)
 				return true;//Exclude window and hidden surfaces
 
-			if ((hit_target = child.current_hit_test(position)) != HTNOWHERE){//Mouse is over child
+			if ((hit_target = child.hit_test(position)) != HTNOWHERE){//Mouse is over child
 				mouse_over = &child;
 				return false;
 			}
@@ -238,10 +238,10 @@ void cwin::hook::io::mouse_move_(){
 				mouse_over_->get_events().trigger<events::io::mouse_enter>(nullptr, 0u, position);
 		}
 		else if (mouse_over_ != nullptr)
-			hit_target = mouse_over_->current_hit_test(position);
+			hit_target = mouse_over_->hit_test(position);
 	}
 	else if (mouse_over_ != nullptr)
-		hit_target = mouse_over_->current_hit_test(position);
+		hit_target = mouse_over_->hit_test(position);
 	
 	if (mouse_over_ != nullptr){
 		if (hit_target == HTCLIENT){//Client
@@ -355,7 +355,7 @@ void cwin::hook::io::mouse_down_(mouse_button_type button){
 
 	mouse_up_(pressed_button_);
 	if (mouse_over_ != nullptr){
-		if (auto hit_target = mouse_over_->current_hit_test(position); hit_target == HTCLIENT){//Client
+		if (auto hit_target = mouse_over_->hit_test(position); hit_target == HTCLIENT){//Client
 			mouse_press_ = mouse_over_;
 			mouse_press_->get_events().trigger<events::interrupt::mouse_down>(nullptr, 0u, get_mouse_button(button));
 		}
@@ -435,14 +435,14 @@ void cwin::hook::io::after_mouse_drag_(const SIZE &delta){}
 
 void cwin::hook::io::offset_size_(const SIZE &delta) const{
 	if (auto surface_target = dynamic_cast<ui::surface *>(parent_); surface_target != nullptr && size_callback_ != nullptr){
-		auto &current_size = surface_target->get_current_size();
+		auto &current_size = surface_target->get_size();
 		size_callback_(SIZE{ (current_size.cx + delta.cx), (current_size.cy + delta.cy) }, false);
 	}
 }
 
 void cwin::hook::io::offset_position_(const SIZE &delta) const{
 	if (auto surface_target = dynamic_cast<ui::surface *>(parent_); surface_target != nullptr && position_callback_ != nullptr){
-		auto &current_position = surface_target->get_current_position();
+		auto &current_position = surface_target->get_position();
 		position_callback_(POINT{ (current_position.x + delta.cx), (current_position.y + delta.cy) }, false);
 	}
 }

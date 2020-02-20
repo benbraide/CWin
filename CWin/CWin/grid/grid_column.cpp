@@ -106,7 +106,7 @@ void cwin::grid::fixed_column::size_update_(const SIZE &old_value, const SIZE &c
 }
 
 int cwin::grid::fixed_column::compute_fixed_width_(int row_width) const{
-	return get_current_size_().cx;
+	return get_size_().cx;
 }
 
 bool cwin::grid::fixed_column::is_fixed_() const{
