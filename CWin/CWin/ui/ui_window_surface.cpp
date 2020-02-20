@@ -326,6 +326,13 @@ void cwin::ui::window_surface::compute_absolute_to_relative_(RECT &value) const{
 UINT cwin::ui::window_surface::current_hit_test_(const POINT &value) const{
 	if (handle_ == nullptr)
 		return visible_surface::current_hit_test_(value);
+
+	RECT dimension{};
+	GetWindowRect(handle_, &dimension);
+
+	if (PtInRect(&dimension, value) == FALSE)
+		return HTNOWHERE;
+
 	return static_cast<UINT>(SendMessageW(handle_, WM_NCHITTEST, 0, MAKELONG(value.x, value.y)));
 }
 
@@ -477,12 +484,6 @@ DWORD cwin::ui::window_surface::get_blacklisted_extended_styles_() const{
 
 DWORD cwin::ui::window_surface::get_persistent_extended_styles_() const{
 	return 0u;
-}
-
-void cwin::ui::window_surface::dispatch_command_(WPARAM code){}
-
-LRESULT cwin::ui::window_surface::dispatch_notification_(NMHDR &info){
-	return 0;
 }
 
 void cwin::ui::window_surface::update_client_bound_(){

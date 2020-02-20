@@ -3,6 +3,7 @@
 
 #include "../events/general_events.h"
 #include "../events/control_events.h"
+#include "../events/interrupt_events.h"
 
 #include "tab_control.h"
 
@@ -13,6 +14,24 @@ cwin::control::tab::tab(tree &parent, std::size_t index)
 	: object(parent, index, WC_TABCONTROLW, ICC_TAB_CLASSES){
 	insert_object<hook::placement>(nullptr, hook::placement::alignment_type::top_left);
 	insert_object<hook::fill>(nullptr);
+
+	bind_default_([=](events::interrupt::notify &e) -> LRESULT{
+		e.do_default();
+		try{
+			switch (e.get_info().code){
+			case TCN_SELCHANGING:
+				return (deactivate_current_item_() ? FALSE : TRUE);
+			case TCN_SELCHANGE:
+				activate_current_item_();
+				break;
+			default:
+				break;
+			}
+		}
+		catch (const ui::exception::not_supported &){}
+
+		return e.get_result();
+	});
 }
 
 cwin::control::tab::~tab() = default;
@@ -71,23 +90,6 @@ void cwin::control::tab::offset_point_from_window_(POINT &value) const{
 
 bool cwin::control::tab::is_dialog_message_(MSG &msg) const{
 	return (IsDialogMessageW(handle_, &msg) != FALSE);
-}
-
-LRESULT cwin::control::tab::dispatch_notification_(NMHDR &info){
-	try{
-		switch (info.code){
-		case TCN_SELCHANGING:
-			return (deactivate_current_item_() ? FALSE : TRUE);
-		case TCN_SELCHANGE:
-			activate_current_item_();
-			break;
-		default:
-			break;
-		}
-	}
-	catch (const ui::exception::not_supported &){}
-
-	return 0;
 }
 
 void cwin::control::tab::update_client_margin_(){

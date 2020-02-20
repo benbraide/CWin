@@ -114,6 +114,16 @@ HWND cwin::ui::window_surface_manager::create(window_surface &owner, const wchar
 	);
 }
 
+LRESULT cwin::ui::window_surface_manager::call_default(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
+	return CallWindowProcW(get_class_entry(target), target.handle_, message, wparam, lparam);
+}
+
+WNDPROC cwin::ui::window_surface_manager::get_class_entry(ui::window_surface &target){
+	if (auto class_entry = target.get_thread().get_class_entry(target.get_class_name()); class_entry != nullptr)
+		return class_entry;
+	return DefWindowProcW;
+}
+
 cwin::ui::window_surface *cwin::ui::window_surface_manager::find_(HWND key, bool cache){
 	if (key == cache_.key)
 		return cache_.target;
@@ -184,10 +194,9 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		}
 		return 0;
 	case WM_COMMAND:
-		command_(target, wparam, lparam);
-		break;
+		return command_(target, wparam, lparam);
 	case WM_NOTIFY:
-		return notify_(target, lparam);
+		return notify_(target, wparam, lparam);
 	case WM_ENABLE:
 		if (wparam == FALSE)
 			target.get_events().trigger<events::disable>(nullptr, 0u);
@@ -439,22 +448,23 @@ void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &targ
 	}
 }
 
-void cwin::ui::window_surface_manager::command_(window_surface &target, WPARAM wparam, LPARAM lparam){
+LRESULT cwin::ui::window_surface_manager::command_(window_surface &target, WPARAM wparam, LPARAM lparam){
 	if (lparam != 0){//Control command
 		if (auto sender = find_(reinterpret_cast<HWND>(lparam), true); sender != nullptr)
-			sender->dispatch_command_(wparam);
+			return sender->get_events().trigger_then_report_result<events::interrupt::command>(0u, MSG{ target.handle_, WM_COMMAND, wparam, lparam }, get_class_entry(target));
 	}
 
 	if (HIWORD(wparam) != 0u){//Accelerator command
 
 	}
+
+	return call_default(target, WM_COMMAND, wparam, lparam);
 }
 
-LRESULT cwin::ui::window_surface_manager::notify_(window_surface &target, LPARAM lparam){
-	auto info = reinterpret_cast<NMHDR *>(lparam);
-	if (auto sender = find_(info->hwndFrom, true); sender != nullptr)
-		return sender->dispatch_notification_(*info);
-	return 0;
+LRESULT cwin::ui::window_surface_manager::notify_(window_surface &target, WPARAM wparam, LPARAM lparam){
+	if (auto sender = find_(reinterpret_cast<NMHDR *>(lparam)->hwndFrom, true); sender != nullptr)
+		return sender->get_events().trigger_then_report_result<events::interrupt::notify>(0u, MSG{ target.handle_, WM_NOTIFY, wparam, lparam }, get_class_entry(target));
+	return call_default(target, WM_COMMAND, wparam, lparam);
 }
 
 void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){

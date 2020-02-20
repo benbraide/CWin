@@ -24,8 +24,6 @@ namespace cwin::menu{
 
 		object *find_(HMENU key, bool cache);
 
-		LRESULT call_default_(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);
-
 		LRESULT dispatch_(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam, ui::window_surface_manager::mouse_info &mouse_info);
 
 		bool context_(ui::window_surface &target, POINT position, ui::window_surface_manager::mouse_info &mouse_info);

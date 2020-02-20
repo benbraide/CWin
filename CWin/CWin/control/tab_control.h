@@ -37,8 +37,6 @@ namespace cwin::control{
 
 		virtual bool is_dialog_message_(MSG &msg) const override;
 
-		virtual LRESULT dispatch_notification_(NMHDR &info) override;
-
 		virtual void update_client_margin_();
 
 		virtual void activate_current_item_() const;

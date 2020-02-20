@@ -35,6 +35,8 @@
 #include "control/radio_check_button_control_group.h"
 #include "control/tool_tip_control.h"
 #include "control/tab_control.h"
+#include "control/toolbar_control.h"
+#include "control/action_toolbar_control_item.h"
 
 #include "audio/pcm_audio_source.h"
 #include "audio/asf_audio_source.h"
@@ -100,9 +102,9 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 	//}, L"C:\\Users\\benpl\\Documents\\ADBIML.asf");
 
 	window.insert_object([](cwin::audio::wave &wav){
-		wav.create();
+		//wav.create();
 		//wav.set_speed(0.75f);
-		wav.start();
+		//wav.start();
 	});
 
 	/*window.insert_object([](cwin::menu::library_popup &popup){
@@ -260,8 +262,14 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			});
 		});
 
-		tab.insert_object([&](cwin::control::tab_item &page){
+		tab.insert_object([](cwin::control::tab_item &page){
 			page.set_caption(L"Second Tab Page");
+
+			page.insert_object([](cwin::control::toolbar::object &ctrl){
+				ctrl.insert_object([](cwin::control::toolbar::text_action_item &item){
+					item.set_text(L"First Item");
+				});
+			});
 		});
 
 		tab.insert_object([&](cwin::control::tab_item &page){

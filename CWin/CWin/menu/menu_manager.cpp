@@ -36,11 +36,6 @@ cwin::menu::object *cwin::menu::manager::find_(HMENU key, bool cache){
 	return it->second;
 }
 
-LRESULT cwin::menu::manager::call_default_(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
-	auto class_entry = thread_.get_class_entry(target.get_class_name());
-	return CallWindowProcW(((class_entry == nullptr) ? DefWindowProcW : class_entry), target.get_handle(), message, wparam, lparam);
-}
-
 LRESULT cwin::menu::manager::dispatch_(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam, ui::window_surface_manager::mouse_info &mouse_info){
 	switch (message){
 	case WM_CONTEXTMENU:
@@ -63,7 +58,7 @@ LRESULT cwin::menu::manager::dispatch_(ui::window_surface &target, UINT message,
 		break;
 	}
 
-	return call_default_(target, message, wparam, lparam);
+	return ui::window_surface_manager::call_default(target, message, wparam, lparam);
 }
 
 bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, ui::window_surface_manager::mouse_info &mouse_info){
@@ -121,7 +116,7 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 }
 
 LRESULT cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, LPARAM lparam){
-	auto result = call_default_(target, WM_INITMENUPOPUP, reinterpret_cast<WPARAM>(handle), lparam);
+	auto result = ui::window_surface_manager::call_default(target, WM_INITMENUPOPUP, reinterpret_cast<WPARAM>(handle), lparam);
 	auto menu_target = find_(handle, true);
 
 	if (menu_target == nullptr)

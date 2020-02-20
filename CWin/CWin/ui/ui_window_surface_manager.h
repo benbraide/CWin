@@ -45,6 +45,10 @@ namespace cwin::ui{
 
 		HWND create(window_surface &owner, const wchar_t *class_name, const wchar_t *caption, HINSTANCE instance);
 
+		static LRESULT call_default(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);
+
+		static WNDPROC get_class_entry(ui::window_surface &target);
+
 	protected:
 		friend class thread::object;
 
@@ -64,9 +68,9 @@ namespace cwin::ui{
 
 		void exclude_from_paint_(visible_surface &target, POINT offset);
 
-		void command_(window_surface &target, WPARAM wparam, LPARAM lparam);
+		LRESULT command_(window_surface &target, WPARAM wparam, LPARAM lparam);
 
-		LRESULT notify_(window_surface &target, LPARAM lparam);
+		LRESULT notify_(window_surface &target, WPARAM wparam, LPARAM lparam);
 
 		void mouse_leave_(window_surface &target);
 

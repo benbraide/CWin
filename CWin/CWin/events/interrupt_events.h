@@ -1,12 +1,37 @@
 #pragma once
 
-#include "event_object.h"
+#include "event_message_object.h"
 
 namespace cwin::ui{
 	class visible_surface;
 }
 
 namespace cwin::events::interrupt{
+	class command : public message_object{
+	public:
+		using message_object::message_object;
+
+		virtual ~command();
+
+		virtual UINT get_code() const;
+	};
+
+	class notify : public message_object{
+	public:
+		using message_object::message_object;
+
+		virtual ~notify();
+
+		virtual NMHDR &get_info() const;
+
+		template <typename target_type>
+		target_type &get_info_as() const{
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			return *reinterpret_cast<target_type *>(get_info());
+		}
+	};
+
 	template <class pair_type, bool is_init>
 	class pair_init_or_request : public object{
 	public:

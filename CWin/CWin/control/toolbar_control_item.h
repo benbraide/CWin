@@ -1,17 +1,17 @@
 #pragma once
 
-#include "../ui/ui_object.h"
+#include "toolbar_control_tree.h"
 
-namespace cwin::control{
-	class toolbar;
+namespace cwin::control::toolbar{
+	class object;
 
-	class toolbar_item : public ui::object{
+	class item : public ui::object{
 	public:
-		explicit toolbar_item(toolbar &parent);
+		explicit item(toolbar::tree &parent);
 
-		toolbar_item(toolbar &parent, std::size_t index);
+		item(toolbar::tree &parent, std::size_t index);
 
-		virtual ~toolbar_item();
+		virtual ~item();
 
 		virtual int get_id() const;
 
@@ -36,9 +36,9 @@ namespace cwin::control{
 		virtual void get_computed_states(const std::function<void(BYTE)> &callback) const;
 
 	protected:
-		friend class toolbar;
+		friend class object;
 
-		toolbar_item();
+		item();
 
 		virtual bool changing_parent_(ui::tree *value) override;
 
@@ -52,6 +52,8 @@ namespace cwin::control{
 
 		virtual void update_active_index_(int index, bool increment);
 
+		std::size_t get_resolved_index_() const;
+
 		virtual void set_states_(BYTE value);
 
 		virtual BYTE get_computed_states_() const;
@@ -60,7 +62,11 @@ namespace cwin::control{
 
 		virtual BYTE get_persistent_states_() const;
 
-		virtual void prepare_info_(MENUITEMINFOW &info) const = 0;
+		virtual void update_styles_();
+
+		virtual BYTE get_styles_() const;
+
+		virtual void prepare_info_(TBBUTTON &info) const = 0;
 
 		int id_ = 0;
 		int active_index_ = -1;

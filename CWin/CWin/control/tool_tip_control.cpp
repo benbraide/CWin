@@ -1,11 +1,40 @@
 #include "../hook/hook_object.h"
+
 #include "../events/general_events.h"
 #include "../events/control_events.h"
+#include "../events/interrupt_events.h"
 
 #include "tool_tip_control.h"
 
 cwin::control::tool_tip::tool_tip()
-	: object(TOOLTIPS_CLASSW, ICC_TAB_CLASSES){}
+	: object(TOOLTIPS_CLASSW, ICC_TAB_CLASSES){
+	bind_default_([=](events::interrupt::notify &e){
+		e.do_default();
+		try{
+			auto &info = e.get_info();
+			auto &current_item = get_current_item_();
+
+			switch (info.code){
+			case TTN_NEEDTEXT:
+				need_text_(current_item, info);
+				break;
+			case TTN_SHOW:
+				return current_item.get_events().trigger_then_report_result<events::show>(0u);
+			case TTN_POP:
+				current_item.get_events().trigger<events::hide>(nullptr, 0u);
+				break;
+			case TTN_LINKCLICK:
+				current_item.get_events().trigger<events::control::tool_tip_link_clicked>(nullptr, 0u);
+				break;
+			default:
+				break;
+			}
+		}
+		catch (const ui::exception::not_supported &){}
+
+		return e.get_result();
+	});
+}
 
 cwin::control::tool_tip::~tool_tip() = default;
 
@@ -23,30 +52,6 @@ DWORD cwin::control::tool_tip::get_persistent_styles_() const{
 
 DWORD cwin::control::tool_tip::get_persistent_extended_styles_() const{
 	return (object::get_persistent_extended_styles_() | WS_EX_TOOLWINDOW);
-}
-
-LRESULT cwin::control::tool_tip::dispatch_notification_(NMHDR &info){
-	try{
-		auto &current_item = get_current_item_();
-		switch (info.code){
-		case TTN_NEEDTEXT:
-			need_text_(current_item, info);
-			break;
-		case TTN_SHOW:
-			return current_item.get_events().trigger_then_report_result<events::show>(0u);
-		case TTN_POP:
-			current_item.get_events().trigger<events::hide>(nullptr, 0u);
-			break;
-		case TTN_LINKCLICK:
-			current_item.get_events().trigger<events::control::tool_tip_link_clicked>(nullptr, 0u);
-			break;
-		default:
-			break;
-		}
-	}
-	catch (const ui::exception::not_supported &){}
-
-	return object::dispatch_notification_(info);
 }
 
 void cwin::control::tool_tip::need_text_(tool_tip_item &current_item, NMHDR &info){

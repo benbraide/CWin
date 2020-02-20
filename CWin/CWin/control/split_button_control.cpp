@@ -1,4 +1,5 @@
 #include "../events/control_events.h"
+#include "../events/interrupt_events.h"
 
 #include "split_button_control.h"
 
@@ -7,6 +8,12 @@ cwin::control::split_button::split_button(tree &parent)
 
 cwin::control::split_button::split_button(tree &parent, std::size_t index)
 	: with_text(parent, index, WC_BUTTONW, ICC_STANDARD_CLASSES){
+	bind_default_([=](events::interrupt::notify &e){
+		e.do_default();
+		if (e.get_info().code == BCN_DROPDOWN)
+			events_.trigger<events::control::split_button_dropdown>(nullptr, 0u);
+	});
+
 	bind_default_([=](events::control::split_button_dropdown &){
 		if (popup_ == nullptr)
 			return;
@@ -73,13 +80,6 @@ SIZE cwin::control::split_button::compute_additional_size_(const SIZE &computed_
 
 std::shared_ptr<cwin::menu::popup> cwin::control::split_button::create_popup_(){
 	return std::make_shared<menu::popup>();
-}
-
-LRESULT cwin::control::split_button::dispatch_notification_(NMHDR &info){
-	if (info.code == BCN_DROPDOWN)
-		events_.trigger<events::control::split_button_dropdown>(nullptr, 0u);
-
-	return with_text::dispatch_notification_(info);
 }
 
 cwin::control::default_split_button::~default_split_button() = default;

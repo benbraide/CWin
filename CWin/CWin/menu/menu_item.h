@@ -52,6 +52,8 @@ namespace cwin::menu{
 
 		virtual void update_active_index_(UINT index, bool increment);
 
+		std::size_t get_resolved_index_() const;
+
 		virtual void set_states_(UINT value);
 
 		virtual UINT get_computed_states_() const;

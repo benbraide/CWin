@@ -180,6 +180,12 @@ void cwin::menu::item::update_active_index_(UINT index, bool increment){
 	}
 }
 
+std::size_t cwin::menu::item::get_resolved_index_() const{
+	if (parent_ == nullptr)
+		return get_index_();
+	return parent_->resolve_child_index<item>(get_index_());
+}
+
 void cwin::menu::item::set_states_(UINT value){
 	auto was_enabled = ((get_computed_states_() & MFS_DISABLED) == 0u);
 
@@ -208,7 +214,7 @@ void cwin::menu::item::set_states_(UINT value){
 
 UINT cwin::menu::item::get_computed_states_() const{
 	if (auto tree_parent = dynamic_cast<menu::tree *>(parent_); tree_parent != nullptr)
-		return (((states_ | tree_parent->get_states_(tree_parent->find_child(*this))) & ~get_blacklisted_states_()) | get_persistent_states_());
+		return (((states_ | tree_parent->get_states_(get_resolved_index_())) & ~get_blacklisted_states_()) | get_persistent_states_());
 	return ((states_ & ~get_blacklisted_states_()) | get_persistent_states_());
 }
 
@@ -235,6 +241,6 @@ void cwin::menu::item::update_types_(){
 
 UINT cwin::menu::item::get_types_() const{
 	if (auto tree_parent = dynamic_cast<menu::tree *>(parent_); tree_parent != nullptr)
-		return tree_parent->get_types_(tree_parent->find_child(*this));
+		return tree_parent->get_types_(get_resolved_index_());
 	return 0u;
 }

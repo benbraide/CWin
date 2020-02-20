@@ -32,8 +32,6 @@ namespace cwin::control{
 
 		virtual DWORD get_persistent_styles_() const override;
 
-		virtual LRESULT dispatch_notification_(NMHDR &info) override;
-
 		virtual const wchar_t *get_theme_name_() const override;
 
 		virtual int get_theme_part_id_() const override;
