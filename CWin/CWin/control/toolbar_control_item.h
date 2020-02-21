@@ -70,6 +70,8 @@ namespace cwin::control::toolbar{
 
 		int id_ = 0;
 		int active_index_ = -1;
-		BYTE states_ = 0;
+
+		BYTE states_ = static_cast<BYTE>(TBSTATE_ENABLED);
+		BYTE styles_ = static_cast<BYTE>(BTNS_AUTOSIZE);
 	};
 }

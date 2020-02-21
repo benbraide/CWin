@@ -90,20 +90,20 @@ bool cwin::menu::item::changing_parent_(ui::tree *value){
 }
 
 void cwin::menu::item::changed_parent_(ui::tree *old_value){
-	try{
-		destroy_();
-	}
-	catch (const ui::exception::not_supported &){
-		if (auto old_tree_value = dynamic_cast<menu::tree *>(old_value); old_tree_value != nullptr){
-			old_tree_value->traverse_offspring_<item>([&](item &offspring){
-				offspring.update_active_index_(active_index_, false);
-				return true;
-			});
-		}
+	if (active_index_ == static_cast<UINT>(-1))
+		return object::changed_parent_(old_value);
+	
+	if (auto old_object_value = dynamic_cast<menu::object *>(old_value); old_object_value != nullptr && old_object_value->is_created())
+		RemoveMenu(old_object_value->get_handle(), active_index_, MF_BYPOSITION);
 
-		active_index_ = static_cast<UINT>(-1);
+	if (auto old_tree_value = dynamic_cast<menu::tree *>(old_value); old_tree_value != nullptr){
+		old_tree_value->traverse_offspring_<item>([&](item &offspring){
+			offspring.update_active_index_(active_index_, false);
+			return true;
+		});
 	}
 
+	active_index_ = static_cast<UINT>(-1);
 	object::changed_parent_(old_value);
 }
 

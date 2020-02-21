@@ -10,12 +10,16 @@ cwin::control::toolbar::object::object(ui::tree &parent)
 
 cwin::control::toolbar::object::object(ui::tree &parent, std::size_t index)
 	: control::object(parent, index, TOOLBARCLASSNAME, ICC_BAR_CLASSES){
+	styles_ |= TBSTYLE_TRANSPARENT;
+
 	bind_default_([=](events::interrupt::notify &e){
 		e.do_default();
 	});
 }
 
-cwin::control::toolbar::object::~object() = default;
+cwin::control::toolbar::object::~object(){
+	force_destroy_();
+}
 
 void cwin::control::toolbar::object::after_create_(){
 	SendMessageW(handle_, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0);
@@ -37,5 +41,5 @@ DWORD cwin::control::toolbar::object::get_persistent_styles_() const{
 }
 
 DWORD cwin::control::toolbar::object::get_persistent_extended_styles_() const{
-	return (control::object::get_persistent_extended_styles_() | (TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_DRAWDDARROWS));
+	return (control::object::get_persistent_extended_styles_() | TBSTYLE_EX_DRAWDDARROWS);
 }

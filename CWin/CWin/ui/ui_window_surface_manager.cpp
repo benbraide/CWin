@@ -177,9 +177,9 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		break;
 	case WM_SHOWWINDOW:
 		if (wparam == FALSE)
-			target.get_events().trigger<events::hide>(nullptr, 0u);
-		else//Show
-			target.get_events().trigger<events::show>(nullptr, 0u);
+			hide_(target);
+		else//Visible
+			show_(target);
 		break;
 	case WM_ERASEBKGND:
 	case WM_PAINT:
@@ -301,6 +301,25 @@ void cwin::ui::window_surface_manager::position_changed_(window_surface &target,
 		--target.updating_count_;
 		throw;
 	}
+}
+
+void cwin::ui::window_surface_manager::show_(visible_surface &target){
+	target.get_events().trigger<events::show>(nullptr, 0u);
+	target.traverse_children_<visible_surface>([&](visible_surface &child){
+		if (child.is_visible_())
+			show_(child);
+		return true;
+	});
+}
+
+void cwin::ui::window_surface_manager::hide_(visible_surface &target){
+	target.traverse_children_<visible_surface>([&](visible_surface &child){
+		if (child.is_visible_())
+			hide_(child);
+		return true;
+	});
+
+	target.get_events().trigger<events::hide>(nullptr, 0u);
 }
 
 void cwin::ui::window_surface_manager::before_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){

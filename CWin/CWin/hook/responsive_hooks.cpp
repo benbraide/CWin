@@ -17,6 +17,54 @@ cwin::hook::parent_size::parent_size(ui::surface &parent, const std::function<vo
 
 cwin::hook::parent_size::~parent_size() = default;
 
+void cwin::hook::parent_size::disable_width(){
+	post_or_execute_task([=]{
+		disabled_.set(option_type::width);
+	});
+}
+
+void cwin::hook::parent_size::enable_width(){
+	post_or_execute_task([=]{
+		disabled_.clear(option_type::width);
+	});
+}
+
+bool cwin::hook::parent_size::width_is_disabled() const{
+	return execute_task([&]{
+		return disabled_.is_set(option_type::width);
+	});
+}
+
+void cwin::hook::parent_size::width_is_disabled(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(disabled_.is_set(option_type::width));
+	});
+}
+
+void cwin::hook::parent_size::disable_height(){
+	post_or_execute_task([=]{
+		disabled_.set(option_type::height);
+	});
+}
+
+void cwin::hook::parent_size::enable_height(){
+	post_or_execute_task([=]{
+		disabled_.clear(option_type::height);
+	});
+}
+
+bool cwin::hook::parent_size::height_is_disabled() const{
+	return execute_task([&]{
+		return disabled_.is_set(option_type::height);
+	});
+}
+
+void cwin::hook::parent_size::height_is_disabled(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(disabled_.is_set(option_type::height));
+	});
+}
+
 void cwin::hook::parent_size::bind_size_event_(ui::tree *parent, ui::tree *previous_parent){
 	if (parent == previous_parent)
 		return;
@@ -26,6 +74,18 @@ void cwin::hook::parent_size::bind_size_event_(ui::tree *parent, ui::tree *previ
 
 	if (parent != nullptr){
 		parent->get_events().bind([this](events::after_size_update &e){
+			auto width_is_disabled = disabled_.is_set(option_type::width);
+			auto height_is_disabled = disabled_.is_set(option_type::height);
+
+			if (width_is_disabled && height_is_disabled)
+				return;//Disabled
+
+			if (width_is_disabled && e.get_old_value().cy == e.get_value().cy)
+				return;//Width disabled, height unchanged
+
+			if (height_is_disabled && e.get_old_value().cx == e.get_value().cx)
+				return;//Height disabled, width unchanged
+
 			if (callback_ != nullptr)
 				callback_();
 		}, get_talk_id());
@@ -132,6 +192,54 @@ void cwin::hook::placement::get_offset(const std::function<void(const POINT &)> 
 	});
 }
 
+void cwin::hook::placement::disable_horizontal(){
+	post_or_execute_task([=]{
+		disabled_.set(option_type::horizontal);
+	});
+}
+
+void cwin::hook::placement::enable_horizontal(){
+	post_or_execute_task([=]{
+		disabled_.clear(option_type::horizontal);
+	});
+}
+
+bool cwin::hook::placement::horizontal_is_disabled() const{
+	return execute_task([&]{
+		return disabled_.is_set(option_type::horizontal);
+	});
+}
+
+void cwin::hook::placement::horizontal_is_disabled(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(disabled_.is_set(option_type::horizontal));
+	});
+}
+
+void cwin::hook::placement::disable_vertical(){
+	post_or_execute_task([=]{
+		disabled_.set(option_type::vertical);
+	});
+}
+
+void cwin::hook::placement::enable_vertical(){
+	post_or_execute_task([=]{
+		disabled_.clear(option_type::vertical);
+	});
+}
+
+bool cwin::hook::placement::vertical_is_disabled() const{
+	return execute_task([&]{
+		return disabled_.is_set(option_type::vertical);
+	});
+}
+
+void cwin::hook::placement::vertical_is_disabled(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(disabled_.is_set(option_type::vertical));
+	});
+}
+
 void cwin::hook::placement::set_alignment_(alignment_type value){
 	alignment_ = value;
 	update_();
@@ -147,12 +255,18 @@ void cwin::hook::placement::update_(){
 	if (surface_target == nullptr)
 		return;
 
+	auto horizontal_is_disabled = disabled_.is_set(option_type::horizontal);
+	auto vertical_is_disabled = disabled_.is_set(option_type::vertical);
+
+	if (horizontal_is_disabled && vertical_is_disabled)
+		return;//Disabled
+
 	SIZE parent_client_size{};
 	auto &target_size = surface_target->get_size();
 
 	if (auto surface_parent = dynamic_cast<ui::surface *>(surface_target->get_parent()); surface_parent == nullptr){//Use desktop window
 		RECT dimension{};
-		GetClientRect(HWND_DESKTOP, &dimension);
+		GetClientRect(GetDesktopWindow(), &dimension);
 		parent_client_size = SIZE{ (dimension.right - dimension.left), (dimension.bottom - dimension.top) };
 	}
 	else//Use parent client
@@ -192,7 +306,10 @@ void cwin::hook::placement::update_(){
 		break;
 	}
 
-	surface_target->set_position(computed_offset);
+	surface_target->set_position(POINT{
+		(horizontal_is_disabled ? surface_target->get_position().x : computed_offset.x),
+		(vertical_is_disabled ? surface_target->get_position().y : computed_offset.y)
+	});
 }
 
 cwin::hook::relative_placement::relative_placement(ui::surface &parent, ui::surface &source)
@@ -456,10 +573,16 @@ void cwin::hook::fill::update_(){
 	if (surface_target == nullptr)
 		return;
 
+	auto width_is_disabled = disabled_.is_set(option_type::width);
+	auto height_is_disabled = disabled_.is_set(option_type::height);
+
+	if (width_is_disabled && height_is_disabled)
+		return;//Disabled
+
 	SIZE parent_client_size{};
 	if (auto surface_parent = dynamic_cast<ui::surface *>(surface_target->get_parent()); surface_parent == nullptr){//Use desktop window
 		RECT dimension{};
-		GetClientRect(HWND_DESKTOP, &dimension);
+		GetClientRect(GetDesktopWindow(), &dimension);
 		parent_client_size = SIZE{ (dimension.right - dimension.left), (dimension.bottom - dimension.top) };
 	}
 	else//Use parent client
@@ -474,7 +597,10 @@ void cwin::hook::fill::update_(){
 	else//Fixed size
 		offset = std::get<SIZE>(offset_);
 
-	surface_target->set_size(SIZE{ (parent_client_size.cx - offset.cx), (parent_client_size.cy - offset.cy) });
+	surface_target->set_size(SIZE{
+		(width_is_disabled ? surface_target->get_size().cx : (parent_client_size.cx - offset.cx)),
+		(height_is_disabled ? surface_target->get_size().cy : (parent_client_size.cy - offset.cy))
+	});
 }
 
 cwin::hook::contain::contain(ui::surface &parent)

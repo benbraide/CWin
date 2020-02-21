@@ -32,9 +32,32 @@ cwin::control::tab::tab(tree &parent, std::size_t index)
 
 		return e.get_result();
 	});
+
+	tool_tip_.get_events().bind([=](events::interrupt::notify &e){
+		auto &info = e.get_info();
+		if (info.code != TTN_NEEDTEXT)
+			return;
+
+		tab_item *target_item = nullptr;
+		traverse_children_<tab_item>([&](tab_item &child){
+			if (child.active_index_ == info.idFrom){
+				target_item = &child;
+				return false;
+			}
+
+			return (child.active_index_ < info.idFrom);
+		});
+
+		if (target_item != nullptr){
+			e.prevent_default();
+			tool_tip_.need_text_(*target_item, info);
+		}
+	}, get_talk_id());
 }
 
-cwin::control::tab::~tab() = default;
+cwin::control::tab::~tab(){
+	force_destroy_();
+}
 
 void cwin::control::tab::update_client_margin(){
 	post_or_execute_task([=]{
@@ -56,6 +79,7 @@ void cwin::control::tab::get_current_item(const std::function<void(tab_item &)> 
 
 void cwin::control::tab::after_create_(){
 	tool_tip_.create();
+	TabCtrl_SetToolTips(handle_, tool_tip_.get_handle());
 	object::after_create_();
 }
 

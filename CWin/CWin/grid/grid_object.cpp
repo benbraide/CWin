@@ -1,3 +1,4 @@
+#include "../hook/responsive_hooks.h"
 #include "../hook/background_hooks.h"
 #include "../hook/non_window_handle_hooks.h"
 
@@ -95,61 +96,23 @@ void cwin::grid::object::refresh_(){
 	}
 }
 
-cwin::grid::fill_object::fill_object()
-	: fill_(*this), placement_(*this, hook::placement::alignment_type::center){}
-
-cwin::grid::fill_object::fill_object(tree &parent)
-	: fill_object(parent, static_cast<std::size_t>(-1)){}
-
-cwin::grid::fill_object::fill_object(tree &parent, std::size_t index)
-	: object(parent, index), fill_(*this), placement_(*this, hook::placement::alignment_type::center){}
-
-cwin::grid::fill_object::~fill_object() = default;
-
-const cwin::hook::fill &cwin::grid::fill_object::get_fill() const{
-	return *execute_task([&]{
-		return &fill_;
-	});
+cwin::grid::fixed_object::fixed_object(){
+	insert_object_<hook::placement>(nullptr, hook::placement::alignment_type::center);
+	insert_object_<hook::fill>(nullptr);
 }
 
-cwin::hook::fill &cwin::grid::fill_object::get_fill(){
-	return *execute_task([&]{
-		return &fill_;
-	});
+cwin::grid::fixed_object::fixed_object(tree &parent)
+	: fixed_object(parent, static_cast<std::size_t>(-1)){}
+
+cwin::grid::fixed_object::fixed_object(tree &parent, std::size_t index)
+	: fixed_object(){
+	index_ = index;
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
+
+	refresh_();
 }
 
-void cwin::grid::fill_object::get_fill(const std::function<void(const hook::fill &)> &callback) const{
-	post_or_execute_task([=]{
-		callback(fill_);
-	});
-}
-
-void cwin::grid::fill_object::get_fill(const std::function<void(hook::fill &)> &callback){
-	post_or_execute_task([=]{
-		callback(fill_);
-	});
-}
-
-const cwin::hook::placement &cwin::grid::fill_object::get_placement() const{
-	return *execute_task([&]{
-		return &placement_;
-	});
-}
-
-cwin::hook::placement &cwin::grid::fill_object::get_placement(){
-	return *execute_task([&]{
-		return &placement_;
-	});
-}
-
-void cwin::grid::fill_object::get_placement(const std::function<void(const hook::placement &)> &callback) const{
-	post_or_execute_task([=]{
-		callback(placement_);
-	});
-}
-
-void cwin::grid::fill_object::get_placement(const std::function<void(hook::placement &)> &callback){
-	post_or_execute_task([=]{
-		callback(placement_);
-	});
-}
+cwin::grid::fixed_object::~fixed_object() = default;

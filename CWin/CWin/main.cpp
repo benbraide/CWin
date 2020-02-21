@@ -37,6 +37,7 @@
 #include "control/tab_control.h"
 #include "control/toolbar_control.h"
 #include "control/action_toolbar_control_item.h"
+#include "control/status_bar_control.h"
 
 #include "audio/pcm_audio_source.h"
 #include "audio/asf_audio_source.h"
@@ -274,6 +275,14 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 		tab.insert_object([&](cwin::control::tab_item &page){
 			page.set_caption(L"Inserted Tab Page");
+
+			page.insert_object([](cwin::control::status_bar::object &ctrl){
+				ctrl.insert_object([](cwin::control::status_bar::item &item){
+					item.get_events().bind([](cwin::events::get_caption &){
+						return L"Test Status Bar";
+					});
+				});
+			});
 		}, 1u);
 	});
 

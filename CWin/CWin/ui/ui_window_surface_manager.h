@@ -60,6 +60,10 @@ namespace cwin::ui{
 
 		void position_changed_(window_surface &target, WINDOWPOS &info);
 
+		void show_(visible_surface &target);
+
+		void hide_(visible_surface &target);
+
 		void before_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);
 
 		void after_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);

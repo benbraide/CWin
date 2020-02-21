@@ -54,7 +54,7 @@ DWORD cwin::control::tool_tip::get_persistent_extended_styles_() const{
 	return (object::get_persistent_extended_styles_() | WS_EX_TOOLWINDOW);
 }
 
-void cwin::control::tool_tip::need_text_(tool_tip_item &current_item, NMHDR &info){
+void cwin::control::tool_tip::need_text_(ui::object &current_item, NMHDR &info){
 	events::control::get_tool_tip_text text(current_item);
 	current_item.get_events().trigger(text, 0u);
 

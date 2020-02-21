@@ -37,7 +37,6 @@ namespace cwin::control{
 		virtual void update_active_index_(int index, bool increment);
 
 		int active_index_ = -1;
-		tool_tip_item *tool_tip_item_ = nullptr;
 	};
 }
 

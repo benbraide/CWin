@@ -4,6 +4,8 @@
 #include "tool_tip_control_item.h"
 
 namespace cwin::control{
+	class tab;
+
 	class tool_tip : public object{
 	public:
 		tool_tip();
@@ -11,6 +13,8 @@ namespace cwin::control{
 		virtual ~tool_tip();
 
 	protected:
+		friend class tab;
+
 		virtual bool inserting_child_(ui::object &child) override;
 
 		virtual bool is_top_level_() const override;
@@ -19,7 +23,7 @@ namespace cwin::control{
 
 		virtual DWORD get_persistent_extended_styles_() const override;
 
-		virtual void need_text_(tool_tip_item &current_item, NMHDR &info);
+		virtual void need_text_(ui::object &current_item, NMHDR &info);
 
 		virtual tool_tip_item &get_current_item_() const;
 

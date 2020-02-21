@@ -41,6 +41,20 @@ namespace cwin::ui{
 		virtual void get_child_at(std::size_t index, const std::function<void(object *)> &callback) const;
 
 		template <typename object_type>
+		std::size_t get_children_count() const{
+			return execute_task([&]{
+				return get_children_count_<object_type>();
+			});
+		}
+
+		template <typename object_type>
+		void get_children_count(const std::function<void(std::size_t)> &callback) const{
+			post_or_execute_task([=]{
+				callback(get_children_count_<object_type>());
+			});
+		}
+
+		template <typename object_type>
 		std::size_t resolve_child_index(std::size_t value) const{
 			return execute_task([&]{
 				return resolve_child_index_<object_type>(value);
@@ -231,6 +245,20 @@ namespace cwin::ui{
 		virtual std::size_t find_child_(const object &child) const;
 
 		virtual object *get_child_at_(std::size_t index) const;
+
+		template <typename object_type>
+		std::size_t get_children_count_() const{
+			if (children_.empty())
+				return 0u;
+
+			std::size_t count = 0u;
+			for (auto child : children_){
+				if (dynamic_cast<object_type *>(child) != nullptr)
+					++count;
+			}
+
+			return count;
+		}
 
 		template <typename object_type>
 		std::size_t resolve_child_index_(std::size_t value) const{

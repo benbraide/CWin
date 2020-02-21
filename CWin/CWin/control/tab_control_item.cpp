@@ -42,17 +42,25 @@ bool cwin::control::tab_item::changing_parent_(ui::tree *value){
 }
 
 void cwin::control::tab_item::changed_parent_(ui::tree *old_value){
+	auto active_index = active_index_;
 	try{
+		active_index_ = -1;
 		destroy_();
+
+		if (auto tab_parent = dynamic_cast<tab *>(old_value); tab_parent != nullptr && active_index != -1){
+			TabCtrl_DeleteItem(tab_parent->handle_, active_index);
+
+			tab_parent->traverse_children([&](tab_item &child){
+				child.update_active_index_(active_index, false);
+			});
+		}
 	}
 	catch (const ui::exception::not_supported &){
 		if (old_value != nullptr){
 			old_value->traverse_children([&](tab_item &child){
-				child.update_active_index_(active_index_, false);
+				child.update_active_index_(active_index, false);
 			});
 		}
-
-		active_index_ = -1;
 	}
 
 	child::changed_parent_(old_value);
@@ -94,59 +102,10 @@ void cwin::control::tab_item::after_create_(){
 					show_();
 					events_.trigger<events::control::activate>(nullptr, 0u);
 				}
+				else
+					hide_();
 			}
 			catch (const ui::exception::not_supported &){}
-
-			RECT caption_dimension{};
-			TabCtrl_GetItemRect(tab_parent->handle_, active_index_, &caption_dimension);
-
-			tab_parent->tool_tip_.insert_object([&](tool_tip_item &item){
-				tool_tip_item_ = &item;
-				bind_(item, [=](events::control::get_tool_tip_text &e){
-					e.do_default();
-
-					events::control::get_tool_tip_text local(*this);
-					events_.trigger(local, 0u);
-
-					return local.get_value();
-				});
-
-				bind_(item, [=](events::control::get_tool_tip_title &e){
-					e.do_default();
-
-					events::control::get_tool_tip_title local(*this);
-					events_.trigger(local, 0u);
-
-					return local.get_value();
-				});
-
-				bind_(item, [=](events::control::get_tool_tip_font &e){
-					e.do_default();
-
-					events::control::get_tool_tip_font local(*this);
-					events_.trigger(local, 0u);
-
-					return local.get_value();
-				});
-
-				bind_(item, [=](events::control::get_tool_tip_image &e){
-					e.do_default();
-
-					events::control::get_tool_tip_image local(*this);
-					events_.trigger(local, 0u);
-
-					return local.get_value();
-				});
-
-				bind_(item, [=](events::control::get_tool_tip_max_width &e){
-					e.do_default();
-
-					events::control::get_tool_tip_max_width local(*this);
-					events_.trigger(local, 0u);
-
-					return local.get_value();
-				});
-			}, *tab_parent, caption_dimension);
 		}
 		else if (active_index_ == -1 && child.is_created_())
 			++index;
@@ -158,14 +117,15 @@ void cwin::control::tab_item::after_create_(){
 }
 
 void cwin::control::tab_item::after_destroy_(){
-	auto tab_parent = dynamic_cast<tab *>(parent_);
-	if (tab_parent != nullptr && active_index_ != -1)
+	if (auto tab_parent = dynamic_cast<tab *>(parent_); tab_parent != nullptr && active_index_ != -1){
 		TabCtrl_DeleteItem(tab_parent->handle_, active_index_);
 
-	active_index_ = -1;
-	tab_parent->traverse_children([&](tab_item &child){
-		child.update_active_index_(active_index_, false);
-	});
+		tab_parent->traverse_children([&](tab_item &child){
+			child.update_active_index_(active_index_, false);
+		});
+
+		active_index_ = -1;
+	}
 
 	child::after_destroy_();
 }
@@ -198,10 +158,4 @@ void cwin::control::tab_item::update_active_index_(int index, bool increment){
 		++active_index_;
 	else if (0 < active_index_)
 		--active_index_;
-
-	if (auto tab_parent = dynamic_cast<tab *>(parent_); tab_parent != nullptr && tool_tip_item_ != nullptr){//Update tool tip dimension
-		RECT caption_dimension{};
-		TabCtrl_GetItemRect(tab_parent->handle_, active_index_, &caption_dimension);
-		tool_tip_item_->set_dimension(caption_dimension);
-	}
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../hook/responsive_hooks.h"
-
 #include "grid_row.h"
 
 namespace cwin::grid{
@@ -31,34 +29,14 @@ namespace cwin::grid{
 		virtual void refresh_();
 	};
 
-	class fill_object : public object{
+	class fixed_object : public object{
 	public:
-		fill_object();
+		fixed_object();
 
-		explicit fill_object(tree &parent);
+		explicit fixed_object(tree &parent);
 
-		fill_object(tree &parent, std::size_t index);
+		fixed_object(tree &parent, std::size_t index);
 
-		virtual ~fill_object();
-
-		virtual const hook::fill &get_fill() const;
-
-		virtual hook::fill &get_fill();
-
-		virtual void get_fill(const std::function<void(const hook::fill &)> &callback) const;
-
-		virtual void get_fill(const std::function<void(hook::fill &)> &callback);
-
-		virtual const hook::placement &get_placement() const;
-
-		virtual hook::placement &get_placement();
-
-		virtual void get_placement(const std::function<void(const hook::placement &)> &callback) const;
-
-		virtual void get_placement(const std::function<void(hook::placement &)> &callback);
-
-	protected:
-		hook::fill fill_;
-		hook::placement placement_;
+		virtual ~fixed_object();
 	};
 }

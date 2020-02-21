@@ -91,19 +91,19 @@ bool cwin::control::toolbar::item::changing_parent_(ui::tree *value){
 }
 
 void cwin::control::toolbar::item::changed_parent_(ui::tree *old_value){
-	try{
-		destroy_();
-	}
-	catch (const ui::exception::not_supported &){
-		if (old_value != nullptr){
-			old_value->traverse_offspring([&](toolbar::item &offspring){
-				offspring.update_active_index_(active_index_, false);
-			});
-		}
+	if (active_index_ == static_cast<UINT>(-1))
+		return object::changed_parent_(old_value);
+	
+	if (auto old_object_value = dynamic_cast<toolbar::object *>(old_value); old_object_value != nullptr && old_object_value->is_created())
+		SendMessageW(old_object_value->get_handle(), TB_DELETEBUTTON, active_index_, 0);
 
-		active_index_ = -1;
+	if (old_value != nullptr){
+		old_value->traverse_offspring([&](item &offspring){
+			offspring.update_active_index_(active_index_, false);
+		});
 	}
 
+	active_index_ = static_cast<UINT>(-1);
 	object::changed_parent_(old_value);
 }
 
@@ -223,6 +223,6 @@ void cwin::control::toolbar::item::update_styles_(){
 
 BYTE cwin::control::toolbar::item::get_styles_() const{
 	if (auto tree_parent = dynamic_cast<toolbar::tree *>(parent_); tree_parent != nullptr)
-		return static_cast<BYTE>(tree_parent->get_styles_(get_resolved_index_()) | TBSTYLE_FLAT);
-	return static_cast<BYTE>(TBSTYLE_FLAT);
+		return static_cast<BYTE>(tree_parent->get_styles_(get_resolved_index_()) | styles_);
+	return styles_;
 }

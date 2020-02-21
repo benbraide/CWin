@@ -5,7 +5,7 @@
 namespace cwin::control::toolbar{
 	class text_and_image_action_item : public item{
 	public:
-		using image_value_type = std::variant<int, HANDLE>;
+		using image_value_type = std::variant<int, HGDIOBJ>;
 
 		struct image_info{
 			image_value_type normal;

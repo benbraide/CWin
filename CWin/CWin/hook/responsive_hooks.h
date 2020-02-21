@@ -11,14 +11,38 @@ namespace cwin::ui{
 namespace cwin::hook{
 	class parent_size : public object{
 	public:
+		enum class option_type{
+			width,
+			height,
+			horizontal,
+			vertical,
+		};
+
 		parent_size(ui::surface &parent, const std::function<void()> &callback);
 
 		virtual ~parent_size();
+
+		virtual void disable_width();
+
+		virtual void enable_width();
+
+		virtual bool width_is_disabled() const;
+
+		virtual void width_is_disabled(const std::function<void(bool)> &callback) const;
+
+		virtual void disable_height();
+
+		virtual void enable_height();
+
+		virtual bool height_is_disabled() const;
+
+		virtual void height_is_disabled(const std::function<void(bool)> &callback) const;
 
 	protected:
 		virtual void bind_size_event_(ui::tree *parent, ui::tree *previous_parent);
 
 		std::function<void()> callback_;
+		utility::small_options disabled_;
 	};
 
 	class children_dimension : public object{
@@ -66,6 +90,22 @@ namespace cwin::hook{
 		virtual const POINT &get_offset() const;
 
 		virtual void get_offset(const std::function<void(const POINT &)> &callback) const;
+
+		virtual void disable_horizontal();
+
+		virtual void enable_horizontal();
+
+		virtual bool horizontal_is_disabled() const;
+
+		virtual void horizontal_is_disabled(const std::function<void(bool)> &callback) const;
+
+		virtual void disable_vertical();
+
+		virtual void enable_vertical();
+
+		virtual bool vertical_is_disabled() const;
+
+		virtual void vertical_is_disabled(const std::function<void(bool)> &callback) const;
 
 	protected:
 		virtual void set_alignment_(alignment_type value);
