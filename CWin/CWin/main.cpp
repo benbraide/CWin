@@ -277,11 +277,18 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			page.set_caption(L"Inserted Tab Page");
 
 			page.insert_object([](cwin::control::status_bar::object &ctrl){
+				ctrl.insert_object<cwin::hook::client_drag>(nullptr);
 				ctrl.insert_object([](cwin::control::status_bar::item &item){
 					item.get_events().bind([](cwin::events::get_caption &){
 						return L"Test Status Bar";
 					});
 				});
+
+				ctrl.insert_object([](cwin::control::status_bar::proportional_item &item){
+					item.get_events().bind([](cwin::events::get_caption &){
+						return L"Proportional Status";
+					});
+				}, 0.36f);
 			});
 		}, 1u);
 	});

@@ -61,7 +61,7 @@ void cwin::grid::object::refresh_(){
 			rows.push_back(row_info{
 				&child,
 				true,
-				child.compute_fixed_height_(client_size.cy)
+				child.compute_fixed_height_(client_size.cy, fixed_height)
 			});
 
 			fixed_height += rows.back().fixed_height;

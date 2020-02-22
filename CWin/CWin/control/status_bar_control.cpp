@@ -11,12 +11,24 @@ cwin::control::status_bar::object::object(ui::tree &parent, std::size_t index)
 : control::object(parent, index, STATUSCLASSNAMEW, ICC_BAR_CLASSES){
 	styles_ |= SBARS_TOOLTIPS;
 
-	insert_object<hook::placement>(nullptr, hook::placement::alignment_type::bottom_left);
-	insert_object([&](hook::fill &item){
+	insert_object([](hook::fill &item){
 		item.disable_height();
 	});
 
 	bind_default_([=](events::show &e){
+		if (handle_ == nullptr)
+			return;
+
+		if (get_children_count_<status_bar::item>() == 0u){//Simple
+			events::get_caption caption(*this);
+			events_.trigger(caption, 0u);
+
+			if (!caption.prevented_default() && !caption.get_value().empty())
+				SendMessageW(handle_, SB_SETTEXTW, 0, reinterpret_cast<LPARAM>(caption.get_value().data()));
+
+			return;
+		}
+
 		traverse_children_<status_bar::item>([&](status_bar::item &child){
 			if (child.active_index_ == -1)
 				return true;
@@ -36,6 +48,36 @@ cwin::control::status_bar::object::~object(){
 	force_destroy_();
 }
 
+void cwin::control::status_bar::object::enable_top_placement(){
+	post_or_execute_task([=]{
+		if (!is_top_placement_){
+			is_top_placement_ = true;
+			update_styles_();
+		}
+	});
+}
+
+void cwin::control::status_bar::object::disable_top_placement(){
+	post_or_execute_task([=]{
+		if (is_top_placement_){
+			is_top_placement_ = false;
+			update_styles_();
+		}
+	});
+}
+
+bool cwin::control::status_bar::object::top_placement_is_enabled() const{
+	return execute_task([&]{
+		return is_top_placement_;
+	});
+}
+
+void cwin::control::status_bar::object::top_placement_is_enabled(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(is_top_placement_);
+	});
+}
+
 void cwin::control::status_bar::object::refresh(){
 	post_or_execute_task([=]{
 		refresh_();
@@ -52,21 +94,49 @@ bool cwin::control::status_bar::object::inserting_child_(ui::object &child){
 	return (dynamic_cast<status_bar::item *>(&child) != nullptr || dynamic_cast<hook::object *>(&child) != nullptr);
 }
 
+void cwin::control::status_bar::object::inserted_child_(ui::object &child, ui::tree *old_parent){
+	control::object::inserted_child_(child, old_parent);
+	if (handle_ != nullptr && get_children_count_<status_bar::item>() == 0u)
+		SendMessageW(handle_, SB_SIMPLE, TRUE, 0);
+}
+
+void cwin::control::status_bar::object::removed_child_(ui::object &child){
+	if (handle_ != nullptr && get_children_count_<status_bar::item>() != 0u)
+		SendMessageW(handle_, SB_SIMPLE, FALSE, 0);
+
+	control::object::removed_child_(child);
+}
+
 void cwin::control::status_bar::object::size_update_(const SIZE &old_value, const SIZE &current_value){
 	control::object::size_update_(old_value, current_value);
 	refresh_();
 }
 
+DWORD cwin::control::status_bar::object::get_blacklisted_styles_() const{
+	return (control::object::get_blacklisted_styles_() | CCS_LEFT | CCS_TOP | CCS_RIGHT | CCS_BOTTOM);
+}
+
 DWORD cwin::control::status_bar::object::get_persistent_styles_() const{
-	return 0u;
+	return (control::object::get_persistent_styles_() | (is_top_placement_ ? CCS_TOP : 0u));
 }
 
 void cwin::control::status_bar::object::refresh_(){
 	if (handle_ == nullptr)
 		return;
 
+	auto items_count = get_children_count_<status_bar::item>();
+	if (items_count == 0u){//Simple
+		events::get_caption caption(*this);
+		events_.trigger(caption, 0u);
+
+		if (!caption.prevented_default() && !caption.get_value().empty())
+			SendMessageW(handle_, SB_SETTEXTW, 0, reinterpret_cast<LPARAM>(caption.get_value().data()));
+
+		return;
+	}
+
 	std::vector<item_info> columns;
-	columns.reserve(children_.size());
+	columns.reserve(items_count);
 
 	auto client_size = compute_client_size_();
 	auto fixed_width = 0, shared_count = 0;
@@ -79,7 +149,7 @@ void cwin::control::status_bar::object::refresh_(){
 			columns.push_back(item_info{
 				&child,
 				true,
-				child.compute_fixed_width_(client_size.cx)
+				child.compute_fixed_width_(client_size.cx, fixed_width)
 			});
 
 			fixed_width += columns.back().fixed_width;
@@ -93,6 +163,7 @@ void cwin::control::status_bar::object::refresh_(){
 	});
 
 	auto shared_width = ((shared_count == 0) ? 0 : ((client_size.cx - fixed_width) / shared_count));
+	auto shared_overlap = ((client_size.cx - fixed_width) - (shared_width * shared_count));
 
 	auto extent = 0;
 	std::vector<int> extents(columns.size());
@@ -102,7 +173,7 @@ void cwin::control::status_bar::object::refresh_(){
 			if (0 < --shared_count)
 				extents[index] = (extent += shared_width);
 			else//Last shared
-				extents[index] = -1;
+				extents[index] = (extent += (shared_width + shared_overlap));
 		}
 		else//Use fixed width
 			extents[index] = (extent += columns[index].fixed_width);

@@ -1,3 +1,4 @@
+#include "../hook/background_hooks.h"
 #include "../hook/responsive_hooks.h"
 #include "../events/control_events.h"
 

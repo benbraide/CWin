@@ -30,7 +30,7 @@ namespace cwin::grid{
 
 		virtual void refresh_();
 
-		virtual int compute_fixed_width_(int row_width) const;
+		virtual int compute_fixed_width_(int row_width, int fixed_width) const;
 
 		virtual void update_dimension_(const SIZE &size, const POINT &position);
 
@@ -52,7 +52,7 @@ namespace cwin::grid{
 	protected:
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) override;
 
-		virtual int compute_fixed_width_(int row_width) const override;
+		virtual int compute_fixed_width_(int row_width, int fixed_width) const override;
 
 		virtual bool is_fixed_() const override;
 	};
@@ -76,13 +76,23 @@ namespace cwin::grid{
 	protected:
 		virtual bool before_size_change_(const SIZE &old_value, const SIZE &current_value) const override;
 
-		virtual int compute_fixed_width_(int row_width) const override;
+		virtual int compute_fixed_width_(int row_width, int fixed_width) const override;
 
 		virtual bool is_fixed_() const override;
 
 		virtual void set_value_(float value);
 
 		float value_;
+	};
+
+	class shared_proportional_column : public proportional_column{
+	public:
+		using proportional_column::proportional_column;
+
+		virtual ~shared_proportional_column();
+
+	protected:
+		virtual int compute_fixed_width_(int row_width, int fixed_width) const override;
 	};
 }
 
@@ -99,6 +109,11 @@ namespace cwin::ui{
 
 	template <>
 	struct parent_type<grid::proportional_column>{
+		using value = grid::row;
+	};
+
+	template <>
+	struct parent_type<grid::shared_proportional_column>{
 		using value = grid::row;
 	};
 }

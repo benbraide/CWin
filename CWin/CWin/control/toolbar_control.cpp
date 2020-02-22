@@ -1,4 +1,4 @@
-#include "../hook/hook_object.h"
+#include "../hook/responsive_hooks.h"
 
 #include "../events/control_events.h"
 #include "../events/interrupt_events.h"
@@ -11,6 +11,10 @@ cwin::control::toolbar::object::object(ui::tree &parent)
 cwin::control::toolbar::object::object(ui::tree &parent, std::size_t index)
 	: control::object(parent, index, TOOLBARCLASSNAME, ICC_BAR_CLASSES){
 	styles_ |= TBSTYLE_TRANSPARENT;
+
+	insert_object([](hook::fill &item){
+		item.disable_height();
+	});
 
 	bind_default_([=](events::interrupt::notify &e){
 		e.do_default();

@@ -64,7 +64,7 @@ void cwin::grid::column::refresh_(){
 		row_parent->refresh();
 }
 
-int cwin::grid::column::compute_fixed_width_(int row_width) const{
+int cwin::grid::column::compute_fixed_width_(int row_width, int fixed_width) const{
 	return 0;
 }
 
@@ -105,7 +105,7 @@ void cwin::grid::fixed_column::size_update_(const SIZE &old_value, const SIZE &c
 		refresh_();
 }
 
-int cwin::grid::fixed_column::compute_fixed_width_(int row_width) const{
+int cwin::grid::fixed_column::compute_fixed_width_(int row_width, int fixed_width) const{
 	return get_size_().cx;
 }
 
@@ -150,7 +150,7 @@ bool cwin::grid::proportional_column::before_size_change_(const SIZE &old_value,
 	return (is_updating_ && column::before_size_change_(old_value, current_value));
 }
 
-int cwin::grid::proportional_column::compute_fixed_width_(int row_width) const{
+int cwin::grid::proportional_column::compute_fixed_width_(int row_width, int fixed_width) const{
 	return static_cast<int>(row_width * value_);
 }
 
@@ -161,4 +161,10 @@ bool cwin::grid::proportional_column::is_fixed_() const{
 void cwin::grid::proportional_column::set_value_(float value){
 	value_ = value;
 	refresh_();
+}
+
+cwin::grid::shared_proportional_column::~shared_proportional_column() = default;
+
+int cwin::grid::shared_proportional_column::compute_fixed_width_(int row_width, int fixed_width) const{
+	return static_cast<int>((row_width - fixed_width) * value_);
 }

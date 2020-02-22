@@ -33,9 +33,9 @@ cwin::hook::color_background::color_background(ui::visible_surface &parent, cons
 
 	parent.get_events().bind([=](events::interrupt::color_updater_request &e){
 		e.set_value([=](const D2D1_COLOR_F &old_value, const D2D1_COLOR_F &current_value){
+			color_update_(old_value, current_value);
 			if (parent_ != nullptr)
 				parent_->get_events().trigger<events::after_background_color_update>(nullptr, 0u, old_value, current_value);
-			color_update_(old_value, current_value);
 		});
 	}, get_talk_id());
 }
@@ -70,8 +70,8 @@ void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value){
 
 void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value, bool enable_interrupt){
 	set_color_(value, enable_interrupt, [=](const D2D1_COLOR_F &old_value, const D2D1_COLOR_F &current_value){
-		parent_->get_events().trigger<events::after_background_color_update>(nullptr, 0u, old_value, current_value);
 		color_update_(old_value, current_value);
+		parent_->get_events().trigger<events::after_background_color_update>(nullptr, 0u, old_value, current_value);
 	});
 }
 

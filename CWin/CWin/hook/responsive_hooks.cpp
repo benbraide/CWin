@@ -13,6 +13,11 @@ cwin::hook::parent_size::parent_size(ui::surface &parent, const std::function<vo
 		if (callback_ != nullptr)
 			callback_();
 	}, get_talk_id());
+
+	parent.get_events().bind([this](events::after_create &){
+		if (callback_ != nullptr)
+			callback_();
+	}, get_talk_id());
 }
 
 cwin::hook::parent_size::~parent_size() = default;

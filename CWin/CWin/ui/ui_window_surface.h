@@ -102,6 +102,8 @@ namespace cwin::ui{
 
 		virtual bool is_top_level_() const;
 
+		virtual void update_styles_();
+
 		virtual void set_styles_(DWORD value);
 
 		virtual DWORD get_computed_styles_() const;
@@ -109,6 +111,8 @@ namespace cwin::ui{
 		virtual DWORD get_blacklisted_styles_() const;
 
 		virtual DWORD get_persistent_styles_() const;
+
+		virtual void update_extended_styles_();
 
 		virtual void set_extended_styles_(DWORD value);
 

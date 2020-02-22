@@ -153,6 +153,7 @@ bool cwin::ui::window_surface_manager::is_dialog_message_(MSG &msg){
 }
 
 LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
+	LRESULT result = 0;
 	switch (message){
 	case WM_NCDESTROY:
 		if (!top_level_windows_.empty())
@@ -172,9 +173,10 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		target.destroy();
 		return 0;
 	case WM_WINDOWPOSCHANGED:
+		result = call_default(target, message, wparam, lparam);
 		if (target.updating_count_ == 0u)
 			position_changed_(target, *reinterpret_cast<WINDOWPOS *>(lparam));
-		break;
+		return result;
 	case WM_SHOWWINDOW:
 		if (wparam == FALSE)
 			hide_(target);

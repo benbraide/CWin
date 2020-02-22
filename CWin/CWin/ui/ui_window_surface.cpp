@@ -436,12 +436,20 @@ bool cwin::ui::window_surface::is_top_level_() const{
 	return (get_matching_ancestor_<window_surface>(nullptr) == nullptr);
 }
 
+void cwin::ui::window_surface::update_styles_(){
+	if (handle_ == nullptr)
+		return;
+
+	SetWindowLongPtrW(handle_, GWL_STYLE, get_computed_styles_());
+	SetWindowPos(handle_, nullptr, 0, 0, 0, 0, (SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED));
+}
+
 void cwin::ui::window_surface::set_styles_(DWORD value){
+	if (styles_ == value)
+		return;
+
 	styles_ = value;
-	if (handle_ != nullptr && (value = get_computed_styles_()) != static_cast<DWORD>(GetWindowLongPtrW(handle_, GWL_STYLE))){
-		SetWindowLongPtrW(handle_, GWL_STYLE, value);
-		SetWindowPos(handle_, nullptr, 0, 0, 0, 0, (SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED));
-	}
+	update_styles_();
 }
 
 DWORD cwin::ui::window_surface::get_computed_styles_() const{
@@ -456,12 +464,20 @@ DWORD cwin::ui::window_surface::get_persistent_styles_() const{
 	return (visible_? WS_VISIBLE : 0u);
 }
 
+void cwin::ui::window_surface::update_extended_styles_(){
+	if (handle_ == nullptr)
+		return;
+
+	SetWindowLongPtrW(handle_, GWL_EXSTYLE, get_computed_extended_styles_());
+	SetWindowPos(handle_, nullptr, 0, 0, 0, 0, (SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED));
+}
+
 void cwin::ui::window_surface::set_extended_styles_(DWORD value){
+	if (extended_styles_ == value)
+		return;
+
 	extended_styles_ = value;
-	if (handle_ != nullptr && (value = get_computed_extended_styles_()) != static_cast<DWORD>(GetWindowLongPtrW(handle_, GWL_EXSTYLE))){
-		SetWindowLongPtrW(handle_, GWL_EXSTYLE, value);
-		SetWindowPos(handle_, nullptr, 0, 0, 0, 0, (SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED));
-	}
+	update_extended_styles_();
 }
 
 DWORD cwin::ui::window_surface::get_computed_extended_styles_() const{

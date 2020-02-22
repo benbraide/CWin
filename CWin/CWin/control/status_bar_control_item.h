@@ -44,7 +44,7 @@ namespace cwin::control::status_bar{
 
 		virtual void refresh_();
 
-		virtual int compute_fixed_width_(int row_width) const;
+		virtual int compute_fixed_width_(int width, int fixed_width) const;
 
 		virtual bool is_fixed_() const;
 
@@ -54,11 +54,84 @@ namespace cwin::control::status_bar{
 
 		int active_index_ = -1;
 	};
+
+	class fixed_item : public item{
+	public:
+		fixed_item(status_bar::object &parent, int value);
+
+		fixed_item(status_bar::object &parent, std::size_t index, int value);
+
+		virtual ~fixed_item();
+
+		virtual void set_value(int value);
+
+		virtual int get_value() const;
+
+		virtual void get_value(const std::function<void(int)> &callback) const;
+
+	protected:
+		virtual int compute_fixed_width_(int width, int fixed_width) const override;
+
+		virtual bool is_fixed_() const override;
+
+		virtual void set_value_(int value);
+
+		int value_;
+	};
+
+	class proportional_item : public item{
+	public:
+		proportional_item(status_bar::object &parent, float value);
+
+		proportional_item(status_bar::object &parent, std::size_t index, float value);
+
+		virtual ~proportional_item();
+
+		virtual void set_value(float value);
+
+		virtual float get_value() const;
+
+		virtual void get_value(const std::function<void(float)> &callback) const;
+
+	protected:
+		virtual int compute_fixed_width_(int width, int fixed_width) const override;
+
+		virtual bool is_fixed_() const override;
+
+		virtual void set_value_(float value);
+
+		float value_;
+	};
+
+	class shared_proportional_item : public proportional_item{
+	public:
+		using proportional_item::proportional_item;
+
+		virtual ~shared_proportional_item();
+
+	protected:
+		virtual int compute_fixed_width_(int width, int fixed_width) const override;
+	};
 }
 
 namespace cwin::ui{
 	template <>
 	struct parent_type<control::status_bar::item>{
+		using value = control::status_bar::object;
+	};
+
+	template <>
+	struct parent_type<control::status_bar::fixed_item>{
+		using value = control::status_bar::object;
+	};
+
+	template <>
+	struct parent_type<control::status_bar::proportional_item>{
+		using value = control::status_bar::object;
+	};
+
+	template <>
+	struct parent_type<control::status_bar::shared_proportional_item>{
 		using value = control::status_bar::object;
 	};
 }

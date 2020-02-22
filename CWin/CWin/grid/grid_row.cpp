@@ -68,7 +68,7 @@ void cwin::grid::row::refresh_(){
 		object_parent->refresh();
 }
 
-int cwin::grid::row::compute_fixed_height_(int object_height) const{
+int cwin::grid::row::compute_fixed_height_(int object_height, int fixed_height) const{
 	return 0;
 }
 
@@ -98,7 +98,7 @@ void cwin::grid::row::update_dimension_(const SIZE &size, const POINT &position)
 			columns.push_back(column_info{
 				&child,
 				true,
-				child.compute_fixed_width_(client_size.cx)
+				child.compute_fixed_width_(client_size.cx, fixed_width)
 			});
 
 			fixed_width += columns.back().fixed_width;
@@ -157,7 +157,7 @@ void cwin::grid::fixed_row::size_update_(const SIZE &old_value, const SIZE &curr
 		refresh_();
 }
 
-int cwin::grid::fixed_row::compute_fixed_height_(int object_height) const{
+int cwin::grid::fixed_row::compute_fixed_height_(int object_height, int fixed_height) const{
 	return get_size_().cx;
 }
 
@@ -202,7 +202,7 @@ bool cwin::grid::proportional_row::before_size_change_(const SIZE &old_value, co
 	return (is_updating_ && row::before_size_change_(old_value, current_value));
 }
 
-int cwin::grid::proportional_row::compute_fixed_height_(int object_height) const{
+int cwin::grid::proportional_row::compute_fixed_height_(int object_height, int fixed_height) const{
 	return static_cast<int>(object_height * value_);
 }
 
@@ -213,4 +213,10 @@ bool cwin::grid::proportional_row::is_fixed_() const{
 void cwin::grid::proportional_row::set_value_(float value){
 	value_ = value;
 	refresh_();
+}
+
+cwin::grid::shared_proportional_row::~shared_proportional_row() = default;
+
+int cwin::grid::shared_proportional_row::compute_fixed_height_(int object_height, int fixed_height) const{
+	return static_cast<int>((object_height - fixed_height) * value_);
 }
