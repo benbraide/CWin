@@ -1,6 +1,6 @@
 #include "../thread/thread_object.h"
 
-#include "general_events.h"
+#include "event_target.h"
 
 cwin::events::target::target(thread::object &thread)
 	: cross_object(thread), events_(*this){}
@@ -15,59 +15,26 @@ const cwin::events::manager &cwin::events::target::get_events() const{
 	return events_;
 }
 
-bool cwin::events::target::event_is_supported(const std::type_info &type) const{
-	return thread_.get_queue().execute_task([&]{
-		return event_is_supported_(type);
-	}, get_talk_id(), thread::queue::highest_task_priority);
-}
-
-bool cwin::events::target::event_is_supported_(const std::type_info &type) const{
+bool cwin::events::target::adding_event_handler_(const std::type_info &type, unsigned __int64 talk_id, std::size_t count){
 	return true;
 }
 
-void cwin::events::target::unbind_default_(unsigned __int64 id){
-	events_.unbind_default_(id);
-}
-
-void cwin::events::target::unbind_default_(manager::key_type key, unsigned __int64 id){
-	events_.unbind_default_(key, id);
-}
-
-bool cwin::events::target::default_exists_(unsigned __int64 id) const{
-	return events_.default_exists_(id);
-}
-
-bool cwin::events::target::default_exists_(manager::key_type key, unsigned __int64 id) const{
-	return events_.default_exists_(key, id);
-}
-
-void cwin::events::target::trigger_default_(object &e, unsigned __int64 id) const{
-	events_.trigger_default_(e, id);
-}
-
-bool cwin::events::target::adding_event_handler_(const std::type_info &type, unsigned __int64 talk_id, const void *value, const std::type_info &value_type, std::size_t count){
-	return event_is_supported_(type);
-}
-
-void cwin::events::target::added_event_handler_(const std::type_info &type, unsigned __int64 id, unsigned __int64 talk_id, const void *value, const std::type_info &value_type, std::size_t count){
+void cwin::events::target::added_event_handler_(const std::type_info &type, unsigned __int64 id, unsigned __int64 talk_id, std::size_t count){
 	if (talk_id != 0u)//Store outbound event
 		thread_.add_outbound_event_(talk_id, *this, &type, id);
-
-	if (auto is_interval = (&type == &typeid(interval)); is_interval || &type == &typeid(timer))
-		added_timer_event_handler_(id, value, value_type, is_interval, false);
 }
 
 void cwin::events::target::removed_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count){}
 
-bool cwin::events::target::adding_default_event_handler_(const std::type_info &type, const void *value, const std::type_info &value_type, std::size_t count){
-	return event_is_supported_(type);
+bool cwin::events::target::adding_default_event_handler_(const std::type_info &type, std::size_t count){
+	return true;
 }
 
-void cwin::events::target::added_default_event_handler_(const std::type_info &type, unsigned __int64 id, const void *value, const std::type_info &value_type, std::size_t count){
-	if (auto is_interval = (&type == &typeid(interval)); is_interval || &type == &typeid(timer))
-		added_timer_event_handler_(id, value, value_type, is_interval, true);
-}
+void cwin::events::target::added_default_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count){}
 
+void cwin::events::target::removed_default_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count){}
+
+/*
 void cwin::events::target::removed_default_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count){}
 
 void cwin::events::target::added_timer_event_handler_(unsigned __int64 id, const void *value, const std::type_info &value_type, bool is_interval, bool is_default){
@@ -140,4 +107,4 @@ void cwin::events::target::added_timer_event_handler_(unsigned __int64 id, const
 		if (!is_active)//Handler removed
 			thread_.remove_timer_(timer_id, dynamic_cast<thread::item *>(this));
 	}, dynamic_cast<thread::item *>(this));
-}
+}*/

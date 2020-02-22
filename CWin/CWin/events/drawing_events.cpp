@@ -47,7 +47,8 @@ void cwin::events::erase_background::do_default_(){
 
 			render_->BeginDraw();
 			interrupt::draw_background e(context_, *render_, area);
-			trigger_(e, 0u);
+
+			trigger_(e);
 			render_->EndDraw();
 		}
 	}
@@ -81,7 +82,7 @@ void cwin::events::non_client_paint::do_default_(){
 	auto &client_margin = non_window_context->get_client_margin();
 
 	events::interrupt::is_big_border_handle big_border_e(context_);
-	trigger_(big_border_e, 0u);
+	trigger_(big_border_e);
 	auto is_big_border = (big_border_e.get_result() != FALSE);
 
 	RECT area{ 0, 0, size.cx, client_margin.top };
@@ -100,7 +101,7 @@ void cwin::events::non_client_paint::do_default_(){
 	GetThemePartSize(theme, info_.hdc, (is_big_border ? WP_CLOSEBUTTON : WP_SMALLCLOSEBUTTON), 0, nullptr, THEMESIZE::TS_TRUE, &close_button_size);
 
 	get_caption e(context_);
-	trigger_(e, 0u);
+	trigger_(e);
 
 	if (e.prevented_default())
 		return;

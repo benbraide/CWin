@@ -70,15 +70,9 @@ namespace cwin::events{
 		using key_type = const std::type_info *;
 		using handler_list_type = std::list<handler_info>;
 
-		enum class handler_list_option_type{
-			bounding_disabled,
-			triggering_disabled,
-		};
-
 		struct handler_list_info{
 			handler_list_type list;
 			handler_list_type default_list;
-			utility::small_options options;
 		};
 
 		using map_type = std::unordered_map<key_type, handler_list_info>;
@@ -94,167 +88,123 @@ namespace cwin::events{
 		virtual events::target &get_target() const;
 
 		template <typename handler_type>
-		unsigned __int64 bind(const handler_type &handler, unsigned __int64 talk_id = 0u){
+		unsigned __int64 bind(const handler_type &handler, unsigned __int64 talk_id){
 			return execute_task([&]{
-				return bind_(utility::object_to_function_traits::get(handler), talk_id, nullptr, typeid(nullptr));
+				return bind_(utility::object_to_function_traits::get(handler), talk_id);
 			});
 		}
 
 		template <typename object_type, typename handler_type>
-		unsigned __int64 bind(const handler_type &handler, unsigned __int64 talk_id = 0u){
+		unsigned __int64 bind(const handler_type &handler, unsigned __int64 talk_id){
 			return execute_task([&]{
-				return bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id, nullptr, typeid(nullptr));
+				return bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id);
 			});
 		}
 		
-		template <typename value_type, typename handler_type>
-		unsigned __int64 bind(const handler_type &handler, const value_type &value, unsigned __int64 talk_id = 0u){
-			return execute_task([&]{
-				return bind_(utility::object_to_function_traits::get(handler), talk_id, &value, typeid(value));
-			});
-		}
-
-		template <typename object_type, typename value_type, typename handler_type>
-		unsigned __int64 bind(const handler_type &handler, const value_type &value, unsigned __int64 talk_id = 0u){
-			return execute_task([&]{
-				return bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id, &value, typeid(value));
-			});
-		}
-
 		template <typename handler_type>
 		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, unsigned __int64 talk_id = 0u){
 			post_or_execute_task([=]{
-				callback(bind_(utility::object_to_function_traits::get(handler), talk_id, nullptr, typeid(nullptr)));
+				callback(bind_(utility::object_to_function_traits::get(handler), talk_id));
 			});
 		}
 
 		template <typename object_type, typename handler_type>
 		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, unsigned __int64 talk_id = 0u){
 			post_or_execute_task([=]{
-				callback(bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id, nullptr, typeid(nullptr)));
-			});
-		}
-
-		template <typename value_type, typename handler_type>
-		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, const value_type &value, unsigned __int64 talk_id = 0u){
-			post_or_execute_task([=]{
-				callback(bind_(utility::object_to_function_traits::get(handler), talk_id, &value, typeid(value)));
-			});
-		}
-
-		template <typename object_type, typename value_type, typename handler_type>
-		void bind(const handler_type &handler, const std::function<void(unsigned __int64)> &callback, const value_type &value, unsigned __int64 talk_id = 0u){
-			post_or_execute_task([=]{
-				callback(bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id, &value, typeid(value)));
+				callback(bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id));
 			});
 		}
 
 		virtual void unbind(unsigned __int64 id);
 
-		template <typename object_type>
-		void unbind(unsigned __int64 id){
-			unbind(get_key<object_type>(), id);
-		}
-
-		virtual void unbind(key_type key, unsigned __int64 id);
-
-		virtual void trigger(object &e, unsigned __int64 id) const;
+		virtual void trigger(object &e) const;
 
 		template <typename object_type, typename... args_types>
-		void trigger(const std::function<void(utility::small_options &, LRESULT)> &callback, unsigned __int64 id, args_types &&... args) const{
-			object_type e(target_, std::forward<args_types>(args)...);
-			trigger(e, id);
-
-			if (callback != nullptr){
-				utility::small_options options;
-				if (e.prevented_default())
-					options.set(object::option_type::prevented_default);
-
-				if (e.stopped_propagation())
-					options.set(object::option_type::stopped_propagation);
-
-				if (e.done_default())
-					options.set(object::option_type::done_default);
-
-				callback(options, e.get_result());
-			}
+		void trigger(args_types &&... args) const{
+			trigger_then<object_type>(nullptr, std::forward<args_types>(args)...);
 		}
 
 		template <typename object_type, typename... args_types>
-		void trigger(const std::function<void(LRESULT)> &callback, unsigned __int64 id, args_types &&... args) const{
-			trigger<object_type>([&](utility::small_options &, LRESULT result){
+		void trigger_then(const std::function<void(utility::small_options &, LRESULT)> &callback, args_types &&... args) const{
+			execute_task([&]{
+				object_type e(target_, std::forward<args_types>(args)...);
+				trigger_(e);
+
+				if (callback != nullptr){
+					utility::small_options options;
+					if (e.prevented_default())
+						options.set(object::option_type::prevented_default);
+
+					if (e.stopped_propagation())
+						options.set(object::option_type::stopped_propagation);
+
+					if (e.done_default())
+						options.set(object::option_type::done_default);
+
+					callback(options, e.get_result());
+				}
+			});
+		}
+
+		template <typename object_type, typename... args_types>
+		void trigger_then(const std::function<void(LRESULT)> &callback, args_types &&... args) const{
+			trigger_then<object_type>([&](utility::small_options &, LRESULT result){
 				callback(result);
-			}, id, std::forward<args_types>(args)...);
+			}, std::forward<args_types>(args)...);
 		}
 		
 		template <typename object_type, typename... args_types>
-		void trigger(const std::function<void(bool)> &callback, unsigned __int64 id, args_types &&... args) const{
-			trigger<object_type>([&](utility::small_options &opts, LRESULT){
+		void trigger_then(const std::function<void(bool)> &callback, args_types &&... args) const{
+			trigger_then<object_type>([&](utility::small_options &opts, LRESULT){
 				callback(opts.is_set(object::option_type::prevented_default));
-			}, id, std::forward<args_types>(args)...);
+			}, std::forward<args_types>(args)...);
 		}
 		
 		template <typename object_type, typename... args_types>
-		void trigger(const std::function<void()> &callback, unsigned __int64 id, args_types &&... args) const{
-			trigger<object_type>([&](utility::small_options &, LRESULT){
+		void trigger_then(const std::function<void()> &callback, args_types &&... args) const{
+			trigger_then<object_type>([&](utility::small_options &, LRESULT){
 				callback();
-			}, id, std::forward<args_types>(args)...);
+			}, std::forward<args_types>(args)...);
 		}
 		
 		template <typename object_type, typename... args_types>
-		void trigger(std::nullptr_t, unsigned __int64 id, args_types &&... args) const{
-			trigger<object_type>([&](utility::small_options &, LRESULT){}, id, std::forward<args_types>(args)...);
+		void trigger_then(std::nullptr_t, args_types &&... args) const{
+			trigger_then<object_type>([&](utility::small_options &, LRESULT){}, std::forward<args_types>(args)...);
 		}
 		
 		template <typename object_type, typename... args_types>
-		LRESULT trigger_then_report_result(unsigned __int64 id, args_types &&... args) const{
+		LRESULT trigger_then_report_result(args_types &&... args) const{
 			LRESULT value = 0;
-			trigger<object_type>([&](utility::small_options &, LRESULT result){
+			trigger_then<object_type>([&](utility::small_options &, LRESULT result){
 				value = result;
-			}, id, std::forward<args_types>(args)...);
+			}, std::forward<args_types>(args)...);
 
 			return value;
 		}
 		
 		template <typename object_type, typename... args_types>
-		utility::small_options trigger_then_report_options(unsigned __int64 id, args_types &&... args) const{
+		utility::small_options trigger_then_report_options(args_types &&... args) const{
 			utility::small_options value;
-			trigger<object_type>([&](utility::small_options &opts, LRESULT){
+			trigger_then<object_type>([&](utility::small_options &opts, LRESULT){
 				value = opts;
-			}, id, std::forward<args_types>(args)...);
+			}, std::forward<args_types>(args)...);
 
 			return value;
 		}
 		
 		template <typename object_type, typename... args_types>
-		bool trigger_then_report_prevented_default(unsigned __int64 id, args_types &&... args) const{
+		bool trigger_then_report_prevented_default(args_types &&... args) const{
 			auto value = false;
-			trigger<object_type>([&](utility::small_options &opts, LRESULT){
+			trigger_then<object_type>([&](utility::small_options &opts, LRESULT){
 				value = opts.is_set(object::option_type::prevented_default);
-			}, id, std::forward<args_types>(args)...);
+			}, std::forward<args_types>(args)...);
 
 			return value;
 		}
 
 		virtual bool exists(unsigned __int64 id) const;
 
-		template <typename object_type>
-		bool exists(unsigned __int64 id) const{
-			return exists(get_key<object_type>(), id);
-		}
-
-		virtual bool exists(key_type key, unsigned __int64 id) const;
-
 		virtual void exists(unsigned __int64 id, const std::function<void(bool)> &callback) const;
-
-		template <typename object_type>
-		void exists(unsigned __int64 id, const std::function<void(bool)> &callback) const{
-			post_or_execute_task([=]{
-				callback(exists_(get_key<object_type>(), id));
-			});
-		}
-
-		virtual void exists(key_type key, unsigned __int64 id, const std::function<void(bool)> &callback) const;
 
 		template <typename object_type>
 		std::size_t get_bound_count() const{
@@ -287,25 +237,25 @@ namespace cwin::events{
 		friend class thread::object;
 
 		template <typename object_type, typename return_type>
-		unsigned __int64 bind_(const std::function<return_type()> &handler, unsigned __int64 talk_id, const void *value, const std::type_info &value_type){
+		unsigned __int64 bind_(const std::function<return_type()> &handler, unsigned __int64 talk_id){
 			return bind_<return_type, object_type>([handler](object_type &){
 				return handler();
-			}, talk_id, value, value_type);
+			}, talk_id);
 		}
 
 		template <typename object_type, typename return_type>
-		unsigned __int64 bind_(const std::function<return_type(const object_type &)> &handler, unsigned __int64 talk_id, const void *value, const std::type_info &value_type){
+		unsigned __int64 bind_(const std::function<return_type(const object_type &)> &handler, unsigned __int64 talk_id){
 			return bind_<return_type, object_type>([handler](object_type &e){
 				return handler(e);
-			}, talk_id, value, value_type);
+			}, talk_id);
 		}
 
 		template <typename object_type, typename return_type>
-		unsigned __int64 bind_(const std::function<return_type(object_type &)> &handler, unsigned __int64 talk_id, const void *value, const std::type_info &value_type){
+		unsigned __int64 bind_(const std::function<return_type(object_type &)> &handler, unsigned __int64 talk_id){
 			auto key = get_key<object_type>();
 			auto &handler_list = handlers_[key];
 
-			if (!alert_target_(true, key, 0u, talk_id, value, value_type, handler_list.list.size()))
+			if (!alert_target_(true, key, 0u, talk_id, handler_list.list.size()))
 				return 0u;//Rejected
 
 			auto handler_object = std::make_shared<events::typed_handler<object_type &, return_type>>(handler, talk_id);
@@ -313,26 +263,23 @@ namespace cwin::events{
 				return 0u;
 
 			auto id = reinterpret_cast<unsigned __int64>(handler_object.get());
-			if (handler_list.options.is_set(handler_list_option_type::bounding_disabled))
-				return 0u;//Bounding disabled
-
 			handler_list.list.push_back(handler_info{
 				id,
 				handler_object
 			});
 
 			++count_;
-			alert_target_(false, key, id, talk_id, value, value_type, handler_list.list.size());
+			alert_target_(false, key, id, talk_id, handler_list.list.size());
 
 			return id;
 		}
 
 		template <typename object_type, typename return_type>
-		unsigned __int64 bind_default_(const std::function<return_type(object_type &)> &handler, const void *value, const std::type_info &value_type){
+		unsigned __int64 bind_default_(const std::function<return_type(object_type &)> &handler){
 			auto key = get_key<object_type>();
 			auto &handler_list = handlers_[key];
 
-			if (!alert_target_default_(true, key, 0u, value, value_type, handler_list.default_list.size()))
+			if (!alert_target_default_(true, key, 0u, handler_list.default_list.size()))
 				return 0u;//Rejected
 
 			auto handler_object = std::make_shared<events::typed_handler<object_type &, return_type>>(handler, get_talk_id_of_(target_));
@@ -345,17 +292,15 @@ namespace cwin::events{
 				handler_object
 			});
 
-			alert_target_default_(false, key, id, value, value_type, handler_list.default_list.size());
+			alert_target_default_(false, key, id, handler_list.default_list.size());
 			return id;
 		}
 
+		virtual void unbind_postponed_();
+
 		virtual void unbind_(unsigned __int64 id);
 
-		virtual void unbind_(key_type key, unsigned __int64 id);
-
 		virtual void unbind_default_(unsigned __int64 id);
-
-		virtual void unbind_default_(key_type key, unsigned __int64 id);
 
 		virtual bool exists_(unsigned __int64 id) const;
 
@@ -389,18 +334,23 @@ namespace cwin::events{
 			get_options_<second_object_type, other_objects_types...>(callback);
 		}
 
-		virtual void trigger_(object &e, unsigned __int64 id) const;
+		virtual void trigger_(object &e) const;
 
-		virtual void trigger_default_(object &e, unsigned __int64 id) const;
+		virtual void trigger_default_(object &e) const;
 
 		virtual unsigned __int64 get_talk_id_of_(events::target &target) const;
 
-		virtual bool alert_target_(bool is_adding, key_type key, unsigned __int64 id, unsigned __int64 talk_id, const void *value, const std::type_info &value_type, std::size_t size) const;
+		virtual bool alert_target_(bool is_adding, key_type key, unsigned __int64 id, unsigned __int64 talk_id, std::size_t size) const;
 
-		virtual bool alert_target_default_(bool is_adding, key_type key, unsigned __int64 id, const void *value, const std::type_info &value_type, std::size_t size) const;
+		virtual bool alert_target_default_(bool is_adding, key_type key, unsigned __int64 id, std::size_t size) const;
 
 		target &target_;
 		std::size_t count_ = 0u;
+
 		mutable map_type handlers_;
+		mutable std::size_t trigger_count_ = 0u;
+
+		mutable std::list<unsigned __int64> unbind_list_;
+		mutable std::list<unsigned __int64> default_unbind_list_;
 	};
 }

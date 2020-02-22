@@ -107,7 +107,7 @@ void cwin::ui::visible_surface::show_(){
 	redraw_(nullptr);
 
 	set_windows_visibility_(visible_);
-	events_.trigger<events::show>(nullptr, 0u);
+	events_.trigger<events::show>();
 }
 
 void cwin::ui::visible_surface::hide_(){
@@ -118,7 +118,7 @@ void cwin::ui::visible_surface::hide_(){
 	redraw_(nullptr);
 
 	set_windows_visibility_(visible_);
-	events_.trigger<events::hide>(nullptr, 0u);
+	events_.trigger<events::hide>();
 }
 
 void cwin::ui::visible_surface::set_windows_visibility_(bool is_visible){

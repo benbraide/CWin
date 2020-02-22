@@ -101,7 +101,7 @@ void cwin::control::tab_item::after_create_(){
 			try{
 				if (auto &current_item = tab_parent->get_current_item_(); &current_item == this){
 					show_();
-					events_.trigger<events::control::activate>(nullptr, 0u);
+					events_.trigger<events::control::activate>();
 				}
 				else
 					hide_();

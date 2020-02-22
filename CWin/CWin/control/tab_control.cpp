@@ -136,18 +136,18 @@ void cwin::control::tab::update_client_margin_(){
 		return true;
 	});
 
-	events_.trigger<events::after_size_update>(nullptr, 0u, get_size_());
+	events_.trigger<events::after_size_update>(get_size_());
 }
 
 void cwin::control::tab::activate_current_item_() const{
 	auto &current_item = get_current_item_();
 	current_item.show();
-	current_item.get_events().trigger<events::control::activate>(nullptr, 0u);
+	current_item.get_events().trigger<events::control::activate>();
 }
 
 bool cwin::control::tab::deactivate_current_item_() const{
 	auto &current_item = get_current_item_();
-	if (current_item.get_events().trigger_then_report_prevented_default<events::control::deactivate>(0u))
+	if (current_item.get_events().trigger_then_report_prevented_default<events::control::deactivate>())
 		return false;
 
 	current_item.hide();

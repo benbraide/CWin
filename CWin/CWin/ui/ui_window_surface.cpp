@@ -195,7 +195,7 @@ bool cwin::ui::window_surface::should_call_after_destroy_() const{
 
 void cwin::ui::window_surface::after_destroy_(){
 	visible_surface::after_destroy_();
-	events_.trigger<events::after_window_destroy>(nullptr, 0u);
+	events_.trigger<events::after_window_destroy>();
 }
 
 void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &current_value){
@@ -363,7 +363,7 @@ void cwin::ui::window_surface::update_bounds_(){
 		SetWindowRgn(handle_, handle_bound_copy, TRUE);
 
 	update_client_bound_();
-	events_.trigger<events::after_bounds_change>(nullptr, 0u);
+	events_.trigger<events::after_bounds_change>();
 }
 
 const cwin::ui::surface::handle_bound_info &cwin::ui::window_surface::get_bound_() const{
@@ -405,7 +405,7 @@ void cwin::ui::window_surface::show_(){
 
 	visible_ = true;
 	if (handle_ == nullptr)
-		events_.trigger<events::show>(nullptr, 0u);
+		events_.trigger<events::show>();
 	else if (handle_ != nullptr)
 		ShowWindow(handle_, SW_SHOW);
 }
@@ -416,7 +416,7 @@ void cwin::ui::window_surface::hide_(){
 
 	visible_ = false;
 	if (handle_ == nullptr)
-		events_.trigger<events::hide>(nullptr, 0u);
+		events_.trigger<events::hide>();
 	else if (handle_ != nullptr)
 		ShowWindow(handle_, SW_HIDE);
 }

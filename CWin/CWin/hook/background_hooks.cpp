@@ -35,7 +35,7 @@ cwin::hook::color_background::color_background(ui::visible_surface &parent, cons
 		e.set_value([=](const D2D1_COLOR_F &old_value, const D2D1_COLOR_F &current_value){
 			color_update_(old_value, current_value);
 			if (parent_ != nullptr)
-				parent_->get_events().trigger<events::after_background_color_update>(nullptr, 0u, old_value, current_value);
+				parent_->get_events().trigger<events::after_background_color_update>(old_value, current_value);
 		});
 	}, get_talk_id());
 }
@@ -71,22 +71,22 @@ void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value){
 void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value, bool enable_interrupt){
 	set_color_(value, enable_interrupt, [=](const D2D1_COLOR_F &old_value, const D2D1_COLOR_F &current_value){
 		color_update_(old_value, current_value);
-		parent_->get_events().trigger<events::after_background_color_update>(nullptr, 0u, old_value, current_value);
+		parent_->get_events().trigger<events::after_background_color_update>(old_value, current_value);
 	});
 }
 
 void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value, bool enable_interrupt, const std::function<void(const D2D1_COLOR_F &, const D2D1_COLOR_F &)> &callback){
 	auto old_value = color_;
-	if (parent_->get_events().trigger_then_report_prevented_default<events::before_background_color_change>(0u, old_value, value))
+	if (parent_->get_events().trigger_then_report_prevented_default<events::before_background_color_change>(old_value, value))
 		throw ui::exception::action_canceled();
 
 	color_ = value;
-	parent_->get_events().trigger<events::after_background_color_change>(nullptr, 0u, old_value, value);
+	parent_->get_events().trigger<events::after_background_color_change>(old_value, value);
 
-	if (!enable_interrupt || !parent_->get_events().trigger_then_report_prevented_default<events::interrupt::color_change>(0u, old_value, value, callback)){
+	if (!enable_interrupt || !parent_->get_events().trigger_then_report_prevented_default<events::interrupt::color_change>(old_value, value, callback)){
 		if (callback == nullptr){
-			parent_->get_events().trigger<events::after_background_color_update>(nullptr, 0u, old_value, value);
 			color_update_(old_value, value);
+			parent_->get_events().trigger<events::after_background_color_update>(old_value, value);
 		}
 		else//Use callback
 			callback(old_value, value);
@@ -99,7 +99,7 @@ void cwin::hook::color_background::color_update_(const D2D1_COLOR_F &old_value, 
 }
 
 const D2D1_COLOR_F &cwin::hook::color_background::get_color_() const{
-	auto value = reinterpret_cast<D2D1_COLOR_F *>(parent_->get_events().trigger_then_report_result<events::interrupt::color_request>(0u));
+	auto value = reinterpret_cast<D2D1_COLOR_F *>(parent_->get_events().trigger_then_report_result<events::interrupt::color_request>());
 	return ((value == nullptr) ? color_ : *value);
 }
 

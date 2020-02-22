@@ -5,32 +5,32 @@ cwin::audio::exclusive_wave::exclusive_wave(){
 
 	exclusive_parent_.get_events().bind([=](events::audio::started &e){
 		if (&e.get_target() == this)
-			events_.trigger<events::audio::started>(nullptr, 0u);
+			events_.trigger<events::audio::started>();
 	}, get_talk_id());
 
 	exclusive_parent_.get_events().bind([=](events::audio::stopped &e){
 		if (&e.get_target() == this)
-			events_.trigger<events::audio::stopped>(nullptr, 0u);
+			events_.trigger<events::audio::stopped>();
 	}, get_talk_id());
 
 	exclusive_parent_.get_events().bind([=](events::audio::paused &e){
 		if (&e.get_target() == this)
-			events_.trigger<events::audio::paused>(nullptr, 0u);
+			events_.trigger<events::audio::paused>();
 	}, get_talk_id());
 
 	exclusive_parent_.get_events().bind([=](events::audio::resumed &e){
 		if (&e.get_target() == this)
-			events_.trigger<events::audio::resumed>(nullptr, 0u);
+			events_.trigger<events::audio::resumed>();
 	}, get_talk_id());
 
 	exclusive_parent_.get_events().bind([=](events::audio::eof &e){
 		if (&e.get_target() == this)
-			events_.trigger<events::audio::eof>(nullptr, 0u);
+			events_.trigger<events::audio::eof>();
 	}, get_talk_id());
 
 	exclusive_parent_.get_events().bind([=](events::audio::after_buffer_done &e){
 		if (&e.get_target() == this)
-			events_.trigger<events::audio::after_buffer_done>(nullptr, 0u);
+			events_.trigger<events::audio::after_buffer_done>();
 	}, get_talk_id());
 }
 

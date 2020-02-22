@@ -91,8 +91,8 @@ void cwin::control::check_button::check_(){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, BM_SETCHECK, BST_CHECKED, 0);
 
-	events_.trigger<events::control::changed_check_state>(nullptr, 0u, events::control::changed_check_state::state_type::checked);
-	events_.trigger<events::control::check>(nullptr, 0u);
+	events_.trigger<events::control::changed_check_state>(events::control::changed_check_state::state_type::checked);
+	events_.trigger<events::control::check>();
 
 	if (is_radio_()){//Remove checks from siblings
 		traverse_siblings_<check_button>([](check_button &offspring, bool){
@@ -110,8 +110,8 @@ void cwin::control::check_button::uncheck_(bool sibbling_checked){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, BM_SETCHECK, BST_UNCHECKED, 0);
 
-	events_.trigger<events::control::changed_check_state>(nullptr, 0u, events::control::changed_check_state::state_type::unchecked);
-	events_.trigger<events::control::uncheck>(nullptr, 0u);
+	events_.trigger<events::control::changed_check_state>(events::control::changed_check_state::state_type::unchecked);
+	events_.trigger<events::control::uncheck>();
 }
 
 void cwin::control::check_button::toggle_check_(){
@@ -239,11 +239,11 @@ void cwin::control::three_state_check_button::set_state_(state_type value){
 		}
 	}
 
-	events_.trigger<events::control::changed_check_state>(nullptr, 0u, state_);
+	events_.trigger<events::control::changed_check_state>(state_);
 	if (state_ == state_type::checked)
-		events_.trigger<events::control::check>(nullptr, 0u);
+		events_.trigger<events::control::check>();
 	else if (state_ == state_type::unchecked)
-		events_.trigger<events::control::uncheck>(nullptr, 0u);
+		events_.trigger<events::control::uncheck>();
 }
 
 void cwin::control::three_state_check_button::toggle_state_(){

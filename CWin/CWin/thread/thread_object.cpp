@@ -374,7 +374,7 @@ void cwin::thread::object::unbound_events_(unsigned __int64 talk_id, unsigned __
 	for (auto &info : it->second){
 		if (target_talk_id == 0u || target_talk_id == info.target_talk_id){
 			if (auto target = find_item_(target_talk_id); target != nullptr){
-				target->get_events().unbind_(info.key, info.id);
+				target->get_events().unbind_(info.id);
 				if (target_talk_id == info.target_talk_id)
 					break;
 			}

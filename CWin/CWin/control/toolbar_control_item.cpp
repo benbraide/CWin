@@ -199,9 +199,9 @@ void cwin::control::toolbar::item::set_states_(BYTE value){
 
 	if (was_enabled != ((computed_states & MFS_DISABLED) == 0u)){//Enabled state changed
 		if (was_enabled)
-			events_.trigger<events::disable>(nullptr, 0u);
+			events_.trigger<events::disable>();
 		else//Enabled
-			events_.trigger<events::enable>(nullptr, 0u);
+			events_.trigger<events::enable>();
 	}
 }
 

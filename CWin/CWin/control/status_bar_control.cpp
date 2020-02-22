@@ -21,7 +21,7 @@ cwin::control::status_bar::object::object(ui::tree &parent, std::size_t index)
 
 		if (get_children_count_<status_bar::item>() == 0u){//Simple
 			events::get_caption caption(*this);
-			events_.trigger(caption, 0u);
+			events_.trigger(caption);
 
 			if (!caption.prevented_default() && !caption.get_value().empty())
 				SendMessageW(handle_, SB_SETTEXTW, 0, reinterpret_cast<LPARAM>(caption.get_value().data()));
@@ -34,7 +34,7 @@ cwin::control::status_bar::object::object(ui::tree &parent, std::size_t index)
 				return true;
 
 			events::get_caption caption(child);
-			child.get_events().trigger(caption, 0u);
+			child.get_events().trigger(caption);
 
 			if (!caption.prevented_default() && !caption.get_value().empty())
 				SendMessageW(handle_, SB_SETTEXTW, child.active_index_, reinterpret_cast<LPARAM>(caption.get_value().data()));
@@ -127,7 +127,7 @@ void cwin::control::status_bar::object::refresh_(){
 	auto items_count = get_children_count_<status_bar::item>();
 	if (items_count == 0u){//Simple
 		events::get_caption caption(*this);
-		events_.trigger(caption, 0u);
+		events_.trigger(caption);
 
 		if (!caption.prevented_default() && !caption.get_value().empty())
 			SendMessageW(handle_, SB_SETTEXTW, 0, reinterpret_cast<LPARAM>(caption.get_value().data()));
@@ -185,7 +185,7 @@ void cwin::control::status_bar::object::refresh_(){
 
 	for (auto &column : columns){
 		events::get_caption caption(*column.target);
-		column.target->get_events().trigger(caption, 0u);
+		column.target->get_events().trigger(caption);
 
 		if (!caption.prevented_default() && !caption.get_value().empty())
 			SendMessageW(handle_, SB_SETTEXTW, column.target->active_index_, reinterpret_cast<LPARAM>(caption.get_value().data()));

@@ -19,12 +19,12 @@ cwin::control::tool_tip::tool_tip()
 				need_text_(current_item, info);
 				break;
 			case TTN_SHOW:
-				return current_item.get_events().trigger_then_report_result<events::show>(0u);
+				return current_item.get_events().trigger_then_report_result<events::show>();
 			case TTN_POP:
-				current_item.get_events().trigger<events::hide>(nullptr, 0u);
+				current_item.get_events().trigger<events::hide>();
 				break;
 			case TTN_LINKCLICK:
-				current_item.get_events().trigger<events::control::tool_tip_link_clicked>(nullptr, 0u);
+				current_item.get_events().trigger<events::control::tool_tip_link_clicked>();
 				break;
 			default:
 				break;
@@ -56,7 +56,7 @@ DWORD cwin::control::tool_tip::get_persistent_extended_styles_() const{
 
 void cwin::control::tool_tip::need_text_(ui::object &current_item, NMHDR &info){
 	events::control::get_tool_tip_text text(current_item);
-	current_item.get_events().trigger(text, 0u);
+	current_item.get_events().trigger(text);
 
 	if (!text.prevented_default() && !(text_ref_ = text.get_value()).empty())
 		reinterpret_cast<NMTTDISPINFOW *>(&info)->lpszText = const_cast<wchar_t *>(text_ref_.data());
@@ -64,11 +64,11 @@ void cwin::control::tool_tip::need_text_(ui::object &current_item, NMHDR &info){
 		return;
 
 	events::control::get_tool_tip_title title(current_item);
-	current_item.get_events().trigger(title, 0u);
+	current_item.get_events().trigger(title);
 
 	if (auto &title_value = title.get_value(); !title.prevented_default() && !title_value.empty()){
 		events::control::get_tool_tip_image image(current_item);
-		current_item.get_events().trigger(image, 0u);
+		current_item.get_events().trigger(image);
 
 		if (auto image_value = image.get_value(); image_value == nullptr || image.prevented_default())
 			SendMessageW(handle_, TTM_SETTITLEW, TTI_NONE, reinterpret_cast<LPARAM>(title_value.data()));
@@ -77,13 +77,13 @@ void cwin::control::tool_tip::need_text_(ui::object &current_item, NMHDR &info){
 	}
 
 	events::control::get_tool_tip_font font(current_item);
-	current_item.get_events().trigger(font, 0u);
+	current_item.get_events().trigger(font);
 
 	if (auto font_value = font.get_value(); !font.prevented_default() && font_value != nullptr)
 		SendMessageW(handle_, WM_SETFONT, reinterpret_cast<WPARAM>(font_value), FALSE);
 
 	events::control::get_tool_tip_max_width max_width(current_item);
-	current_item.get_events().trigger(max_width, 0u);
+	current_item.get_events().trigger(max_width);
 
 	if (auto max_width_value = max_width.get_value(); !max_width.prevented_default() && max_width_value)
 		SendMessageW(handle_, TTM_SETMAXTIPWIDTH, 0, ((max_width_value <= 0) ? -1 : max_width_value));

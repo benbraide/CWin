@@ -27,6 +27,12 @@ cwin::events::target &cwin::events::object::get_target() const{
 	return target_;
 }
 
+unsigned __int64 cwin::events::object::get_handler_id() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return handler_id_;
+}
+
 LRESULT cwin::events::object::get_result() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
@@ -79,12 +85,6 @@ void cwin::events::object::stop_propagation(){
 	options_.set(option_type::stopped_propagation);
 }
 
-void cwin::events::object::unbind_on_exit(){
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	options_.set(option_type::unbound_on_exit);
-}
-
 bool cwin::events::object::prevented_default() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
@@ -101,12 +101,6 @@ bool cwin::events::object::stopped_propagation() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
 	return options_.is_set(option_type::stopped_propagation);
-}
-
-bool cwin::events::object::unbound_on_exit() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return options_.is_set(option_type::unbound_on_exit);
 }
 
 bool cwin::events::object::is_thread_context() const{
@@ -130,15 +124,15 @@ bool cwin::events::object::handle_set_result_(const void *value, const std::type
 void cwin::events::object::prevent_default_(){}
 
 void cwin::events::object::do_default_(){
-	context_.get_events().trigger_default_(*this, 0u);
+	context_.get_events().trigger_default_(*this);
 }
 
 void cwin::events::object::call_handler_(){}
 
-void cwin::events::object::trigger_(object &e, unsigned __int64 id) const{
-	trigger_(context_, e, id);
+void cwin::events::object::trigger_(object &e) const{
+	trigger_(context_, e);
 }
 
-void cwin::events::object::trigger_(const target &context, object &e, unsigned __int64 id) const{
-	context.get_events().trigger_(e, id);
+void cwin::events::object::trigger_(const target &context, object &e) const{
+	context.get_events().trigger_(e);
 }

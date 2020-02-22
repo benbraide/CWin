@@ -11,7 +11,7 @@ cwin::control::split_button::split_button(tree &parent, std::size_t index)
 	bind_default_([=](events::interrupt::notify &e){
 		e.do_default();
 		if (e.get_info().code == BCN_DROPDOWN)
-			events_.trigger<events::control::split_button_dropdown>(nullptr, 0u);
+			events_.trigger<events::control::split_button_dropdown>();
 	});
 
 	bind_default_([=](events::control::split_button_dropdown &){

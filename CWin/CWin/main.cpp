@@ -281,13 +281,13 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				ctrl.insert_object([](cwin::control::status_bar::item &item){
 					item.get_events().bind([](cwin::events::get_caption &){
 						return L"Test Status Bar";
-					});
+					}, 0u);
 				});
 
 				ctrl.insert_object([](cwin::control::status_bar::proportional_item &item){
 					item.get_events().bind([](cwin::events::get_caption &){
 						return L"Proportional Status";
-					});
+					}, 0u);
 				}, 0.36f);
 			});
 		}, 1u);

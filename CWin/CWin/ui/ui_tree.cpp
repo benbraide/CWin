@@ -144,7 +144,7 @@ void cwin::ui::tree::insert_child_(object &child){
 }
 
 bool cwin::ui::tree::inserting_child_(object &child){
-	if (events_.trigger_then_report_prevented_default<events::before_child_insert>(0u, child))
+	if (events_.trigger_then_report_prevented_default<events::before_child_insert>(child))
 		return false;
 
 	return child.changing_parent_(this);
@@ -152,7 +152,7 @@ bool cwin::ui::tree::inserting_child_(object &child){
 
 void cwin::ui::tree::inserted_child_(object &child, tree *old_parent){
 	child.changed_parent_(old_parent);
-	events_.trigger<events::after_child_insert>(nullptr, 0u, child);
+	events_.trigger<events::after_child_insert>(child);
 }
 
 void cwin::ui::tree::remove_child_(object &child){
@@ -189,11 +189,11 @@ bool cwin::ui::tree::removing_child_(object &child){
 	if (!child.changing_parent_(nullptr))
 		return false;
 
-	return !events_.trigger_then_report_prevented_default<events::before_child_remove>(0u, child);
+	return !events_.trigger_then_report_prevented_default<events::before_child_remove>(child);
 }
 
 void cwin::ui::tree::removed_child_(object &child){
-	events_.trigger<events::after_child_remove>(nullptr, 0u, child);
+	events_.trigger<events::after_child_remove>(child);
 	child.changed_parent_(this);
 }
 
@@ -227,7 +227,7 @@ void cwin::ui::tree::change_child_index_(object &child, std::size_t old_value, s
 }
 
 bool cwin::ui::tree::changing_child_index_(object &child, std::size_t old_value, std::size_t value){
-	if (events_.trigger_then_report_prevented_default<events::before_child_index_change>(0u, child, value))
+	if (events_.trigger_then_report_prevented_default<events::before_child_index_change>(child, value))
 		return false;
 
 	return child.changing_index_(value);
@@ -235,7 +235,7 @@ bool cwin::ui::tree::changing_child_index_(object &child, std::size_t old_value,
 
 void cwin::ui::tree::changed_child_index_(object &child, std::size_t old_value, std::size_t value){
 	child.changed_index_(old_value);
-	events_.trigger<events::after_child_index_change>(nullptr, 0u, child, old_value);
+	events_.trigger<events::after_child_index_change>(child, old_value);
 }
 
 std::size_t cwin::ui::tree::find_child_(const object &child) const{

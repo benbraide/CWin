@@ -44,7 +44,7 @@ namespace cwin::hook{
 				return &current_value_;
 			}, get_talk_id());
 
-			if (auto value = reinterpret_cast<value_type *>(events_.trigger_then_report_result<m_init_interrupt_type>(0u)); value != nullptr)
+			if (auto value = reinterpret_cast<value_type *>(events_.trigger_then_report_result<m_init_interrupt_type>()); value != nullptr)
 				current_value_ = *value;
 		}
 

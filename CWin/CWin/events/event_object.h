@@ -23,7 +23,6 @@ namespace cwin::events{
 			stopped_propagation,
 			calling_handler,
 			called_handler,
-			unbound_on_exit,
 		};
 
 		explicit object(events::target &target);
@@ -41,6 +40,8 @@ namespace cwin::events{
 		virtual events::target &get_context() const;
 
 		virtual events::target &get_target() const;
+
+		virtual unsigned __int64 get_handler_id() const;
 
 		template <typename result_type>
 		void set_result(const result_type &result){
@@ -62,15 +63,11 @@ namespace cwin::events{
 
 		virtual void stop_propagation();
 
-		virtual void unbind_on_exit();
-
 		virtual bool prevented_default() const;
 
 		virtual bool done_default() const;
 
 		virtual bool stopped_propagation() const;
-
-		virtual bool unbound_on_exit() const;
 
 		virtual bool is_thread_context() const;
 
@@ -99,9 +96,9 @@ namespace cwin::events{
 
 		virtual void call_handler_();
 
-		virtual void trigger_(object &e, unsigned __int64 id) const;
+		virtual void trigger_(object &e) const;
 
-		virtual void trigger_(const target &context, object &e, unsigned __int64 id) const;
+		virtual void trigger_(const target &context, object &e) const;
 
 		thread::object &thread_;
 		events::target &context_;
@@ -109,6 +106,7 @@ namespace cwin::events{
 
 		LRESULT result_ = 0;
 		utility::small_options options_;
+		unsigned __int64 handler_id_ = 0u;
 	};
 
 	template <class object_type>
