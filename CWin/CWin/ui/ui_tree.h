@@ -36,6 +36,20 @@ namespace cwin::ui{
 
 		virtual void find_child(const object &child, const std::function<void(std::size_t)> &callback) const;
 
+		template <typename object_type>
+		object_type *find_first_of(std::size_t index = 0u) const{
+			return execute_task([&]{
+				return find_first_of_<object_type>(index);
+			});
+		}
+
+		template <typename object_type>
+		void find_first_of(const std::function<void(object_type *)> &callback, std::size_t index = 0u) const{
+			post_or_execute_task([=]{
+				callback(find_first_of_<object_type>(index));
+			});
+		}
+
 		virtual object *get_child_at(std::size_t index) const;
 
 		virtual void get_child_at(std::size_t index, const std::function<void(object *)> &callback) const;
@@ -243,6 +257,25 @@ namespace cwin::ui{
 		virtual void changed_child_index_(object &child, std::size_t old_value, std::size_t value);
 
 		virtual std::size_t find_child_(const object &child) const;
+
+		template <typename object_type>
+		object_type *find_first_of_(std::size_t index) const{
+			if (children_.empty())
+				return nullptr;
+
+			object_type *matched = nullptr;
+			for (auto child : children_){
+				if ((matched = dynamic_cast<object_type *>(child)) != nullptr){
+					if (index == 0u)
+						break;
+
+					matched = nullptr;
+					--index;
+				}
+			}
+
+			return matched;
+		}
 
 		virtual object *get_child_at_(std::size_t index) const;
 

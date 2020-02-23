@@ -25,7 +25,13 @@ void cwin::audio::pcm_source::create_(){
 	for (auto &c : path_)//Convert to narrow
 		path.push_back(static_cast<char>(c));
 
-	file_.open(path);
+	try{
+		file_.open(path);
+	}
+	catch (const std::ios_base::failure &){
+		throw ui::exception::action_failed();
+	}
+	
 	if (!file_.is_open())
 		throw ui::exception::action_failed();
 

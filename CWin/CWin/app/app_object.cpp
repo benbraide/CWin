@@ -56,7 +56,9 @@ ATOM cwin::app::object::class_id_ = 0u;
 
 std::atomic_bool cwin::app::object::auto_init_ = false;
 
-thread_local cwin::app::object::auto_initializer cwin::app::object::auto_initializer_;
+cwin::app::object::global_initializer cwin::app::object::global_initializer_;
+
+thread_local cwin::app::object::thread_initializer cwin::app::object::thread_initializer_;
 
 thread_local std::shared_ptr<cwin::thread::object> cwin::app::object::thread_;
 
@@ -64,11 +66,20 @@ std::unordered_map<DWORD, cwin::thread::object *> cwin::app::object::threads_;
 
 std::mutex cwin::app::object::lock_;
 
-cwin::app::object::auto_initializer::auto_initializer(){
+cwin::app::object::global_initializer::global_initializer()
+	: rich_edit_dll_(LoadLibraryW(L"Msftedit.dll")){}
+
+cwin::app::object::global_initializer::~global_initializer(){
+	if (rich_edit_dll_ != nullptr)
+		FreeLibrary(rich_edit_dll_);
+	rich_edit_dll_ = nullptr;
+}
+
+cwin::app::object::thread_initializer::thread_initializer(){
 	if (auto_init_)
 		init();
 }
 
-cwin::app::object::auto_initializer::~auto_initializer(){
+cwin::app::object::thread_initializer::~thread_initializer(){
 	uninit();
 }

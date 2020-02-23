@@ -19,6 +19,18 @@ cwin::menu::library_popup::~library_popup(){
 	force_destroy_();
 }
 
+cwin::menu::library_item *cwin::menu::library_popup::find(UINT id) const{
+	return execute_task([&]{
+		return find_(id);
+	});
+}
+
+void cwin::menu::library_popup::find(UINT id, const std::function<void(library_item *)> &callback) const{
+	post_or_execute_task([=]{
+		callback(find_(id));
+	});
+}
+
 void cwin::menu::library_popup::after_create_(){
 	popup::after_create_();
 
@@ -77,4 +89,17 @@ HMENU cwin::menu::library_popup::create_handle_() const{
 		FreeLibrary(library);
 
 	return handle;
+}
+
+cwin::menu::library_item *cwin::menu::library_popup::find_(UINT id) const{
+	library_item *found = nullptr;
+	traverse_items_<library_item>([&](library_item &offspring){
+		if (offspring.id_ != id)
+			return true;
+
+		found = &offspring;
+		return false;
+	});
+
+	return found;
 }

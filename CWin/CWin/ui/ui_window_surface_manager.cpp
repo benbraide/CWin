@@ -167,6 +167,7 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 
 		target.handle_ = nullptr;
 		target.after_destroy_();
+		target.get_events().trigger<events::after_destroy>();
 
 		break;
 	case WM_CLOSE:

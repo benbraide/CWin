@@ -152,8 +152,9 @@ void cwin::ui::object::create(){
 			throw exception::action_canceled();
 
 		create_();
-		events_.trigger<events::after_create>();
 		after_create_();
+
+		events_.trigger<events::after_create>();
 	});
 }
 
@@ -166,10 +167,10 @@ void cwin::ui::object::destroy(){
 			throw exception::action_canceled();
 
 		destroy_();
-		events_.trigger<events::after_destroy>();
-
-		if (should_call_after_destroy_())
+		if (should_call_after_destroy_()){
 			after_destroy_();
+			events_.trigger<events::after_destroy>();
+		}
 	});
 }
 

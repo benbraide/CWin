@@ -13,6 +13,7 @@
 
 #include <wingdi.h>
 #include <commctrl.h>
+#include <Richedit.h>
 
 #include <mmreg.h>
 #include <wmsdk.h>

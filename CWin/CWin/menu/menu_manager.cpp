@@ -81,12 +81,8 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 		events::menu::context e(*moused, *top_moused);
 		moused->get_events().trigger(e);
 
-		if (e.prevented_default()){//Skip
-			if (e.stopped_propagation())
-				break;
-			else
-				continue;
-		}
+		if (e.prevented_default())
+			return false;
 
 		if ((context_value = reinterpret_cast<popup *>(e.get_result())) != nullptr){
 			if (e.popup_.get() == context_value)
@@ -106,6 +102,7 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 	if (position.x == -1 && position.y == -1){//Request default position
 		auto position_value = moused->get_events().trigger_then_report_result<events::menu::get_context_position>(*top_moused);
 		position = POINT{ GET_X_LPARAM(position_value), GET_Y_LPARAM(position_value) };
+		moused->compute_relative_to_absolute(position);
 	}
 
 	auto window_moused = dynamic_cast<ui::window_surface *>(moused);

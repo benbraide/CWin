@@ -46,8 +46,6 @@ namespace cwin::events::menu{
 		friend class cwin::menu::manager;
 
 		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
-
-		virtual void do_default_() override;
 	};
 
 	class init : public object{

@@ -36,11 +36,3 @@ bool cwin::events::menu::get_context_position::handle_set_result_(const void *va
 
 	return true;
 }
-
-void cwin::events::menu::get_context_position::do_default_(){
-	if (auto visible_context = dynamic_cast<ui::visible_surface *>(&context_); visible_context != nullptr){
-		POINT absolute_position{};
-		visible_context->compute_relative_to_absolute(absolute_position);
-		result_ = MAKELONG(absolute_position.x, absolute_position.y);
-	}
-}

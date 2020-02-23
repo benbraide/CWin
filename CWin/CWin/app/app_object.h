@@ -27,18 +27,29 @@ namespace cwin::app{
 	private:
 		friend class thread::object;
 
-		class auto_initializer{
+		class global_initializer{
 		public:
-			auto_initializer();
+			global_initializer();
 
-			~auto_initializer();
+			~global_initializer();
+
+		private:
+			HMODULE rich_edit_dll_ = nullptr;
+		};
+
+		class thread_initializer{
+		public:
+			thread_initializer();
+
+			~thread_initializer();
 		};
 
 		static DWORD thread_id_;
 		static ATOM class_id_;
 		static std::atomic_bool auto_init_;
 
-		static thread_local auto_initializer auto_initializer_;
+		static global_initializer global_initializer_;
+		static thread_local thread_initializer thread_initializer_;
 		static thread_local std::shared_ptr<thread::object> thread_;
 
 		static std::unordered_map<DWORD, thread::object *> threads_;

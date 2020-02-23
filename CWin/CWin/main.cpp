@@ -38,6 +38,8 @@
 #include "control/toolbar_control.h"
 #include "control/action_toolbar_control_item.h"
 #include "control/status_bar_control.h"
+#include "control/edit_control.h"
+#include "control/label_control.h"
 
 #include "audio/pcm_audio_source.h"
 #include "audio/asf_audio_source.h"
@@ -94,9 +96,9 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	//}, L"C:\\Users\\benpl\\Documents\\enya.wav");
 	
-	window.insert_object([](cwin::audio::asf_source &src){
+	//window.insert_object([](cwin::audio::asf_source &src){
 
-	}, L"C:\\Users\\benpl\\Documents\\KDWoju.mp3");
+	//}, L"C:\\Users\\benpl\\Documents\\KDWoju.mp3");
 	
 	//window.insert_object([](cwin::audio::asf_source &src){
 
@@ -270,6 +272,62 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				ctrl.insert_object([](cwin::control::toolbar::text_action_item &item){
 					item.set_text(L"First Item");
 				});
+			});
+		});
+
+		tab.insert_object([](cwin::control::tab_item &page){
+			page.set_caption(L"Audio Player");
+			page.traverse_children([](cwin::hook::color_background &bg){
+				auto color = GetSysColor(COLOR_BTNFACE);
+				bg.set_color(D2D1::ColorF(
+					(GetRValue(color) / 255.0f),	//Red
+					(GetGValue(color) / 255.0f),	//Green
+					(GetBValue(color) / 255.0f),	//Blue
+					1.0f							//Alpha
+				));
+			});
+			
+			page.insert_object<cwin::audio::wave>(nullptr);
+			page.insert_object<cwin::audio::pcm_source>(nullptr);
+			page.insert_object([](cwin::audio::asf_source &src){
+
+			}, L"C:\\Users\\benpl\\Documents\\KDWoju.mp3");
+
+			page.insert_object([](cwin::control::label &ctrl){
+				ctrl.set_position(POINT{ 30, 10 });
+				ctrl.set_text(L"Enter Song Path: (C:\\Users\\benpl\\Documents\\KDWoju.mp3)");
+				ctrl.insert_object<cwin::hook::client_drag>(nullptr);
+			});
+
+			page.insert_object([](cwin::control::edit &ctrl){
+				ctrl.set_text(L"C:\\Users\\benpl\\Documents\\KDWoju.mp3");
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
+					cwin::hook::relative_placement::sibling_type::previous,				//Source
+					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
+					cwin::hook::relative_placement::alignment_type::bottom_left,		//Source Alignment
+					POINT{ 0, 2 }
+				);
+			});
+
+			page.insert_object([&](cwin::control::push_button &ctrl){
+				ctrl.set_text(L"Load");
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
+					cwin::hook::relative_placement::sibling_type::previous,				//Source
+					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
+					cwin::hook::relative_placement::alignment_type::top_right,			//Source Alignment
+					POINT{ 4, 0 }
+				);
+
+				ctrl.get_events().bind([&](cwin::events::io::click &){
+					page.find_first_of<cwin::control::label>()->set_text(L"Enter Song Path: (" + page.find_first_of<cwin::control::edit>()->get_text() + L")");
+					page.traverse_children([&](cwin::control::label &label){
+
+					});
+
+					page.get_events().trigger<cwin::events::audio::stop>();
+				}, 0u);
 			});
 		});
 

@@ -16,7 +16,7 @@ bool cwin::events::audio::get_source::handle_set_result_(const void *value, cons
 cwin::events::audio::get_format::~get_format() = default;
 
 bool cwin::events::audio::get_format::handle_set_result_(const void *value, const std::type_info & type){
-	if (type == typeid(WAVEFORMATEX *))
+	if (type == typeid(WAVEFORMATEX *) || type == typeid(const WAVEFORMATEX *))
 		result_ = reinterpret_cast<LRESULT>(*static_cast<WAVEFORMATEX *const *>(value));
 	else
 		throw exception::bad_value();
