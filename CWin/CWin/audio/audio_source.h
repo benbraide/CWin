@@ -19,6 +19,10 @@ namespace cwin::audio{
 
 		virtual void set_path(const std::wstring &value);
 
+		virtual const std::wstring &get_path() const;
+
+		virtual void get_path(const std::function<void(const std::wstring &)> &callback) const;
+
 		virtual void seek(const std::chrono::nanoseconds &offset);
 
 		virtual void seek(float offset);

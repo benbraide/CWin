@@ -10,6 +10,10 @@ namespace cwin::ui{
 	class window_surface_manager;
 }
 
+namespace cwin::menu{
+	class manager;
+}
+
 namespace cwin::hook{
 	class io : public object{
 	public:
@@ -21,12 +25,17 @@ namespace cwin::hook{
 
 		static mouse_button_type get_mouse_button(UINT msg);
 
-		static mouse_button_type get_mouse_button(events::interrupt::mouse_button::button_type btn);
-
-		static events::interrupt::mouse_button::button_type get_mouse_button(mouse_button_type btn);
-
 	protected:
-		virtual void mouse_cursor_(UINT hit_target, events::interrupt::mouse_cursor &e);
+		friend class ui::window_surface_manager;
+		friend class menu::manager;
+
+		virtual bool changing_parent_(ui::tree *value) override;
+
+		virtual void changed_parent_(ui::tree *old_value) override;
+
+		virtual ui::visible_surface *get_top_moused_() const;
+
+		virtual bool mouse_cursor_(UINT hit_target);
 
 		virtual void mouse_leave_();
 
@@ -34,7 +43,7 @@ namespace cwin::hook{
 
 		virtual void mouse_move_();
 
-		virtual void mouse_drag_begin_(events::interrupt::mouse_drag_begin &e);
+		virtual bool mouse_drag_begin_();
 
 		virtual void mouse_drag_(const SIZE &delta);
 

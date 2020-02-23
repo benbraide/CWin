@@ -2,10 +2,10 @@
 
 #include "../menu/popup_menu.h"
 
-#include "control_with_text.h"
+#include "button_control.h"
 
 namespace cwin::control{
-	class split_button : public with_text{
+	class split_button : public button{
 	public:
 		explicit split_button(tree &parent);
 

@@ -3,14 +3,6 @@
 
 #include "asf_audio_source.h"
 
-cwin::audio::asf_source::asf_source() = default;
-
-cwin::audio::asf_source::asf_source(ui::tree &parent)
-	: asf_source(parent, L""){}
-
-cwin::audio::asf_source::asf_source(ui::tree &parent, const std::wstring &path)
-	: source(parent, path){}
-
 cwin::audio::asf_source::~asf_source(){
 	force_destroy_();
 }
@@ -22,8 +14,10 @@ void cwin::audio::asf_source::create_(){
 	if (!SUCCEEDED(::WMCreateSyncReader(nullptr, ::WMT_RIGHTS::WMT_RIGHT_PLAYBACK, &reader_)) || reader_ == nullptr)
 		throw ui::exception::action_failed();
 
-	if (!SUCCEEDED(reader_->Open(path_.c_str())))
+	if (!SUCCEEDED(reader_->Open(path_.c_str()))){
+		destroy_();
 		throw ui::exception::action_failed();
+	}
 
 	Microsoft::WRL::ComPtr<IWMProfile> profile;
 	if (!SUCCEEDED(reader_->QueryInterface(profile.GetAddressOf()))){
@@ -222,13 +216,19 @@ std::shared_ptr<cwin::audio::buffer> cwin::audio::asf_source::get_reverse_buffer
 }
 
 const WAVEFORMATEX &cwin::audio::asf_source::get_format_() const{
+	if (!is_created_())
+		throw ui::exception::not_supported();
 	return format_;
 }
 
 std::chrono::nanoseconds cwin::audio::asf_source::compute_duration_() const{
+	if (!is_created_())
+		throw ui::exception::not_supported();
 	return duration_;
 }
 
 std::chrono::nanoseconds cwin::audio::asf_source::compute_progress_() const{
+	if (!is_created_())
+		throw ui::exception::not_supported();
 	return std::chrono::nanoseconds((last_sample_time_ + last_sample_duration_) * 100u);
 }

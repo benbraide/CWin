@@ -6,7 +6,7 @@
 
 #include "../subhook/subhook.h"
 
-#include "../events/interrupt_events.h"
+#include "../events/io_events.h"
 
 namespace cwin::thread{
 	class object;
@@ -18,7 +18,7 @@ namespace cwin::ui{
 
 	class window_surface_manager{
 	public:
-		using mouse_button_type = events::interrupt::mouse_button::button_type;
+		using mouse_button_type = events::io::mouse_button::button_type;
 
 		struct cache_info{
 			HWND key;

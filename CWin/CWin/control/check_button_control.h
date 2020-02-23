@@ -2,10 +2,10 @@
 
 #include "../events/control_events.h"
 
-#include "control_with_text.h"
+#include "button_control.h"
 
 namespace cwin::control{
-	class check_button : public with_text{
+	class check_button : public button{
 	public:
 		explicit check_button(tree &parent);
 
@@ -32,8 +32,6 @@ namespace cwin::control{
 
 		virtual DWORD get_persistent_styles_() const override;
 
-		virtual const wchar_t *get_theme_name_() const override;
-
 		virtual int get_theme_part_id_() const override;
 
 		virtual int get_theme_state_id_() const override;
@@ -49,7 +47,7 @@ namespace cwin::control{
 		bool is_checked_ = false;
 	};
 
-	class three_state_check_button : public with_text{
+	class three_state_check_button : public button{
 	public:
 		using state_type = events::control::changed_check_state::state_type;
 
@@ -73,8 +71,6 @@ namespace cwin::control{
 		virtual void after_create_() override;
 
 		virtual DWORD get_persistent_styles_() const override;
-
-		virtual const wchar_t *get_theme_name_() const override;
 
 		virtual int get_theme_part_id_() const override;
 

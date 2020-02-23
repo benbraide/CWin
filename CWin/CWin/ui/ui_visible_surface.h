@@ -4,7 +4,10 @@
 
 namespace cwin::hook{
 	class io;
-	class background;
+}
+
+namespace cwin::menu{
+	class manager;
 }
 
 namespace cwin::ui{
@@ -36,6 +39,8 @@ namespace cwin::ui{
 
 	protected:
 		friend class window_surface_manager;
+		friend class menu::manager;
+		friend class hook::io;
 
 		virtual void redraw_(HRGN region);
 
@@ -53,6 +58,9 @@ namespace cwin::ui{
 
 		virtual bool is_occluded_() const;
 
+		virtual bool prevent_mouse_click_translation_() const;
+
 		bool visible_ = true;
+		hook::io *io_hook_ = nullptr;
 	};
 }

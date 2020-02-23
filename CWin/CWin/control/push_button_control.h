@@ -1,9 +1,9 @@
 #pragma once
 
-#include "control_with_text.h"
+#include "button_control.h"
 
 namespace cwin::control{
-	class push_button : public with_text{
+	class push_button : public button{
 	public:
 		explicit push_button(tree &parent);
 
@@ -13,8 +13,6 @@ namespace cwin::control{
 
 	protected:
 		virtual DWORD get_persistent_styles_() const override;
-
-		virtual const wchar_t *get_theme_name_() const override;
 
 		virtual int get_theme_part_id_() const override;
 

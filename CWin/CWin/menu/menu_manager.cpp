@@ -1,8 +1,8 @@
 #include "../app/app_object.h"
 #include "../events/menu_events.h"
-#include "../events/interrupt_events.h"
 
 #include "../ui/ui_window_surface.h"
+#include "../hook/io_hook.h"
 
 #include "menu_separator.h"
 #include "system_popup_menu.h"
@@ -66,9 +66,8 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 		return false;
 
 	ui::visible_surface *top_moused = nullptr;
-	if (position.x != -1 || position.y != -1){
-		top_moused = reinterpret_cast<ui::visible_surface *>(target.get_events().trigger_then_report_result<events::interrupt::top_moused_request>());
-		if (top_moused == nullptr)//Use target
+	if ((position.x != -1 || position.y != -1) && target.io_hook_ != nullptr){
+		if ((top_moused = target.io_hook_->get_top_moused_()) == nullptr)//Use target
 			top_moused = &target;
 	}
 	else//Keyboard shortcut

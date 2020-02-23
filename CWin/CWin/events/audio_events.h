@@ -8,14 +8,13 @@
 #include "event_object.h"
 
 namespace cwin::events::audio{
-	class get_source : public object{
+	class get_device_id : public object{
 	public:
-		using object::object;
+		explicit get_device_id(events::target &target);
 
-		virtual ~get_source();
+		get_device_id(events::target &context, events::target &target);
 
-	protected:
-		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
+		virtual ~get_device_id();
 	};
 
 	class get_format : public object{
@@ -56,13 +55,6 @@ namespace cwin::events::audio{
 		std::shared_ptr<cwin::audio::buffer> value_;
 	};
 
-	class compute_progress : public object{
-	public:
-		using object::object;
-
-		virtual ~compute_progress() = default;
-	};
-
 	class start : public object{
 	public:
 		using object::object;
@@ -91,95 +83,6 @@ namespace cwin::events::audio{
 		virtual ~resume() = default;
 	};
 
-	class toggle_pause : public object{
-	public:
-		using object::object;
-
-		virtual ~toggle_pause() = default;
-	};
-
-	class enable_reverse : public object{
-	public:
-		using object::object;
-
-		virtual ~enable_reverse() = default;
-	};
-
-	class disable_reverse : public object{
-	public:
-		using object::object;
-
-		virtual ~disable_reverse() = default;
-	};
-
-	class seek : public object{
-	public:
-		using variant_type = std::variant<std::chrono::nanoseconds, float>;
-
-		seek(events::target &target, const std::chrono::nanoseconds &offset);
-
-		seek(events::target &context, events::target &target, const std::chrono::nanoseconds &offset);
-
-		seek(events::target &target, float offset);
-
-		seek(events::target &context, events::target &target, float offset);
-
-		virtual ~seek();
-
-		virtual const variant_type &get_offset() const;
-
-	protected:
-		variant_type offset_;
-	};
-
-	class set_volume : public object{
-	public:
-		set_volume(events::target &target, WORD value);
-
-		set_volume(events::target &context, events::target &target, WORD value);
-
-		set_volume(events::target &target, WORD left, WORD right);
-
-		set_volume(events::target &context, events::target &target, WORD left, WORD right);
-
-		virtual ~set_volume();
-
-		virtual WORD get_left() const;
-
-		virtual WORD get_right() const;
-	};
-
-	class set_speed : public object{
-	public:
-		set_speed(events::target &target, float value);
-
-		set_speed(events::target &context, events::target &target, float value);
-
-		virtual ~set_speed();
-
-		virtual float get_value() const;
-	};
-
-	class set_pitch : public object{
-	public:
-		set_pitch(events::target &target, float value);
-
-		set_pitch(events::target &context, events::target &target, float value);
-
-		virtual ~set_pitch();
-
-		virtual float get_value() const;
-	};
-
-	class get_device_id : public object{
-	public:
-		explicit get_device_id(events::target &target);
-
-		get_device_id(events::target &context, events::target &target);
-
-		virtual ~get_device_id();
-	};
-
 	class after_buffer_done : public object{
 	public:
 		using object::object;
@@ -192,33 +95,5 @@ namespace cwin::events::audio{
 		using object::object;
 
 		virtual ~eof() = default;
-	};
-
-	class started : public object{
-	public:
-		using object::object;
-
-		virtual ~started() = default;
-	};
-
-	class stopped : public object{
-	public:
-		using object::object;
-
-		virtual ~stopped() = default;
-	};
-
-	class paused : public object{
-	public:
-		using object::object;
-
-		virtual ~paused() = default;
-	};
-
-	class resumed : public object{
-	public:
-		using object::object;
-
-		virtual ~resumed() = default;
 	};
 }

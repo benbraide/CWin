@@ -5,9 +5,8 @@
 cwin::control::check_button::check_button(tree &parent)
 	: check_button(parent, static_cast<std::size_t>(-1)){}
 
-cwin::control::check_button::check_button(tree &parent, std::size_t index)
-	: with_text(WC_BUTTONW, ICC_STANDARD_CLASSES){
-	index_ = index;
+cwin::control::check_button::check_button(tree &parent, std::size_t index){
+	index_ = parent.resolve_child_index<check_button>(index);
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error
@@ -63,16 +62,12 @@ void cwin::control::check_button::is_radio(const std::function<void(bool)> &call
 }
 
 void cwin::control::check_button::after_create_(){
-	with_text::after_create_();
+	button::after_create_();
 	SendMessageW(handle_, BM_SETCHECK, (is_checked_ ? BST_CHECKED : BST_UNCHECKED), 0);
 }
 
 DWORD cwin::control::check_button::get_persistent_styles_() const{
-	return (with_text::get_persistent_styles_() | (is_radio_() ? BS_RADIOBUTTON : BS_CHECKBOX));
-}
-
-const wchar_t *cwin::control::check_button::get_theme_name_() const{
-	return L"BUTTON";
+	return (button::get_persistent_styles_() | (is_radio_() ? BS_RADIOBUTTON : BS_CHECKBOX));
 }
 
 int cwin::control::check_button::get_theme_part_id_() const{
@@ -128,8 +123,7 @@ bool cwin::control::check_button::is_radio_() const{
 cwin::control::three_state_check_button::three_state_check_button(tree &parent)
 	: three_state_check_button(parent, static_cast<std::size_t>(-1)){}
 
-cwin::control::three_state_check_button::three_state_check_button(tree &parent, std::size_t index)
-	: with_text(WC_BUTTONW, ICC_STANDARD_CLASSES){
+cwin::control::three_state_check_button::three_state_check_button(tree &parent, std::size_t index){
 	index_ = index;
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
@@ -170,18 +164,18 @@ void cwin::control::three_state_check_button::get_state(const std::function<void
 cwin::control::three_state_check_button::state_type cwin::control::three_state_check_button::get_next_state(state_type value){
 	switch (value){
 	case state_type::indeterminate:
-		return state_type::checked;
-	case state_type::checked:
 		return state_type::unchecked;
+	case state_type::checked:
+		return state_type::indeterminate;
 	default:
 		break;
 	}
 
-	return state_type::indeterminate;
+	return state_type::checked;
 }
 
 void cwin::control::three_state_check_button::after_create_(){
-	with_text::after_create_();
+	button::after_create_();
 	switch (state_){
 	case state_type::indeterminate:
 		SendMessageW(handle_, BM_SETCHECK, BST_INDETERMINATE, 0);
@@ -196,11 +190,7 @@ void cwin::control::three_state_check_button::after_create_(){
 }
 
 DWORD cwin::control::three_state_check_button::get_persistent_styles_() const{
-	return (with_text::get_persistent_styles_() | BS_3STATE);
-}
-
-const wchar_t *cwin::control::three_state_check_button::get_theme_name_() const{
-	return L"BUTTON";
+	return (button::get_persistent_styles_() | BS_3STATE);
 }
 
 int cwin::control::three_state_check_button::get_theme_part_id_() const{

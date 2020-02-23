@@ -9,15 +9,7 @@ namespace cwin::audio{
 
 	class wave_helper{
 	public:
-		static UINT get_device_id(const wave &target);
-
-		static const WAVEFORMATEX &get_format(const wave &target, audio::source *source);
-
-		static std::shared_ptr<buffer> get_buffer(wave &target, audio::source *source, bool is_reversed);
-
-		static void seek(wave &target, audio::source *source, const events::audio::seek::variant_type &offset);
-
-		static std::chrono::nanoseconds compute_progress(const wave &target, audio::source *source);
+		static std::shared_ptr<buffer> get_buffer(wave &target, bool is_reversed);
 
 		static DWORD pack_float(float value);
 
@@ -42,13 +34,7 @@ namespace cwin::audio{
 			eof,
 		};
 
-		wave();
-
-		explicit wave(audio::source &source);
-
-		explicit wave(ui::tree &parent);
-
-		wave(ui::tree &parent, audio::source &source);
+		using ui::object::object;
 
 		virtual ~wave();
 
@@ -59,6 +45,8 @@ namespace cwin::audio{
 		virtual bool is_stopped() const;
 
 		virtual void is_stopped(const std::function<void(bool)> &callback) const;
+
+		virtual void flush();
 
 		virtual void pause();
 
@@ -71,8 +59,6 @@ namespace cwin::audio{
 		virtual void is_paused(const std::function<void(bool)> &callback) const;
 
 		virtual void seek(const std::chrono::nanoseconds &offset);
-
-		virtual void seek(float offset);
 
 		virtual void set_volume(WORD value);
 
@@ -139,7 +125,7 @@ namespace cwin::audio{
 
 		virtual void toggle_pause_();
 
-		virtual void seek_(const events::audio::seek::variant_type &offset);
+		virtual void seek_(const std::chrono::nanoseconds &offset);
 
 		virtual void set_volume_(WORD left, WORD right);
 
@@ -168,11 +154,9 @@ namespace cwin::audio{
 		static void CALLBACK callback_(HWAVEOUT handle, UINT code, DWORD_PTR user_data, DWORD_PTR param1, DWORD_PTR param2);
 
 		HWAVEOUT handle_ = nullptr;
-		audio::source *source_ = nullptr;
-
 		std::vector<header_info> pool_;
-		std::size_t write_count_ = 0u;
 
+		std::size_t write_count_ = 0u;
 		std::size_t skip_index_ = static_cast<std::size_t>(-1);
 		std::size_t skip_count_ = 0u;
 

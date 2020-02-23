@@ -8,11 +8,7 @@
 namespace cwin::audio{
 	class asf_source : public source{
 	public:
-		asf_source();
-
-		explicit asf_source(ui::tree &parent);
-
-		asf_source(ui::tree &parent, const std::wstring &path);
+		using source::source;
 
 		virtual ~asf_source();
 

@@ -223,7 +223,7 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 		if (reinterpret_cast<HWND>(wparam) != target.handle_)
 			return FALSE;
 
-		if (target.get_events().trigger_then_report_prevented_default<events::interrupt::mouse_cursor>(static_cast<UINT>(LOWORD(lparam))))
+		if (target.io_hook_ != nullptr && target.io_hook_->mouse_cursor_(static_cast<UINT>(LOWORD(lparam))))
 			return 0;
 
 		break;
@@ -519,7 +519,8 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 	}
 	else{//Outside window
 		track_info_.dwFlags = 0u;
-		target.get_events().trigger<events::interrupt::mouse_leave>();
+		if (target.io_hook_ != nullptr)
+			target.io_hook_->mouse_leave_();
 
 		if (mouse_info_.target == &target)
 			mouse_info_.target = nullptr;
@@ -527,16 +528,16 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 		for (auto window_ancestor = target.get_matching_ancestor<window_surface>(); window_ancestor != nullptr; window_ancestor = window_ancestor->get_matching_ancestor<window_surface>()){
 			if (window_ancestor->hit_test_(position) != HTNOWHERE)
 				break;
-			else//Outside ancestor
-				window_ancestor->get_events().trigger<events::interrupt::mouse_leave>();
+			else if (window_ancestor->io_hook_ != nullptr)//Outside ancestor
+				window_ancestor->io_hook_->mouse_leave_();
 		}
 	}
 }
 
 void cwin::ui::window_surface_manager::mouse_move_(window_surface &target, UINT message){
 	if (mouse_info_.target != &target){//Mouse entry
-		if (mouse_info_.target == nullptr || !mouse_info_.target->is_ancestor_(target))
-			target.get_events().trigger<events::interrupt::mouse_enter>();
+		if ((mouse_info_.target == nullptr || !mouse_info_.target->is_ancestor_(target)) && target.io_hook_ != nullptr)
+			target.io_hook_->mouse_enter_();
 
 		mouse_info_.target = &target;
 		if (track_info_.dwFlags == 0u){
@@ -546,8 +547,8 @@ void cwin::ui::window_surface_manager::mouse_move_(window_surface &target, UINT 
 		}
 	}
 
-	if (message == WM_MOUSEMOVE)
-		target.get_events().trigger<events::interrupt::mouse_move>();
+	if (message == WM_MOUSEMOVE && target.io_hook_ != nullptr)
+		target.io_hook_->mouse_move_();
 
 	auto pos = GetMessagePos();
 	mouse_info_.last_position.x = GET_X_LPARAM(pos);
@@ -560,19 +561,23 @@ void cwin::ui::window_surface_manager::mouse_down_(window_surface &target, mouse
 	mouse_info_.pressed_position.y = GET_Y_LPARAM(pos);
 
 	mouse_info_.focused = &target;
-	target.get_events().trigger<events::interrupt::mouse_down>(button);
+	if (target.io_hook_ != nullptr)
+		target.io_hook_->mouse_down_(button);
 }
 
 void cwin::ui::window_surface_manager::mouse_up_(window_surface &target, mouse_button_type button){
-	target.get_events().trigger<events::interrupt::mouse_up>(button);
+	if (target.io_hook_ != nullptr)
+		target.io_hook_->mouse_up_(button);
 }
 
 void cwin::ui::window_surface_manager::mouse_dbl_click_(window_surface &target, mouse_button_type button){
-	target.get_events().trigger<events::interrupt::mouse_dbl_click>(button);
+	if (target.io_hook_ != nullptr)
+		target.io_hook_->mouse_dbl_click_(button);
 }
 
 void cwin::ui::window_surface_manager::mouse_wheel_(window_surface &target, const SIZE &delta){
-	target.get_events().trigger<events::interrupt::mouse_wheel>(delta);
+	if (target.io_hook_ != nullptr)
+		target.io_hook_->mouse_wheel_(delta);
 }
 
 LRESULT CALLBACK cwin::ui::window_surface_manager::entry_(HWND handle, UINT message, WPARAM wparam, LPARAM lparam){

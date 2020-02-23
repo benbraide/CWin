@@ -45,8 +45,32 @@
 #include "audio/asf_audio_source.h"
 #include "audio/wave_audio.h"
 
+struct audio_player_info{
+	cwin::control::tab_item *page;
+	cwin::audio::wave *output;
+
+	cwin::audio::pcm_source *pcm_source;
+	cwin::audio::asf_source *asf_source;
+	cwin::audio::source *active_source;
+
+	cwin::control::label *label;
+	cwin::control::edit *input;
+	
+	cwin::control::push_button *load_btn;
+	cwin::control::push_button *play_stop_btn;
+	cwin::control::push_button *pause_resume_btn;
+
+	cwin::control::push_button *rewind_btn;
+	cwin::control::push_button *fst_fwd_btn;
+
+	bool is_input_dirty;
+	bool is_file_loaded;
+};
+
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
+	audio_player_info player_info{};
+
 	cwin::control::tool_tip tool_tip;
 	cwin::window::top_level window;
 
@@ -275,7 +299,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			});
 		});
 
-		tab.insert_object([](cwin::control::tab_item &page){
+		tab.insert_object([&](cwin::control::tab_item &page){
+			player_info.page = &page;
+			player_info.is_input_dirty = true;
+
 			page.set_caption(L"Audio Player");
 			page.traverse_children([](cwin::hook::color_background &bg){
 				auto color = GetSysColor(COLOR_BTNFACE);
@@ -287,19 +314,71 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				));
 			});
 			
-			page.insert_object<cwin::audio::wave>(nullptr);
-			page.insert_object<cwin::audio::pcm_source>(nullptr);
-			page.insert_object([](cwin::audio::asf_source &src){
+			page.insert_object([&](cwin::audio::wave &output){
+				player_info.output = &output;
+				output.get_events().bind([&](cwin::events::audio::get_format &){
+					return ((player_info.active_source == nullptr) ? nullptr : &player_info.active_source->get_format());
+				}, 0u);
 
-			}, L"C:\\Users\\benpl\\Documents\\KDWoju.mp3");
+				output.get_events().bind([&](cwin::events::audio::get_buffer &e){
+					if (player_info.active_source == nullptr)
+						return;
 
-			page.insert_object([](cwin::control::label &ctrl){
-				ctrl.set_position(POINT{ 30, 10 });
-				ctrl.set_text(L"Enter Song Path: (C:\\Users\\benpl\\Documents\\KDWoju.mp3)");
-				ctrl.insert_object<cwin::hook::client_drag>(nullptr);
+					if (auto buffer = player_info.active_source->get_buffer(); buffer == nullptr)
+						e.prevent_default();
+					else//Valid buffer
+						e.set_value(buffer);
+				}, 0u);
+
+				output.get_events().bind([&](cwin::events::audio::get_reverse_buffer &e){
+					if (player_info.active_source == nullptr)
+						return;
+
+					if (auto buffer = player_info.active_source->get_reverse_buffer(); buffer == nullptr)
+						e.prevent_default();
+					else//Valid buffer
+						e.set_value(buffer);
+				}, 0u);
+
+				output.get_events().bind([&](cwin::events::audio::start &){
+					player_info.play_stop_btn->set_text(L"Stop");
+				}, 0u);
+
+				output.get_events().bind([&](cwin::events::audio::stop &){
+					player_info.play_stop_btn->set_text(L"Play");
+					player_info.pause_resume_btn->set_text(L"Pause");
+
+					if (player_info.active_source != nullptr)
+						player_info.active_source->seek(0.0f);
+				}, 0u);
+
+				output.get_events().bind([&](cwin::events::audio::pause &){
+					player_info.pause_resume_btn->set_text(L"Resume");
+				}, 0u);
+
+				output.get_events().bind([&](cwin::events::audio::resume &){
+					player_info.pause_resume_btn->set_text(L"Pause");
+				}, 0u);
 			});
 
-			page.insert_object([](cwin::control::edit &ctrl){
+			page.insert_object([&](cwin::audio::pcm_source &src){
+				player_info.pcm_source = &src;
+			});
+
+			page.insert_object([&](cwin::audio::asf_source &src){
+				player_info.asf_source = &src;
+			});
+
+			page.insert_object([&](cwin::control::label &ctrl){
+				player_info.label = &ctrl;
+				ctrl.insert_object<cwin::hook::client_drag>(nullptr);
+
+				ctrl.set_position(POINT{ 30, 10 });
+				ctrl.set_text(L"Enter Song Path:");
+			});
+
+			page.insert_object([&](cwin::control::edit &ctrl){
+				player_info.input = &ctrl;
 				ctrl.set_text(L"C:\\Users\\benpl\\Documents\\KDWoju.mp3");
 				ctrl.insert_object<cwin::hook::relative_placement>(
 					nullptr,
@@ -311,6 +390,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			});
 
 			page.insert_object([&](cwin::control::push_button &ctrl){
+				player_info.load_btn = &ctrl;
 				ctrl.set_text(L"Load");
 				ctrl.insert_object<cwin::hook::relative_placement>(
 					nullptr,
@@ -321,12 +401,88 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				);
 
 				ctrl.get_events().bind([&](cwin::events::io::click &){
-					page.find_first_of<cwin::control::label>()->set_text(L"Enter Song Path: (" + page.find_first_of<cwin::control::edit>()->get_text() + L")");
-					page.traverse_children([&](cwin::control::label &label){
+					if (!player_info.is_input_dirty)
+						return;
 
-					});
+					player_info.output->destroy();
+					if (player_info.active_source != nullptr){
+						player_info.active_source->destroy();
+						player_info.active_source = nullptr;
+					}
 
-					page.get_events().trigger<cwin::events::audio::stop>();
+					try{
+						player_info.pcm_source->set_path(player_info.input->get_text());
+						player_info.pcm_source->create();
+						player_info.active_source = player_info.pcm_source;
+					}
+					catch (...){}
+
+					try{
+						player_info.asf_source->set_path(player_info.input->get_text());
+						player_info.asf_source->create();
+						player_info.active_source = player_info.asf_source;
+					}
+					catch (...){}
+
+					if (player_info.active_source == nullptr){
+						player_info.label->set_text(L"Enter Song Path: [Failed to load]");
+						return;
+					}
+
+					try{
+						player_info.output->create();
+					}
+					catch (...){
+						player_info.label->set_text(L"Enter Song Path: [Failed to load]");
+						return;
+					}
+					//player_info.load_btn->disable();
+
+					player_info.is_input_dirty = false;
+					player_info.is_file_loaded = true;
+
+					if (player_info.active_source == player_info.pcm_source)
+						player_info.label->set_text(L"Enter Song Path: [PCM] " + player_info.input->get_text());
+					else//ASF
+						player_info.label->set_text(L"Enter Song Path: [ASF] " + player_info.input->get_text());
+				}, 0u);
+			});
+
+			page.insert_object([&](cwin::control::push_button &ctrl){
+				player_info.play_stop_btn = &ctrl;
+				ctrl.set_text(L"Play");
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
+					*player_info.input,													//Source
+					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
+					cwin::hook::relative_placement::alignment_type::bottom_left,		//Source Alignment
+					POINT{ 0, 5 }
+				);
+
+				ctrl.get_events().bind([&](cwin::events::io::click &){
+					if (player_info.is_file_loaded){
+						if (player_info.output->is_stopped())
+							player_info.output->start();
+						else
+							player_info.output->stop();
+					}
+				}, 0u);
+			});
+
+			page.insert_object([&](cwin::control::push_button &ctrl){
+				player_info.pause_resume_btn = &ctrl;
+				ctrl.set_text(L"Pause");
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
+					cwin::hook::relative_placement::sibling_type::previous,				//Source
+					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
+					cwin::hook::relative_placement::alignment_type::top_right,			//Source Alignment
+					POINT{ 4, 0 }
+				);
+
+				ctrl.get_events().bind([&](cwin::events::io::click &){
+					if (player_info.is_file_loaded && !player_info.output->is_stopped())
+						player_info.output->toggle_pause();
 				}, 0u);
 			});
 		});

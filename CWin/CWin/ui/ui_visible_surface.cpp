@@ -141,3 +141,7 @@ bool cwin::ui::visible_surface::is_occluded_() const{
 
 	return false;
 }
+
+bool cwin::ui::visible_surface::prevent_mouse_click_translation_() const{
+	return false;
+}

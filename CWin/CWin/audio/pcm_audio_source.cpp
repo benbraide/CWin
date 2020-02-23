@@ -3,14 +3,6 @@
 
 #include "pcm_audio_source.h"
 
-cwin::audio::pcm_source::pcm_source() = default;
-
-cwin::audio::pcm_source::pcm_source(ui::tree &parent)
-	: pcm_source(parent, L""){}
-
-cwin::audio::pcm_source::pcm_source(ui::tree &parent, const std::wstring &path)
-	: source(parent, path){}
-
 cwin::audio::pcm_source::~pcm_source(){
 	force_destroy_();
 }
@@ -134,7 +126,7 @@ std::shared_ptr<cwin::audio::buffer> cwin::audio::pcm_source::get_buffer_(){
 
 std::shared_ptr<cwin::audio::buffer> cwin::audio::pcm_source::get_reverse_buffer_(){
 	if (!is_created_())
-		return nullptr;
+		throw ui::exception::not_supported();
 
 	auto remaining_size = offset_;
 	if (remaining_size < format_.nBlockAlign)
@@ -151,12 +143,14 @@ std::shared_ptr<cwin::audio::buffer> cwin::audio::pcm_source::get_reverse_buffer
 }
 
 const WAVEFORMATEX &cwin::audio::pcm_source::get_format_() const{
+	if (!is_created_())
+		throw ui::exception::not_supported();
 	return format_;
 }
 
 std::chrono::nanoseconds cwin::audio::pcm_source::compute_duration_() const{
 	if (!is_created_())
-		return std::chrono::nanoseconds(0);
+		throw ui::exception::not_supported();
 
 	auto duration_in_seconds = ((data_size_ * 8.0) / ((format_.nSamplesPerSec * format_.nChannels) * format_.wBitsPerSample));
 	return std::chrono::nanoseconds(static_cast<unsigned __int64>(duration_in_seconds * 1000000000));
@@ -164,7 +158,7 @@ std::chrono::nanoseconds cwin::audio::pcm_source::compute_duration_() const{
 
 std::chrono::nanoseconds cwin::audio::pcm_source::compute_progress_() const{
 	if (!is_created_())
-		return std::chrono::nanoseconds(0);
+		throw ui::exception::not_supported();
 
 	auto duration_in_seconds = ((offset_ * 8.0) / ((format_.nSamplesPerSec * format_.nChannels) * format_.wBitsPerSample));
 	return std::chrono::nanoseconds(static_cast<unsigned __int64>(duration_in_seconds * 1000000000));

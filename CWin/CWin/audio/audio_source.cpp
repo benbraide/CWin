@@ -14,48 +14,6 @@ cwin::audio::source::source(ui::tree &parent, const std::wstring &path)
 		set_parent_(parent);
 	else//Error
 		throw thread::exception::context_mismatch();
-	
-	parent.get_events().bind([=](events::audio::get_source &e){
-		return this;
-	}, get_talk_id());
-	
-	parent.get_events().bind([=](events::audio::get_format &e){
-		return &get_format_();
-	}, get_talk_id());
-
-	parent.get_events().bind([=](events::audio::get_buffer &e){
-		if (auto value = get_buffer_(); value == nullptr)
-			e.prevent_default();
-		else
-			e.set_value(value);
-	}, get_talk_id());
-	
-	parent.get_events().bind([=](events::audio::get_reverse_buffer &e){
-		if (auto value = get_reverse_buffer_(); value == nullptr)
-			e.prevent_default();
-		else
-			e.set_value(value);
-	}, get_talk_id());
-
-	parent.get_events().bind([=](events::audio::seek &e){
-		if (!is_created_()){
-			e.prevent_default();
-			return;
-		}
-
-		auto &offset = e.get_offset();
-		if (std::holds_alternative<std::chrono::nanoseconds>(offset))
-			seek_(std::get<std::chrono::nanoseconds>(offset));
-		else if (std::holds_alternative<float>(offset))
-			seek_(std::get<float>(offset));
-		else
-			e.prevent_default();
-	}, get_talk_id());
-
-	parent.get_events().bind([=](events::audio::compute_progress &e){
-		if (e.get_result() == 0)
-			e.set_result(compute_progress_().count());
-	}, get_talk_id());
 }
 
 cwin::audio::source::~source() = default;
@@ -64,7 +22,18 @@ void cwin::audio::source::set_path(const std::wstring &value){
 	post_or_execute_task([=]{
 		if (!is_created_())
 			path_ = value;
-		throw ui::exception::not_supported();
+	});
+}
+
+const std::wstring &cwin::audio::source::get_path() const{
+	return *execute_task([&]{
+		return &path_;
+	});
+}
+
+void cwin::audio::source::get_path(const std::function<void(const std::wstring &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(path_);
 	});
 }
 

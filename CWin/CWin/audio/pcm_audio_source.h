@@ -19,11 +19,7 @@ namespace cwin::audio{
 			char wave[4];
 		};
 
-		pcm_source();
-
-		explicit pcm_source(ui::tree &parent);
-
-		pcm_source(ui::tree &parent, const std::wstring &path);
+		using source::source;
 
 		virtual ~pcm_source();
 

@@ -7,7 +7,7 @@ cwin::control::split_button::split_button(tree &parent)
 	: split_button(parent, static_cast<std::size_t>(-1)){}
 
 cwin::control::split_button::split_button(tree &parent, std::size_t index)
-	: with_text(parent, index, WC_BUTTONW, ICC_STANDARD_CLASSES){
+	: button(parent, index){
 	bind_default_([=](events::interrupt::notify &e){
 		e.do_default();
 		if (e.get_info().code == BCN_DROPDOWN)
@@ -46,7 +46,7 @@ void cwin::control::split_button::get_popup(const std::function<void(menu::popup
 }
 
 void cwin::control::split_button::after_create_(){
-	with_text::after_create_();
+	button::after_create_();
 	if (popup_ == nullptr)
 		return;
 
@@ -59,7 +59,7 @@ void cwin::control::split_button::after_create_(){
 }
 
 DWORD cwin::control::split_button::get_persistent_styles_() const{
-	return (with_text::get_persistent_styles_() | BS_SPLITBUTTON);
+	return (button::get_persistent_styles_() | BS_SPLITBUTTON);
 }
 
 const wchar_t *cwin::control::split_button::get_theme_name_() const{
@@ -85,7 +85,7 @@ std::shared_ptr<cwin::menu::popup> cwin::control::split_button::create_popup_(){
 cwin::control::default_split_button::~default_split_button() = default;
 
 DWORD cwin::control::default_split_button::get_persistent_styles_() const{
-	return (with_text::get_persistent_styles_() | BS_DEFSPLITBUTTON);
+	return (button::get_persistent_styles_() | BS_DEFSPLITBUTTON);
 }
 
 int cwin::control::default_split_button::get_theme_state_id_() const{
