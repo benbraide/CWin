@@ -171,6 +171,13 @@ bool cwin::menu::item::is_created_() const{
 	return (active_index_ != static_cast<UINT>(-1));
 }
 
+void cwin::menu::item::after_set_enable_state_(){
+	if (is_enabled_)
+		set_states_(states_ & ~MFS_DISABLED);
+	else//Disabled
+		set_states_(states_ | MFS_DISABLED);
+}
+
 void cwin::menu::item::update_active_index_(UINT index, bool increment){
 	if (active_index_ != static_cast<UINT>(-1) && index != static_cast<UINT>(-1) && index <= active_index_){
 		if (increment)

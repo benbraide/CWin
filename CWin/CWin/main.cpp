@@ -11,6 +11,7 @@
 
 #include "grid/grid_object.h"
 #include "events/drawing_events.h"
+#include "events/general_events.h"
 
 #include "menu/popup_menu.h"
 #include "menu/action_menu_item.h"
@@ -53,15 +54,17 @@ struct audio_player_info{
 	cwin::audio::asf_source *asf_source;
 	cwin::audio::source *active_source;
 
-	cwin::control::label *label;
+	cwin::control::label *path_label;
+	cwin::control::label *stage_label;
 	cwin::control::edit *input;
 	
-	cwin::control::push_button *load_btn;
+	cwin::control::push_button *load_unload_btn;
+
 	cwin::control::push_button *play_stop_btn;
 	cwin::control::push_button *pause_resume_btn;
 
 	cwin::control::push_button *rewind_btn;
-	cwin::control::push_button *fst_fwd_btn;
+	cwin::control::push_button *fast_fwd_btn;
 
 	bool is_input_dirty;
 	bool is_file_loaded;
@@ -305,13 +308,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 			page.set_caption(L"Audio Player");
 			page.traverse_children([](cwin::hook::color_background &bg){
-				auto color = GetSysColor(COLOR_BTNFACE);
-				bg.set_color(D2D1::ColorF(
-					(GetRValue(color) / 255.0f),	//Red
-					(GetGValue(color) / 255.0f),	//Green
-					(GetBValue(color) / 255.0f),	//Blue
-					1.0f							//Alpha
-				));
+				bg.set_color(GetSysColor(COLOR_BTNFACE));
 			});
 			
 			page.insert_object([&](cwin::audio::wave &output){
@@ -339,14 +336,50 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 					else//Valid buffer
 						e.set_value(buffer);
 				}, 0u);
+				
+				output.get_events().bind([&](cwin::events::after_create &){
+					player_info.load_unload_btn->set_text(L"Unload");
+
+					player_info.play_stop_btn->enable();
+					player_info.pause_resume_btn->enable();
+
+					//player_info.rewind_btn->enable();
+					//player_info.fast_fwd_btn->enable();
+
+					player_info.is_input_dirty = false;
+					player_info.is_file_loaded = true;
+
+					player_info.stage_label->set_text(L"Stage: Loaded");
+					if (player_info.active_source == player_info.pcm_source)
+						player_info.path_label->set_text(L"Selected File: [PCM] " + player_info.input->get_text());
+					else//ASF
+						player_info.path_label->set_text(L"Selected File: [ASF] " + player_info.input->get_text());
+				}, 0u);
+				
+				output.get_events().bind([&](cwin::events::after_destroy &){
+					player_info.load_unload_btn->set_text(L"Load");
+					player_info.path_label->set_text(L"Selected File: [None]");
+					player_info.stage_label->set_text(L"Stage: Unloaded");
+
+					player_info.play_stop_btn->disable();
+					player_info.pause_resume_btn->disable();
+
+					//player_info.rewind_btn->disable();
+					//player_info.fast_fwd_btn->disable();
+
+					player_info.is_input_dirty = true;
+					player_info.is_file_loaded = false;
+				}, 0u);
 
 				output.get_events().bind([&](cwin::events::audio::start &){
 					player_info.play_stop_btn->set_text(L"Stop");
+					player_info.stage_label->set_text(L"Stage: Playing");
 				}, 0u);
 
 				output.get_events().bind([&](cwin::events::audio::stop &){
 					player_info.play_stop_btn->set_text(L"Play");
 					player_info.pause_resume_btn->set_text(L"Pause");
+					player_info.stage_label->set_text(L"Stage: Loaded");
 
 					if (player_info.active_source != nullptr)
 						player_info.active_source->seek(0.0f);
@@ -354,10 +387,12 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 				output.get_events().bind([&](cwin::events::audio::pause &){
 					player_info.pause_resume_btn->set_text(L"Resume");
+					player_info.stage_label->set_text(L"Stage: Paused");
 				}, 0u);
 
 				output.get_events().bind([&](cwin::events::audio::resume &){
 					player_info.pause_resume_btn->set_text(L"Pause");
+					player_info.stage_label->set_text(L"Stage: Playing");
 				}, 0u);
 			});
 
@@ -370,27 +405,44 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 			});
 
 			page.insert_object([&](cwin::control::label &ctrl){
-				player_info.label = &ctrl;
+				player_info.path_label = &ctrl;
 				ctrl.insert_object<cwin::hook::client_drag>(nullptr);
 
 				ctrl.set_position(POINT{ 30, 10 });
-				ctrl.set_text(L"Enter Song Path:");
+				ctrl.set_text(L"Selected File: [None]");
+			});
+			
+			page.insert_object([&](cwin::control::label &ctrl){
+				player_info.stage_label = &ctrl;
+				ctrl.set_text(L"Stage: Unloaded");
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
+					cwin::hook::relative_placement::sibling_type::previous,				//Source
+					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
+					cwin::hook::relative_placement::alignment_type::bottom_left,		//Source Alignment
+					POINT{ 0, 5 }
+				);
 			});
 
 			page.insert_object([&](cwin::control::edit &ctrl){
 				player_info.input = &ctrl;
+
+				ctrl.set_min_width(250);
+				ctrl.set_max_width(250);
+
 				ctrl.set_text(L"C:\\Users\\benpl\\Documents\\KDWoju.mp3");
 				ctrl.insert_object<cwin::hook::relative_placement>(
 					nullptr,
 					cwin::hook::relative_placement::sibling_type::previous,				//Source
 					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
 					cwin::hook::relative_placement::alignment_type::bottom_left,		//Source Alignment
-					POINT{ 0, 2 }
+					POINT{ 0, 5 }
 				);
 			});
 
 			page.insert_object([&](cwin::control::push_button &ctrl){
-				player_info.load_btn = &ctrl;
+				player_info.load_unload_btn = &ctrl;
+
 				ctrl.set_text(L"Load");
 				ctrl.insert_object<cwin::hook::relative_placement>(
 					nullptr,
@@ -401,55 +453,49 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				);
 
 				ctrl.get_events().bind([&](cwin::events::io::click &){
-					if (!player_info.is_input_dirty)
-						return;
+					if (!player_info.is_file_loaded){
+						try{
+							player_info.pcm_source->set_path(player_info.input->get_text());
+							player_info.pcm_source->create();
+							player_info.active_source = player_info.pcm_source;
+						}
+						catch (...){}
 
-					player_info.output->destroy();
-					if (player_info.active_source != nullptr){
-						player_info.active_source->destroy();
-						player_info.active_source = nullptr;
+						try{
+							player_info.asf_source->set_path(player_info.input->get_text());
+							player_info.asf_source->create();
+							player_info.active_source = player_info.asf_source;
+						}
+						catch (...){}
+
+						if (player_info.active_source == nullptr){
+							player_info.path_label->set_text(L"Selected File: [Failed to load]");
+							return;
+						}
+
+						try{
+							player_info.output->create();
+						}
+						catch (...){
+							player_info.path_label->set_text(L"Selected File: [Failed to load]");
+							return;
+						}
 					}
+					else{//Unload
+						if (player_info.active_source != nullptr){
+							player_info.active_source->destroy();
+							player_info.active_source = nullptr;
+						}
 
-					try{
-						player_info.pcm_source->set_path(player_info.input->get_text());
-						player_info.pcm_source->create();
-						player_info.active_source = player_info.pcm_source;
+						player_info.output->destroy();
 					}
-					catch (...){}
-
-					try{
-						player_info.asf_source->set_path(player_info.input->get_text());
-						player_info.asf_source->create();
-						player_info.active_source = player_info.asf_source;
-					}
-					catch (...){}
-
-					if (player_info.active_source == nullptr){
-						player_info.label->set_text(L"Enter Song Path: [Failed to load]");
-						return;
-					}
-
-					try{
-						player_info.output->create();
-					}
-					catch (...){
-						player_info.label->set_text(L"Enter Song Path: [Failed to load]");
-						return;
-					}
-					//player_info.load_btn->disable();
-
-					player_info.is_input_dirty = false;
-					player_info.is_file_loaded = true;
-
-					if (player_info.active_source == player_info.pcm_source)
-						player_info.label->set_text(L"Enter Song Path: [PCM] " + player_info.input->get_text());
-					else//ASF
-						player_info.label->set_text(L"Enter Song Path: [ASF] " + player_info.input->get_text());
 				}, 0u);
 			});
 
 			page.insert_object([&](cwin::control::push_button &ctrl){
 				player_info.play_stop_btn = &ctrl;
+
+				ctrl.disable();
 				ctrl.set_text(L"Play");
 				ctrl.insert_object<cwin::hook::relative_placement>(
 					nullptr,
@@ -471,6 +517,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 			page.insert_object([&](cwin::control::push_button &ctrl){
 				player_info.pause_resume_btn = &ctrl;
+
+				ctrl.disable();
 				ctrl.set_text(L"Pause");
 				ctrl.insert_object<cwin::hook::relative_placement>(
 					nullptr,

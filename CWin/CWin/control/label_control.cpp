@@ -1,3 +1,5 @@
+#include "../events/io_events.h"
+
 #include "label_control.h"
 
 cwin::control::label::label(tree &parent)
@@ -5,8 +7,13 @@ cwin::control::label::label(tree &parent)
 
 cwin::control::label::label(tree &parent, std::size_t index)
 	: with_text(parent, index, WC_STATIC, ICC_STANDARD_CLASSES){
-	padding_ = SIZE{};
+	padding_ = SIZE{ -2, -2 };
 	update_size_();
+
+	bind_default_([=](events::io::hit_test &e){
+		e.prevent_default();
+		return hit_test_(e.get_position());
+	});
 }
 
 cwin::control::label::~label() = default;

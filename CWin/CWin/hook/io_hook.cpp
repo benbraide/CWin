@@ -318,7 +318,7 @@ void cwin::hook::io::mouse_down_(mouse_button_type button){
 }
 
 void cwin::hook::io::mouse_up_(mouse_button_type button){
-	if (pressed_button_ == mouse_button_type::nil || button != pressed_button_)
+	if (pressed_button_ == mouse_button_type::nil || (button != pressed_button_ && button != mouse_button_type::any))
 		return;
 
 	auto pos = GetMessagePos();

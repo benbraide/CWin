@@ -4,6 +4,8 @@
 
 #include "../events/menu_events.h"
 #include "../events/general_events.h"
+#include "../events/control_events.h"
+#include "../events/interrupt_events.h"
 
 #include "edit_control.h"
 
@@ -51,11 +53,95 @@ cwin::control::edit::edit(tree &parent, std::size_t index)
 
 		return POINT{ static_cast<int>(cursor_position.x), static_cast<int>(cursor_position.y) };
 	});
+	
+	bind_default_([=](events::interrupt::notify &e){
+		switch (e.get_info().code){
+		case EN_REQUESTRESIZE:
+			request_resize_(e.get_info_as<REQRESIZE>());
+			break;
+		default:
+			break;
+		}
+	});
 
 	update_size_();
 }
 
-cwin::control::edit::~edit() = default;
+cwin::control::edit::~edit(){
+	force_destroy_();
+}
+
+void cwin::control::edit::set_min_width(int value){
+	post_or_execute_task([=]{
+		min_width_ = value;
+		update_size_();
+	});
+}
+
+int cwin::control::edit::get_min_width() const{
+	return execute_task([&]{
+		return min_width_;
+	});
+}
+
+void cwin::control::edit::get_min_width(const std::function<void(int)> &callback) const{
+	post_or_execute_task([=]{
+		callback(min_width_);
+	});
+}
+
+void cwin::control::edit::set_max_width(int value){
+	post_or_execute_task([=]{
+		max_width_ = value;
+		update_size_();
+	});
+}
+
+int cwin::control::edit::get_max_width() const{
+	return execute_task([&]{
+		return max_width_;
+	});
+}
+
+void cwin::control::edit::get_max_width(const std::function<void(int)> &callback) const{
+	post_or_execute_task([=]{
+		callback(max_width_);
+	});
+}
+
+void cwin::control::edit::after_create_(){
+	with_text::after_create_();
+	SendMessageW(handle_, EM_SETEVENTMASK, 0, (ENM_UPDATE | ENM_CHANGE | ENM_REQUESTRESIZE));
+
+	CHARFORMATW format{ sizeof(CHARFORMATW) };
+	SendMessageW(handle_, EM_GETCHARFORMAT, SCF_DEFAULT, reinterpret_cast<LPARAM>(&format));
+
+	auto device = GetDC(handle_);
+	LOGFONTW font_info{};
+	std::memcpy(font_info.lfFaceName, format.szFaceName, LF_FACESIZE);
+
+	font_info.lfHeight = -MulDiv(format.yHeight, GetDeviceCaps(device, LOGPIXELSY), 1440);
+	font_info.lfCharSet = format.bCharSet;
+	font_info.lfPitchAndFamily = format.bPitchAndFamily;
+
+	font_info.lfWeight = (((format.dwEffects & CFE_BOLD) == 0u) ? FW_NORMAL : FW_BOLD);
+	font_info.lfItalic = (((format.dwEffects & CFE_ITALIC) == 0u) ? FALSE : TRUE);
+	font_info.lfUnderline = (((format.dwEffects & CFE_UNDERLINE) == 0u) ? FALSE : TRUE);
+	font_info.lfStrikeOut = (((format.dwEffects & CFE_STRIKEOUT) == 0u) ? FALSE : TRUE);
+
+	font_ = CreateFontIndirectW(&font_info);
+	ReleaseDC(handle_, device);
+	update_size_(false);
+}
+
+void cwin::control::edit::after_destroy_(){
+	if (font_ != nullptr){
+		DeleteObject(font_);
+		font_ = nullptr;
+	}
+
+	with_text::after_destroy_();
+}
 
 DWORD cwin::control::edit::get_persistent_styles_() const{
 	return (with_text::get_persistent_styles_() | WS_BORDER | ES_AUTOHSCROLL | ES_NOHIDESEL);
@@ -81,4 +167,25 @@ SIZE cwin::control::edit::compute_additional_size_(const SIZE &computed_size) co
 		return SIZE{ (min_width_ - computed_size.cx), 0 };
 
 	return SIZE{};
+}
+
+SIZE cwin::control::edit::compute_size_() const{
+	auto value = with_text::compute_size_();
+	return SIZE{ (value.cx + 7), value.cy };
+}
+
+void cwin::control::edit::request_resize_(REQRESIZE &info){
+	auto &size = get_size_();
+	SIZE new_size{ ((info.rc.right - info.rc.left) + padding_.cx + 7), ((info.rc.bottom - info.rc.top) + padding_.cy) };
+
+	if (0 < max_width_ && max_width_ < new_size.cx)
+		new_size.cx = max_width_;
+	else if (new_size.cx < min_width_)
+		new_size.cx = min_width_;
+
+	if (new_size.cy < size.cy)
+		new_size.cy = size.cy;
+
+	if (new_size.cx != size.cx || new_size.cy != size.cy)
+		set_size_(new_size);
 }

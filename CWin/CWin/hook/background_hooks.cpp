@@ -16,8 +16,8 @@ cwin::hook::background::background(ui::visible_surface &parent)
 
 cwin::hook::background::~background() = default;
 
-cwin::hook::color_background::color_background(ui::visible_surface &target)
-	: color_background(target, D2D1::ColorF(D2D1::ColorF::White)){}
+cwin::hook::color_background::color_background(ui::visible_surface &parent)
+	: color_background(parent, D2D1::ColorF(D2D1::ColorF::White)){}
 
 cwin::hook::color_background::color_background(ui::visible_surface &parent, const D2D1_COLOR_F &value)
 	: background(parent), color_(value){
@@ -40,12 +40,24 @@ cwin::hook::color_background::color_background(ui::visible_surface &parent, cons
 	}, get_talk_id());
 }
 
+cwin::hook::color_background::color_background(ui::visible_surface &parent, COLORREF value, float alpha)
+	: color_background(parent, D2D1::ColorF((GetRValue(value) / 255.0f), (GetGValue(value) / 255.0f), (GetBValue(value) / 255.0f), alpha)){}
+
 cwin::hook::color_background::~color_background() = default;
 
 void cwin::hook::color_background::set_color(const D2D1_COLOR_F &value){
 	post_or_execute_task([=]{
 		set_color_(value);
 	});
+}
+
+void cwin::hook::color_background::set_color(COLORREF value, float alpha){
+	set_color(D2D1::ColorF(
+		(GetRValue(value) / 255.0f),	//Red
+		(GetGValue(value) / 255.0f),	//Green
+		(GetBValue(value) / 255.0f),	//Blue
+		1.0f							//Alpha
+	));
 }
 
 const D2D1_COLOR_F &cwin::hook::color_background::get_color() const{

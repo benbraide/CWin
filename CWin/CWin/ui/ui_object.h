@@ -115,6 +115,14 @@ namespace cwin::ui{
 
 		virtual void is_created(const std::function<void(bool)> &callback) const;
 
+		virtual void enable();
+
+		virtual void disable();
+
+		virtual bool is_disabled() const;
+
+		virtual void is_disabled(const std::function<void(bool)> &callback) const;
+
 	protected:
 		friend class tree;
 
@@ -328,8 +336,13 @@ namespace cwin::ui{
 
 		virtual bool is_created_() const;
 
+		virtual void set_enable_state_(bool is_enabled);
+
+		virtual void after_set_enable_state_();
+
 		tree *parent_ = nullptr;
 		std::size_t index_ = static_cast<std::size_t>(-1);
+		bool is_enabled_ = true;
 	};
 
 	struct undefined_parent_type;

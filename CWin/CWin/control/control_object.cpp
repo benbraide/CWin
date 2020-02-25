@@ -55,19 +55,20 @@ SIZE cwin::control::object::measure_themed_text_(const std::wstring &value, HFON
 	SaveDC(device);
 	SelectObject(device, font);
 
-	RECT region{};
-	GetThemeTextExtent(theme, device, get_theme_part_id_(), get_theme_state_id_(), value.data(), static_cast<int>(value.size()), format_flags, nullptr, &region);
+	RECT region{}, symbols_region{};
+	GetThemeTextExtent(theme, device, get_theme_part_id_(), get_theme_state_id_(), symbol_list_, -1, format_flags, nullptr, &symbols_region);
+
+	if (!value.empty())
+		GetThemeTextExtent(theme, device, get_theme_part_id_(), get_theme_state_id_(), value.data(), -1, format_flags, nullptr, &region);
 
 	RestoreDC(device, -1);
 	ReleaseDC(HWND_DESKTOP, device);
 	CloseThemeData(theme);
 
-	return SIZE{ (region.right - region.left), (region.bottom - region.top) };
+	return SIZE{ (region.right - region.left), (symbols_region.bottom - symbols_region.top) };
 }
 
 SIZE cwin::control::object::measure_text_(const std::wstring &value, HFONT font, DWORD format_flags) const{
-	static const auto symbol_list = L"AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";
-
 	auto device = GetDC(HWND_DESKTOP);
 	if (device == nullptr)
 		return SIZE{};
@@ -75,16 +76,16 @@ SIZE cwin::control::object::measure_text_(const std::wstring &value, HFONT font,
 	SaveDC(device);
 	SelectObject(device, font);
 
-	SIZE size{}, symbols_size{};
-	GetTextExtentPoint32W(device, symbol_list, static_cast<int>(std::wcslen(symbol_list)), &symbols_size);
+	RECT region{}, symbols_region{};
+	DrawTextW(device, symbol_list_, -1, &symbols_region, (format_flags | DT_CALCRECT));
 
 	if (!value.empty())
-		GetTextExtentPoint32W(device, value.data(), static_cast<int>(value.size()), &size);
+		DrawTextW(device, value.data(), -1, &region, (format_flags | DT_CALCRECT));
 
 	RestoreDC(device, -1);
 	ReleaseDC(HWND_DESKTOP, device);
 
-	return SIZE{ size.cx, symbols_size.cy };
+	return SIZE{ (region.right - region.left), (symbols_region.bottom - symbols_region.top) };
 }
 
 const wchar_t *cwin::control::object::get_theme_name_() const{
@@ -98,3 +99,5 @@ int cwin::control::object::get_theme_part_id_() const{
 int cwin::control::object::get_theme_state_id_() const{
 	return 0;
 }
+
+const wchar_t *cwin::control::object::symbol_list_ = L"AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";

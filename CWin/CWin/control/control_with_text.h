@@ -34,6 +34,8 @@ namespace cwin::control{
 		virtual void get_padding(const std::function<void(const SIZE &)> &callback) const;
 
 	protected:
+		virtual void after_create_() override;
+
 		virtual const wchar_t *get_caption_() const override;
 
 		virtual void set_text_(const std::wstring &value);

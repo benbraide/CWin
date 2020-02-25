@@ -201,10 +201,14 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 	case WM_NOTIFY:
 		return notify_(target, wparam, lparam);
 	case WM_ENABLE:
-		if (wparam == FALSE)
+		if (wparam == FALSE){
+			target.is_enabled_ = false;
 			target.get_events().trigger<events::disable>();
-		else//Enabled
+		}
+		else{//Enabled
+			target.is_enabled_ = true;
 			target.get_events().trigger<events::enable>();
+		}
 		break;
 	case WM_SETFOCUS:
 		mouse_info_.focused = &target;
@@ -219,6 +223,8 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 			return 0;
 
 		break;
+	case WM_NCHITTEST:
+		return target.get_events().trigger_then_report_result<events::io::hit_test>(MSG{ target.handle_, WM_NCHITTEST, wparam, lparam }, get_class_entry(target));
 	case WM_SETCURSOR:
 		if (reinterpret_cast<HWND>(wparam) != target.handle_)
 			return FALSE;
@@ -560,12 +566,23 @@ void cwin::ui::window_surface_manager::mouse_down_(window_surface &target, mouse
 	mouse_info_.pressed_position.x = GET_X_LPARAM(pos);
 	mouse_info_.pressed_position.y = GET_Y_LPARAM(pos);
 
+	if (mouse_info_.pressed != nullptr && mouse_info_.pressed->io_hook_ != nullptr)
+		mouse_info_.pressed->io_hook_->mouse_up_(mouse_button_type::any);
+
 	mouse_info_.focused = &target;
+	mouse_info_.pressed = &target;
+
 	if (target.io_hook_ != nullptr)
 		target.io_hook_->mouse_down_(button);
 }
 
 void cwin::ui::window_surface_manager::mouse_up_(window_surface &target, mouse_button_type button){
+	if (mouse_info_.pressed != nullptr && mouse_info_.pressed->io_hook_ != nullptr){
+		if (mouse_info_.pressed != &target && mouse_info_.pressed->io_hook_ != nullptr)
+			mouse_info_.pressed->io_hook_->mouse_up_(mouse_button_type::any);
+		mouse_info_.pressed = nullptr;
+	}
+
 	if (target.io_hook_ != nullptr)
 		target.io_hook_->mouse_up_(button);
 }

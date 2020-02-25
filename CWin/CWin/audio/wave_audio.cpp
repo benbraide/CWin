@@ -272,7 +272,7 @@ void cwin::audio::wave::destroy_(){
 	if (handle_ == nullptr)
 		return;
 
-	waveOutReset(handle_);
+	stop_();
 	for (auto &header : pool_){
 		if ((header.details.dwFlags & WHDR_PREPARED) == 0u)
 			continue;

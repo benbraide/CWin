@@ -186,6 +186,30 @@ void cwin::ui::object::is_created(const std::function<void(bool)> &callback) con
 	});
 }
 
+void cwin::ui::object::enable(){
+	post_or_execute_task([=]{
+		set_enable_state_(true);
+	});
+}
+
+void cwin::ui::object::disable(){
+	post_or_execute_task([=]{
+		set_enable_state_(false);
+	});
+}
+
+bool cwin::ui::object::is_disabled() const{
+	return execute_task([&]{
+		return !is_enabled_;
+	});
+}
+
+void cwin::ui::object::is_disabled(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(!is_enabled_);
+	});
+}
+
 void cwin::ui::object::set_parent_(tree &value){
 	value.insert_child_(*this);
 }
@@ -303,4 +327,18 @@ void cwin::ui::object::after_destroy_(){}
 
 bool cwin::ui::object::is_created_() const{
 	return (parent_ != nullptr && parent_->is_created_());
+}
+
+void cwin::ui::object::set_enable_state_(bool is_enabled){
+	if (is_enabled_ != is_enabled){
+		is_enabled_ = is_enabled;
+		after_set_enable_state_();
+	}
+}
+
+void cwin::ui::object::after_set_enable_state_(){
+	if (is_enabled_)
+		events_.trigger<events::enable>();
+	else//Disabled
+		events_.trigger<events::disable>();
 }

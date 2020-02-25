@@ -28,6 +28,7 @@ namespace cwin::ui{
 		struct mouse_info{
 			window_surface *target;
 			window_surface *focused;
+			window_surface *pressed;
 			POINT last_position;
 			POINT pressed_position;
 			SIZE drag_threshold;

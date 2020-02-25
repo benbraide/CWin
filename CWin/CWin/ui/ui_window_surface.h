@@ -64,6 +64,8 @@ namespace cwin::ui{
 
 		virtual void after_destroy_() override;
 
+		virtual void after_set_enable_state_() override;
+
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) override;
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value) override;

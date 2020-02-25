@@ -3,14 +3,7 @@
 #include "non_window_object.h"
 
 cwin::non_window::object::object(){
-	auto window_color = GetSysColor(COLOR_WINDOW);
-	insert_object<hook::color_background>(
-		nullptr, D2D1::ColorF(
-		(GetRValue(window_color) / 255.0f),	//Red
-		(GetGValue(window_color) / 255.0f),	//Green
-		(GetBValue(window_color) / 255.0f),	//Blue
-		1.0f								//Alpha
-	));
+	insert_object<hook::color_background>(nullptr, GetSysColor(COLOR_WINDOW));
 }
 
 cwin::non_window::object::object(tree &parent)

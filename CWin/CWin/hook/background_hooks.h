@@ -25,9 +25,13 @@ namespace cwin::hook{
 
 		color_background(ui::visible_surface &parent, const D2D1_COLOR_F &value);
 
+		color_background(ui::visible_surface &parent, COLORREF value, float alpha = 1.0f);
+
 		virtual ~color_background();
 
 		virtual void set_color(const D2D1_COLOR_F &value);
+
+		virtual void set_color(COLORREF value, float alpha = 1.0f);
 
 		virtual const D2D1_COLOR_F &get_color() const;
 

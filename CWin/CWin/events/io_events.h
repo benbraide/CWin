@@ -1,6 +1,6 @@
 #pragma once
 
-#include "event_object.h"
+#include "event_message_object.h"
 
 namespace cwin::ui{
 	class visible_surface;
@@ -19,6 +19,15 @@ namespace cwin::events::io{
 		using object::object;
 
 		virtual ~blur() = default;
+	};
+
+	class hit_test : public message_object{
+	public:
+		using message_object::message_object;
+
+		virtual ~hit_test();
+
+		virtual POINT get_position() const;
 	};
 
 	class mouse_cursor : public object{
@@ -98,6 +107,7 @@ namespace cwin::events::io{
 			middle,
 			right,
 			x,
+			any,
 		};
 
 		mouse_button(events::target &target, const POINT &position, button_type button);

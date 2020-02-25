@@ -31,5 +31,6 @@ namespace cwin::control{
 		virtual int get_theme_state_id_() const;
 
 		std::wstring class_name_;
+		static const wchar_t *symbol_list_;
 	};
 }

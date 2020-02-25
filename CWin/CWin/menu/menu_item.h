@@ -50,6 +50,8 @@ namespace cwin::menu{
 
 		virtual bool is_created_() const override;
 
+		virtual void after_set_enable_state_() override;
+
 		virtual void update_active_index_(UINT index, bool increment);
 
 		std::size_t get_resolved_index_() const;

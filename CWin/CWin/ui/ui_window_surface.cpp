@@ -9,15 +9,7 @@
 
 cwin::ui::window_surface::window_surface(){
 	insert_object<hook::io>(nullptr);
-
-	auto window_color = GetSysColor(COLOR_WINDOW);
-	insert_object<hook::color_background>(
-		nullptr, D2D1::ColorF(
-		(GetRValue(window_color) / 255.0f),	//Red
-		(GetGValue(window_color) / 255.0f),	//Green
-		(GetBValue(window_color) / 255.0f),	//Blue
-		1.0f								//Alpha
-	));
+	insert_object<hook::color_background>(nullptr, GetSysColor(COLOR_WINDOW));
 }
 
 cwin::ui::window_surface::window_surface(tree &parent)
@@ -196,6 +188,19 @@ bool cwin::ui::window_surface::should_call_after_destroy_() const{
 void cwin::ui::window_surface::after_destroy_(){
 	visible_surface::after_destroy_();
 	events_.trigger<events::after_window_destroy>();
+}
+
+void cwin::ui::window_surface::after_set_enable_state_(){
+	if (handle_ == nullptr){
+		if (is_enabled_)
+			styles_ &= ~WS_DISABLED;
+		else//Disabled
+			styles_ |= WS_DISABLED;
+
+		visible_surface::after_set_enable_state_();
+	}
+	else
+		EnableWindow(handle_, (is_enabled_ ? TRUE : FALSE));
 }
 
 void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &current_value){

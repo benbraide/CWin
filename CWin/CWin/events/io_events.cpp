@@ -1,5 +1,13 @@
 #include "io_events.h"
 
+cwin::events::io::hit_test::~hit_test() = default;
+
+POINT cwin::events::io::hit_test::get_position() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return POINT{ GET_X_LPARAM(message_info_.lParam), GET_Y_LPARAM(message_info_.lParam) };
+}
+
 cwin::events::io::mouse_cursor::mouse_cursor(events::target &target, const POINT &position, UINT hit_target)
 	: mouse_cursor(target, target, position, hit_target){}
 

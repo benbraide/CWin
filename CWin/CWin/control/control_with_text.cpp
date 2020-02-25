@@ -76,6 +76,11 @@ void cwin::control::with_text::get_padding(const std::function<void(const SIZE &
 	});
 }
 
+void cwin::control::with_text::after_create_(){
+	object::after_create_();
+	font_ = reinterpret_cast<HFONT>(SendMessageW(handle_, WM_GETFONT, 0, 0));
+}
+
 const wchar_t *cwin::control::with_text::get_caption_() const{
 	return text_.data();
 }
@@ -122,11 +127,11 @@ void cwin::control::with_text::update_size_(bool enable_interrupt, const std::fu
 }
 
 SIZE cwin::control::with_text::compute_size_() const{
-	auto size = measure_themed_text_(text_, font_, 0u);
+	auto size = measure_themed_text_(text_, font_, DT_SINGLELINE);
 	if (size.cx == 0 && size.cy == 0)
-		size = measure_text_(text_, font_, 0u);
+		size = measure_text_(text_, font_, DT_SINGLELINE);
 
-	SIZE computed_size{ static_cast<int>(size.cx * scale_.width), static_cast<int>(size.cy * scale_.height) };
+	SIZE computed_size{ static_cast<int>((size.cx + 2) * scale_.width), static_cast<int>((size.cy + 2) * scale_.height) };
 	auto additional_size = compute_additional_size_(computed_size);
 
 	return SIZE{ (computed_size.cx + additional_size.cx + padding_.cx), (computed_size.cy + additional_size.cy + padding_.cy) };

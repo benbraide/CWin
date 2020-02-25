@@ -26,9 +26,7 @@ namespace cwin::events::interrupt{
 
 		template <typename target_type>
 		target_type &get_info_as() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return *reinterpret_cast<target_type *>(get_info());
+			return *reinterpret_cast<target_type *>(&get_info());
 		}
 	};
 
