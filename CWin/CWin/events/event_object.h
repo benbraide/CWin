@@ -108,17 +108,4 @@ namespace cwin::events{
 		utility::small_options options_;
 		unsigned __int64 handler_id_ = 0u;
 	};
-
-	template <class object_type>
-	class disable_result : public object_type{
-	public:
-		using object_type::object_type;
-
-		virtual ~disable_result() = default;
-
-	protected:
-		virtual bool handle_set_result_(const void *value, const std::type_info &type) override{
-			return !object_type::options_.is_set(object::option_type::calling_handler);
-		}
-	};
 }

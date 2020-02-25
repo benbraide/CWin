@@ -493,29 +493,6 @@ void cwin::hook::relative_placement::update_(){
 	});
 }
 
-cwin::hook::relative_placement::sibling::sibling(std::size_t index)
-	: index_(index){}
-
-cwin::ui::surface &cwin::hook::relative_placement::sibling::get(ui::surface &target) const{
-	auto index = index_;
-	ui::surface *value = nullptr;
-
-	target.traverse_siblings([&](ui::surface &sibling){
-		if (index == 0u){
-			value = &sibling;
-			return false;
-		}
-
-		--index;
-		return true;
-	});
-
-	if (value == nullptr)
-		throw ui::exception::not_supported();
-
-	return *value;
-}
-
 cwin::hook::fill::fill(ui::surface &parent)
 	: fill(parent, SIZE{}){}
 
@@ -606,6 +583,79 @@ void cwin::hook::fill::update_(){
 		(width_is_disabled ? surface_target->get_size().cx : (parent_client_size.cx - offset.cx)),
 		(height_is_disabled ? surface_target->get_size().cy : (parent_client_size.cy - offset.cy))
 	});
+}
+
+cwin::hook::mirror_size::mirror_size(ui::surface &parent, ui::surface &source, bool is_two_way)
+	: object(parent), source_(source), is_two_way_(is_two_way){
+	parent.get_events().bind([this](events::after_size_update &e){
+		update_();
+	}, get_talk_id());
+
+	source.get_events().bind([this](events::after_size_update &e){
+		update_();
+	}, get_talk_id());
+
+	update_();
+}
+
+cwin::hook::mirror_size::mirror_size(ui::surface &parent, sibling_type source, bool is_two_way)
+	: mirror_size(parent, relative_placement::get_sibling(parent, source), is_two_way){}
+
+cwin::hook::mirror_size::mirror_size(ui::surface &parent, const sibling &source, bool is_two_way)
+	: mirror_size(parent, source.get(parent), is_two_way){}
+
+cwin::hook::mirror_size::~mirror_size() = default;
+
+cwin::ui::surface &cwin::hook::mirror_size::get_source() const{
+	return *execute_task([&]{
+		return &source_;
+	});
+}
+
+void cwin::hook::mirror_size::get_source(const std::function<void(ui::surface &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(source_);
+	});
+}
+
+void cwin::hook::mirror_size::update_(){
+	if (is_updating_)
+		return;
+
+	auto surface_target = dynamic_cast<ui::surface *>(parent_);
+	if (surface_target == nullptr)
+		return;
+
+	try{
+		auto target_size = surface_target->get_true_size();
+		auto source_size = source_.get_true_size();
+
+		auto new_target_size = target_size;
+		auto new_source_size = source_size;
+
+		if (target_size.cx < source_size.cx)
+			new_target_size.cx = source_size.cx;
+		else//Update source
+			new_source_size.cx = target_size.cx;
+
+		if (target_size.cy < source_size.cy)
+			new_target_size.cy = source_size.cy;
+		else//Update source
+			new_source_size.cy = target_size.cy;
+
+		is_updating_ = true;
+		if (new_target_size.cx != target_size.cx || new_target_size.cy != target_size.cy)
+			surface_target->set_size(new_target_size);
+
+		if (is_two_way_ && (new_source_size.cx != source_size.cx || new_source_size.cy != source_size.cy))
+			source_.set_size(new_source_size);
+
+		is_updating_ = false;
+	}
+	catch (...){
+		is_updating_ = false;
+		throw;
+	}
 }
 
 cwin::hook::contain::contain(ui::surface &parent)

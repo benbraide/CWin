@@ -36,6 +36,8 @@ namespace cwin::control{
 	protected:
 		virtual void after_create_() override;
 
+		virtual SIZE get_true_size_() const override;
+
 		virtual const wchar_t *get_caption_() const override;
 
 		virtual void set_text_(const std::wstring &value);

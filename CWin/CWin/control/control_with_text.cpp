@@ -81,6 +81,12 @@ void cwin::control::with_text::after_create_(){
 	font_ = reinterpret_cast<HFONT>(SendMessageW(handle_, WM_GETFONT, 0, 0));
 }
 
+SIZE cwin::control::with_text::get_true_size_() const{
+	auto size = compute_size_();
+	auto additional_size = compute_additional_size_(size);
+	return SIZE{ (size.cx + additional_size.cx), (size.cy + additional_size.cy) };
+}
+
 const wchar_t *cwin::control::with_text::get_caption_() const{
 	return text_.data();
 }
@@ -121,9 +127,7 @@ void cwin::control::with_text::update_size_(bool enable_interrupt){
 }
 
 void cwin::control::with_text::update_size_(bool enable_interrupt, const std::function<void(const SIZE &, const SIZE &)> &callback){
-	auto size = compute_size_();
-	auto additional_size = compute_additional_size_(size);
-	set_size_(SIZE{ (size.cx + additional_size.cx), (size.cy + additional_size.cy) }, enable_interrupt, callback);
+	set_size_(get_true_size_(), enable_interrupt, callback);
 }
 
 SIZE cwin::control::with_text::compute_size_() const{

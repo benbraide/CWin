@@ -596,6 +596,7 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 	if (handle_ == nullptr || (value.dwFlags & WHDR_DONE) == 0u)
 		return;
 
+	auto buffer_length = value.dwBufferLength;
 	if ((value.dwFlags & WHDR_PREPARED) != 0u && waveOutUnprepareHeader(handle_, &value, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
 		throw ui::exception::action_failed();
 
@@ -611,9 +612,9 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 
 	events_.trigger<events::audio::after_buffer_done>();
 	if (state_.is_set(option_type::reverse))
-		progress_ -= static_cast<__int64>(value.dwBufferLength);
+		progress_ -= static_cast<__int64>(buffer_length);
 	else//Forward
-		progress_ += static_cast<__int64>(value.dwBufferLength);
+		progress_ += static_cast<__int64>(buffer_length);
 
 	write_skipped_();
 	if (0u < skip_count_ || (header->buffer = wave_helper::get_buffer(*this, state_.is_set(option_type::reverse))) == nullptr){//EOF

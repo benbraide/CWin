@@ -328,25 +328,20 @@ WNDPROC cwin::thread::object::get_message_entry(){
 }
 
 void cwin::thread::object::add_item_(item &item){
-	if (&item.get_thread() != this)
-		throw exception::context_mismatch();
 	items_[item.get_talk_id()] = (item_info{ &item });
 }
 
-void cwin::thread::object::remove_item_(item &item){
-	if (&item.get_thread() != this)
-		throw exception::context_mismatch();
-
+void cwin::thread::object::remove_item_(unsigned __int64 talk_id){
 	if (items_.empty())
 		return;
 
-	auto it = items_.find(item.get_talk_id());
+	auto it = items_.find(talk_id);
 	if (it == items_.end())//Item not found
 		return;
 
 	auto owned_timers = std::move(it->second.owned_timers);
 	for (auto timer_id : owned_timers)//Remove all timers
-		remove_timer_(timer_id, nullptr);
+		remove_timer_(timer_id, 0u);
 
 	items_.erase(it);//Remove entry
 }
@@ -384,22 +379,32 @@ void cwin::thread::object::unbound_events_(unsigned __int64 talk_id, unsigned __
 	bound_events_.erase(it);
 }
 
-void cwin::thread::object::add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner){
+void cwin::thread::object::add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, unsigned __int64 talk_id){
 	if (auto id = SetTimer(nullptr, 0, static_cast<UINT>(duration.count()), timer_entry_); id != static_cast<UINT_PTR>(0)){
-		timers_[id] = callback;
-		if (owner != nullptr){
-			auto it = items_.find(owner->get_talk_id());
-			if (it != items_.end())
-				it->second.owned_timers.push_back(id);
-		}
+		timers_[id] = timer_info{ talk_id, callback };
+		if (auto it = items_.find(talk_id); it != items_.end())
+			it->second.owned_timers.push_back(id);
 	}
 	else//Error
 		throw exception::failed_to_add_timer();
 }
 
-void cwin::thread::object::remove_timer_(unsigned __int64 id, const item *owner){
+void cwin::thread::object::remove_timer_(unsigned __int64 id, unsigned __int64 talk_id){
 	if (timers_.empty())
 		return;
+
+	if (id == 0u){//No ID
+		if (talk_id == 0u || items_.empty())
+			return;
+
+		auto it = items_.find(talk_id);
+		if (it == items_.end())//Item not found
+			return;
+
+		auto owned_timers = std::move(it->second.owned_timers);
+		for (auto timer_id : owned_timers)//Remove all timers
+			remove_timer_(timer_id, 0u);
+	}
 
 	auto timer_it = timers_.find(id);
 	if (timer_it == timers_.end())
@@ -409,10 +414,10 @@ void cwin::thread::object::remove_timer_(unsigned __int64 id, const item *owner)
 		throw exception::failed_to_remove_timer();
 
 	timers_.erase(timer_it);
-	if (owner == nullptr)
+	if (talk_id == 0u || items_.empty())
 		return;
 
-	auto it = items_.find(owner->get_talk_id());
+	auto it = items_.find(talk_id);
 	if (it == items_.end())
 		return;
 
@@ -590,6 +595,6 @@ float cwin::thread::object::convert_pixel_to_dip_y_(int value) const{
 
 void CALLBACK cwin::thread::object::timer_entry_(HWND handle, UINT message, UINT_PTR id, DWORD time){
 	auto &thread = app::object::get_thread();
-	if (auto it = thread.timers_.find(static_cast<unsigned __int64>(id)); it != thread.timers_.end())
-		it->second(static_cast<unsigned __int64>(id));//Call handler
+	if (auto it = thread.timers_.find(static_cast<unsigned __int64>(id)); it != thread.timers_.end() && !thread.queue_.is_blacklisted(it->second.talk_id))
+		it->second.callback(static_cast<unsigned __int64>(id));//Call handler
 }

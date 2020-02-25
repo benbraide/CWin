@@ -56,6 +56,9 @@ struct audio_player_info{
 
 	cwin::control::label *path_label;
 	cwin::control::label *stage_label;
+
+	cwin::control::label *progress_key;
+	cwin::control::label *progress_value;
 	cwin::control::edit *input;
 	
 	cwin::control::push_button *load_unload_btn;
@@ -68,6 +71,8 @@ struct audio_player_info{
 
 	bool is_input_dirty;
 	bool is_file_loaded;
+
+	unsigned __int64 progress;
 };
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
@@ -394,6 +399,11 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 					player_info.pause_resume_btn->set_text(L"Pause");
 					player_info.stage_label->set_text(L"Stage: Playing");
 				}, 0u);
+
+				output.get_events().bind([&](cwin::events::audio::after_buffer_done &){
+					auto progress = player_info.output->compute_progress();
+					player_info.progress = (progress.count() / 1000000000);
+				}, 0u);
 			});
 
 			page.insert_object([&](cwin::audio::pcm_source &src){
@@ -423,6 +433,45 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 					POINT{ 0, 5 }
 				);
 			});
+			
+			page.insert_object([&](cwin::control::label &ctrl){
+				player_info.progress_key = &ctrl;
+				ctrl.set_text(L"Progress:");
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
+					cwin::hook::relative_placement::sibling_type::previous,				//Source
+					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
+					cwin::hook::relative_placement::alignment_type::bottom_left,		//Source Alignment
+					POINT{ 0, 5 }
+				);
+			});
+
+			page.insert_object([&](cwin::control::label &ctrl){
+				player_info.progress_value = &ctrl;
+				ctrl.set_text(L"00:00");
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
+					cwin::hook::relative_placement::sibling_type::previous,				//Source
+					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
+					cwin::hook::relative_placement::alignment_type::top_right,			//Source Alignment
+					POINT{ 5, 0 }
+				);
+
+				ctrl.get_events().trigger<cwin::events::timer>(std::chrono::seconds(1), [&]{
+					if (!player_info.output->is_created() || player_info.output->is_stopped() || player_info.output->is_paused())
+						return;
+
+					auto min = std::to_wstring(player_info.progress / 60);
+					if (min.size() == 1u)
+						min.insert(min.begin(), L'0');
+
+					auto sec = std::to_wstring(player_info.progress % 60);
+					if (sec.size() == 1u)
+						sec.insert(sec.begin(), L'0');
+
+					player_info.progress_value->set_text(min + L":" + sec);
+				});
+			});
 
 			page.insert_object([&](cwin::control::edit &ctrl){
 				player_info.input = &ctrl;
@@ -433,7 +482,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				ctrl.set_text(L"C:\\Users\\benpl\\Documents\\KDWoju.mp3");
 				ctrl.insert_object<cwin::hook::relative_placement>(
 					nullptr,
-					cwin::hook::relative_placement::sibling_type::previous,				//Source
+					cwin::hook::relative_placement::previous_sibling(1),				//Source
 					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
 					cwin::hook::relative_placement::alignment_type::bottom_left,		//Source Alignment
 					POINT{ 0, 5 }
@@ -526,6 +575,11 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
 					cwin::hook::relative_placement::alignment_type::top_right,			//Source Alignment
 					POINT{ 4, 0 }
+				);
+
+				ctrl.insert_object<cwin::hook::mirror_size>(
+					nullptr,
+					cwin::hook::relative_placement::sibling_type::previous				//Source
 				);
 
 				ctrl.get_events().bind([&](cwin::events::io::click &){

@@ -6,5 +6,5 @@ cwin::thread::item::item()
 }
 
 cwin::thread::item::~item(){
-	thread_.remove_item_(*this);
+	thread_.remove_item_(get_talk_id());
 }

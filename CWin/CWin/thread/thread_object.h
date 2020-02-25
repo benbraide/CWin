@@ -36,6 +36,11 @@ namespace cwin::thread{
 			std::list<unsigned __int64> owned_timers;
 		};
 
+		struct timer_info{
+			unsigned __int64 talk_id;
+			std::function<void(unsigned __int64)> callback;
+		};
+
 		~object();
 
 		queue &get_queue();
@@ -146,7 +151,7 @@ namespace cwin::thread{
 
 		void add_item_(item &item);
 
-		void remove_item_(item &item);
+		void remove_item_(unsigned __int64 talk_id);
 
 		item *find_item_(unsigned __int64 talk_id) const;
 
@@ -154,9 +159,9 @@ namespace cwin::thread{
 
 		void unbound_events_(unsigned __int64 talk_id, unsigned __int64 target_talk_id);
 
-		void add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, const item *owner);
+		void add_timer_(const std::chrono::milliseconds &duration, const std::function<void(unsigned __int64)> &callback, unsigned __int64 talk_id);
 
-		void remove_timer_(unsigned __int64 id, const item *owner);
+		void remove_timer_(unsigned __int64 id, unsigned __int64 talk_id);
 
 		WNDPROC get_class_entry_(const std::wstring &class_name) const;
 
@@ -202,7 +207,7 @@ namespace cwin::thread{
 		std::atomic_bool inside_animation_loop_ = false;
 		std::list<animation_request_info> animation_callbacks_;
 
-		std::unordered_map<unsigned __int64, std::function<void(unsigned __int64)>> timers_;
+		std::unordered_map<unsigned __int64, timer_info> timers_;
 		utility::random_integral_number_generator random_generator_;
 
 		ID2D1Factory *draw_factory_ = nullptr;

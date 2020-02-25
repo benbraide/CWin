@@ -2,6 +2,8 @@
 
 #include <variant>
 
+#include "../ui/ui_sibling.h"
+
 #include "hook_object.h"
 
 namespace cwin::ui{
@@ -120,6 +122,10 @@ namespace cwin::hook{
 
 	class relative_placement : public object{
 	public:
+		using sibling = ui::sibling<ui::surface>;
+		using previous_sibling = ui::previous_sibling<ui::surface>;
+		using next_sibling = ui::next_sibling<ui::surface>;
+
 		enum class alignment_type{
 			top_left,
 			top_center,
@@ -135,16 +141,6 @@ namespace cwin::hook{
 		enum class sibling_type{
 			previous,
 			next,
-		};
-
-		class sibling{
-		public:
-			explicit sibling(std::size_t index);
-
-			ui::surface &get(ui::surface &target) const;
-
-		private:
-			std::size_t index_;
 		};
 
 		relative_placement(ui::surface &parent, ui::surface &source);
@@ -236,6 +232,33 @@ namespace cwin::hook{
 		std::variant<SIZE, D2D1_SIZE_F> offset_;
 	};
 
+	class mirror_size : public object{
+	public:
+		using sibling = ui::sibling<ui::surface>;
+		using previous_sibling = ui::previous_sibling<ui::surface>;
+		using next_sibling = ui::next_sibling<ui::surface>;
+		using sibling_type = relative_placement::sibling_type;
+
+		mirror_size(ui::surface &parent, ui::surface &source, bool is_two_way = true);
+
+		mirror_size(ui::surface &parent, sibling_type source, bool is_two_way = true);
+
+		mirror_size(ui::surface &parent, const sibling &source, bool is_two_way = true);
+
+		virtual ~mirror_size();
+
+		virtual ui::surface &get_source() const;
+
+		virtual void get_source(const std::function<void(ui::surface &)> &callback) const;
+
+	protected:
+		virtual void update_();
+
+		ui::surface &source_;
+		bool is_two_way_ = true;
+		bool is_updating_ = false;
+	};
+
 	class contain : public children_dimension{
 	public:
 		explicit contain(ui::surface &parent);
@@ -288,6 +311,11 @@ namespace cwin::ui{
 
 	template <>
 	struct parent_type<hook::fill>{
+		using value = surface;
+	};
+
+	template <>
+	struct parent_type<hook::mirror_size>{
 		using value = surface;
 	};
 
