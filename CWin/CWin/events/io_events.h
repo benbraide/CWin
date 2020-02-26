@@ -21,6 +21,15 @@ namespace cwin::events::io{
 		virtual ~blur() = default;
 	};
 
+	class get_dlg_code : public message_object{
+	public:
+		using message_object::message_object;
+
+		virtual ~get_dlg_code();
+
+		virtual DWORD get_virtual_code () const;
+	};
+
 	class hit_test : public message_object{
 	public:
 		using message_object::message_object;

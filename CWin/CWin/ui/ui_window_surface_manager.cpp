@@ -115,7 +115,7 @@ HWND cwin::ui::window_surface_manager::create(window_surface &owner, const wchar
 }
 
 LRESULT cwin::ui::window_surface_manager::call_default(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
-	return CallWindowProcW(get_class_entry(target), target.handle_, message, wparam, lparam);
+	return target.get_events().trigger_then_report_result<events::unknown>(MSG{ target.handle_, message, wparam, lparam }, get_class_entry(target));
 }
 
 WNDPROC cwin::ui::window_surface_manager::get_class_entry(ui::window_surface &target){
@@ -223,8 +223,10 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 			return 0;
 
 		break;
+	case WM_GETDLGCODE:
+		return target.get_events().trigger_then_report_result<events::io::get_dlg_code>(MSG{ target.handle_, message, wparam, lparam }, get_class_entry(target));
 	case WM_NCHITTEST:
-		return target.get_events().trigger_then_report_result<events::io::hit_test>(MSG{ target.handle_, WM_NCHITTEST, wparam, lparam }, get_class_entry(target));
+		return target.get_events().trigger_then_report_result<events::io::hit_test>(MSG{ target.handle_, message, wparam, lparam }, get_class_entry(target));
 	case WM_SETCURSOR:
 		if (reinterpret_cast<HWND>(wparam) != target.handle_)
 			return FALSE;
@@ -606,33 +608,36 @@ LRESULT CALLBACK cwin::ui::window_surface_manager::entry_(HWND handle, UINT mess
 }
 
 LRESULT CALLBACK cwin::ui::window_surface_manager::hook_entry_(int code, WPARAM wparam, LPARAM lparam){
-	auto &manager = app::object::get_thread().get_window_manager();
-	switch (code){
-	case HCBT_DESTROYWND:
-		if (manager.find_(reinterpret_cast<HWND>(wparam), true) != nullptr)
-			SetMenu(reinterpret_cast<HWND>(wparam), nullptr);
-		return CallNextHookEx(nullptr, code, wparam, lparam);
-	case HCBT_CREATEWND:
-		break;
-	default:
-		return CallNextHookEx(nullptr, code, wparam, lparam);
+	try{
+		auto &manager = app::object::get_thread().get_window_manager();
+		switch (code){
+		case HCBT_DESTROYWND:
+			if (manager.find_(reinterpret_cast<HWND>(wparam), true) != nullptr)
+				SetMenu(reinterpret_cast<HWND>(wparam), nullptr);
+			return CallNextHookEx(nullptr, code, wparam, lparam);
+		case HCBT_CREATEWND:
+			break;
+		default:
+			return CallNextHookEx(nullptr, code, wparam, lparam);
+		}
+
+		auto info = reinterpret_cast<CBT_CREATEWNDW *>(lparam)->lpcs;
+		auto owner = static_cast<window_surface *>(info->lpCreateParams);
+
+		if (manager.cache_.key != nullptr || manager.cache_.target == nullptr || manager.cache_.target != owner)
+			return CallNextHookEx(nullptr, code, wparam, lparam);//Does not match object creating window
+
+		manager.cache_.key = reinterpret_cast<HWND>(wparam);
+		manager.cache_.target->handle_ = manager.cache_.key;
+
+		manager.windows_[manager.cache_.key] = manager.cache_.target;
+		if (manager.cache_.target->is_top_level_())
+			manager.top_level_windows_[manager.cache_.key] = manager.cache_.target;
+
+		if (auto class_entry = manager.thread_.get_class_entry(info->lpszClass); class_entry != nullptr && class_entry != DefWindowProcW)
+			SetWindowLongPtrW(manager.cache_.key, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(entry_));//Subclass window
 	}
-
-	auto info = reinterpret_cast<CBT_CREATEWNDW *>(lparam)->lpcs;
-	auto owner = static_cast<window_surface *>(info->lpCreateParams);
-
-	if (manager.cache_.key != nullptr || manager.cache_.target == nullptr || manager.cache_.target != owner)
-		return CallNextHookEx(nullptr, code, wparam, lparam);//Does not match object creating window
-
-	manager.cache_.key = reinterpret_cast<HWND>(wparam);
-	manager.cache_.target->handle_ = manager.cache_.key;
-
-	manager.windows_[manager.cache_.key] = manager.cache_.target;
-	if (manager.cache_.target->is_top_level_())
-		manager.top_level_windows_[manager.cache_.key] = manager.cache_.target;
-
-	if (auto class_entry = manager.thread_.get_class_entry(info->lpszClass); class_entry != nullptr && class_entry != DefWindowProcW)
-		SetWindowLongPtrW(manager.cache_.key, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(entry_));//Subclass window
+	catch (const app::exception::unitialized &){}
 
 	return CallNextHookEx(nullptr, code, wparam, lparam);
 }

@@ -3,6 +3,8 @@
 
 cwin::thread::object::object()
 	: queue_(*this), window_manager_(*this), menu_manager_(*this), id_(GetCurrentThreadId()){
+	CoInitializeEx(nullptr, COINIT::COINIT_APARTMENTTHREADED);
+
 	handle_bound_.handle = CreateRectRgn(0, 0, 0, 0);
 	handle_bound_.rect_handle = handle_bound_.handle;
 
@@ -99,7 +101,9 @@ cwin::thread::object::~object(){
 
 	std::lock_guard<std::mutex> guard(app::object::lock_);
 	app::object::threads_.erase(GetCurrentThreadId());
+
 	stop(-1);
+	CoUninitialize();
 }
 
 cwin::thread::queue &cwin::thread::object::get_queue(){

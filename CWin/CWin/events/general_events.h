@@ -225,7 +225,7 @@ namespace cwin::events{
 	class timer : public object{
 	public:
 		template <typename callback_type>
-		timer(events::target &target, const std::chrono::milliseconds &duration, const callback_type &callback)
+		timer(events::target &target, const std::chrono::milliseconds &duration, const callback_type &callback, unsigned __int64 talk_id)
 			: object(target), duration_(duration){
 			using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
 			set_callback<return_type>::template set(*this, utility::object_to_function_traits::get(callback));
@@ -235,7 +235,9 @@ namespace cwin::events{
 
 		virtual const std::chrono::milliseconds &get_duration() const;
 
-		virtual const std::function<bool()> &get_callback() const;
+		virtual const std::function<bool(unsigned __int64)> &get_callback() const;
+
+		virtual unsigned __int64 get_talk_id() const;
 
 	protected:
 		template <class return_type>
@@ -243,15 +245,28 @@ namespace cwin::events{
 
 		template <>
 		struct set_callback<bool>{
-			static void set(timer &target, const std::function<bool()> &callback){
+			static void set(timer &target, const std::function<bool(unsigned __int64)> &callback){
 				target.callback_ = callback;
+			}
+
+			static void set(timer &target, const std::function<bool()> &callback){
+				set(target, [=](unsigned __int64){
+					return callback();
+				});
 			}
 		};
 
 		template <>
 		struct set_callback<void>{
+			static void set(timer &target, const std::function<void(unsigned __int64)> &callback){
+				set_callback<bool>::set(target, [=](unsigned __int64 id){
+					callback(id);
+					return true;
+				});
+			}
+
 			static void set(timer &target, const std::function<void()> &callback){
-				set_callback<bool>::set(target, [=]{
+				set_callback<bool>::set(target, [=](unsigned __int64){
 					callback();
 					return true;
 				});
@@ -259,6 +274,7 @@ namespace cwin::events{
 		};
 
 		std::chrono::milliseconds duration_;
-		std::function<bool()> callback_;
+		std::function<bool(unsigned __int64)> callback_;
+		unsigned __int64 talk_id_;
 	};
 }

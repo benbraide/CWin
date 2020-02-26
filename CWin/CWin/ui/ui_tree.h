@@ -25,6 +25,11 @@ namespace cwin::ui{
 				}, args...);
 			});
 		}
+		
+		template <typename object_type>
+		void insert_object(){
+			insert_object<object_type>(nullptr);
+		}
 
 		virtual void insert_child(object &child);
 

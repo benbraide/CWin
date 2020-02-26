@@ -152,4 +152,18 @@ namespace cwin::events::control{
 
 		virtual ~deactivate() = default;
 	};
+
+	class dirty_content : public object{
+	public:
+		using object::object;
+
+		virtual ~dirty_content() = default;
+	};
+
+	class content_change : public object{
+	public:
+		using object::object;
+
+		virtual ~content_change() = default;
+	};
 }

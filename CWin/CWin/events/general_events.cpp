@@ -74,8 +74,12 @@ const std::chrono::milliseconds &cwin::events::timer::get_duration() const{
 	return duration_;
 }
 
-const std::function<bool()> &cwin::events::timer::get_callback() const{
+const std::function<bool(unsigned __int64)> &cwin::events::timer::get_callback() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
 	return callback_;
+}
+
+unsigned __int64 cwin::events::timer::get_talk_id() const{
+	return talk_id_;
 }

@@ -42,6 +42,8 @@ namespace cwin::control{
 
 		virtual void set_text_(const std::wstring &value);
 
+		virtual const std::wstring &get_text_() const;
+
 		virtual void set_font_(HFONT value);
 
 		virtual void set_scale_(const D2D1_SIZE_F &value);
@@ -58,7 +60,7 @@ namespace cwin::control{
 
 		virtual SIZE compute_additional_size_(const SIZE &computed_size) const;
 
-		std::wstring text_;
+		mutable std::wstring text_;
 		HFONT font_ = nullptr;
 
 		D2D1_SIZE_F scale_{ 1.0f, 1.0f };

@@ -31,6 +31,13 @@ void cwin::menu::library_popup::find(UINT id, const std::function<void(library_i
 	});
 }
 
+void cwin::menu::library_popup::find(UINT id, const std::function<void(library_item &)> &callback) const{
+	find(id, [=](library_item *item){
+		if (item != nullptr)
+			callback(*item);
+	});
+}
+
 void cwin::menu::library_popup::after_create_(){
 	popup::after_create_();
 

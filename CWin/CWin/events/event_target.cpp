@@ -6,8 +6,8 @@
 cwin::events::target::target(thread::object &thread)
 	: cross_object(thread), events_(*this){
 	bind_default_([=](timer &e){
-		thread_.add_timer_(e.get_duration(), [this, callback = e.get_callback()](unsigned __int64 timer_id){
-			if (!callback())
+		thread_.add_timer_(e.get_duration(), [this, callback = e.get_callback(), talk_id = e.get_talk_id()](unsigned __int64 timer_id){
+			if (thread_.get_queue().is_blacklisted(talk_id) || !callback(timer_id))
 				thread_.remove_timer_(timer_id, get_talk_id());
 		}, get_talk_id());
 	});

@@ -1,3 +1,6 @@
+#include <Shobjidl.h>
+#include <filesystem>
+
 #include "app/app_object.h"
 #include "window/child_window.h"
 #include "window/top_level_window.h"
@@ -61,6 +64,7 @@ struct audio_player_info{
 	cwin::control::label *progress_value;
 	cwin::control::edit *input;
 	
+	cwin::control::push_button *browse_btn;
 	cwin::control::push_button *load_unload_btn;
 
 	cwin::control::push_button *play_stop_btn;
@@ -73,11 +77,22 @@ struct audio_player_info{
 	bool is_file_loaded;
 
 	unsigned __int64 progress;
+	IFileDialog *file_diag;
 };
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
 	audio_player_info player_info{};
+
+	CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&player_info.file_diag));
+	COMDLG_FILTERSPEC filters[] = {
+		{ L"PCM", L"*.wav;" },
+		{ L"ASF", L"*.mp3;*.asf" }
+	};
+
+	player_info.file_diag->SetFileTypes(2u, filters);
+	player_info.file_diag->SetFileTypeIndex(2u);
+	player_info.file_diag->SetTitle(L"Select Song File");
 
 	cwin::control::tool_tip tool_tip;
 	cwin::window::top_level window;
@@ -345,6 +360,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				output.get_events().bind([&](cwin::events::after_create &){
 					player_info.load_unload_btn->set_text(L"Unload");
 
+					player_info.browse_btn->disable();
 					player_info.play_stop_btn->enable();
 					player_info.pause_resume_btn->enable();
 
@@ -368,6 +384,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 					player_info.play_stop_btn->disable();
 					player_info.pause_resume_btn->disable();
+					player_info.browse_btn->enable();
 
 					//player_info.rewind_btn->disable();
 					//player_info.fast_fwd_btn->disable();
@@ -470,7 +487,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 						sec.insert(sec.begin(), L'0');
 
 					player_info.progress_value->set_text(min + L":" + sec);
-				});
+				}, 0u);
 			});
 
 			page.insert_object([&](cwin::control::edit &ctrl){
@@ -487,6 +504,47 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 					cwin::hook::relative_placement::alignment_type::bottom_left,		//Source Alignment
 					POINT{ 0, 5 }
 				);
+
+				ctrl.get_events().bind([&](cwin::events::control::dirty_content &){
+					player_info.is_input_dirty = true;
+				}, 0u);
+
+				ctrl.get_events().bind([&](cwin::events::control::content_change &){
+					player_info.is_input_dirty = true;
+				}, 0u);
+			});
+			
+			page.insert_object([&](cwin::control::push_button &ctrl){
+				player_info.browse_btn = &ctrl;
+
+				ctrl.set_text(L"Browse");
+				ctrl.insert_object<cwin::hook::relative_placement>(
+					nullptr,
+					cwin::hook::relative_placement::sibling_type::previous,				//Source
+					cwin::hook::relative_placement::alignment_type::top_left,			//Alignment
+					cwin::hook::relative_placement::alignment_type::top_right,			//Source Alignment
+					POINT{ 4, 0 }
+				);
+
+				ctrl.get_events().bind([&](cwin::events::io::click &){
+					player_info.file_diag->Show(page.get_handle());
+
+					IShellItem *result = nullptr;
+					player_info.file_diag->GetResult(&result);
+
+					if (result == nullptr)
+						return;
+
+					wchar_t *path = nullptr;
+					result->GetDisplayName(SIGDN_FILESYSPATH, &path);
+
+					if (path == nullptr)
+						return;
+
+					player_info.input->set_text(path);
+					CoTaskMemFree(path);
+					result->Release();
+				}, 0u);
 			});
 
 			page.insert_object([&](cwin::control::push_button &ctrl){
@@ -503,19 +561,23 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 				ctrl.get_events().bind([&](cwin::events::io::click &){
 					if (!player_info.is_file_loaded){
-						try{
-							player_info.pcm_source->set_path(player_info.input->get_text());
-							player_info.pcm_source->create();
-							player_info.active_source = player_info.pcm_source;
+						auto &path = player_info.input->get_text();
+						if (std::filesystem::path(path).extension() == L".wav"){
+							try{
+								player_info.pcm_source->set_path(path);
+								player_info.pcm_source->create();
+								player_info.active_source = player_info.pcm_source;
+							}
+							catch (...){}
 						}
-						catch (...){}
-
-						try{
-							player_info.asf_source->set_path(player_info.input->get_text());
-							player_info.asf_source->create();
-							player_info.active_source = player_info.asf_source;
+						else{//ASF
+							try{
+								player_info.asf_source->set_path(path);
+								player_info.asf_source->create();
+								player_info.active_source = player_info.asf_source;
+							}
+							catch (...){}
 						}
-						catch (...){}
 
 						if (player_info.active_source == nullptr){
 							player_info.path_label->set_text(L"Selected File: [Failed to load]");

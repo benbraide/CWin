@@ -1,5 +1,13 @@
 #include "io_events.h"
 
+cwin::events::io::get_dlg_code::~get_dlg_code() = default;
+
+DWORD cwin::events::io::get_dlg_code::get_virtual_code() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return static_cast<DWORD>(message_info_.wParam);
+}
+
 cwin::events::io::hit_test::~hit_test() = default;
 
 POINT cwin::events::io::hit_test::get_position() const{

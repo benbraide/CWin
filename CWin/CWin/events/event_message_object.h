@@ -25,4 +25,11 @@ namespace cwin::events{
 		MSG message_info_;
 		WNDPROC default_callback_;
 	};
+
+	class unknown : public message_object{
+	public:
+		using message_object::message_object;
+
+		virtual ~unknown() = default;
+	};
 }

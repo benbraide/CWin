@@ -12,13 +12,13 @@ void cwin::control::with_text::set_text(const std::wstring &value){
 
 const std::wstring &cwin::control::with_text::get_text() const{
 	return *execute_task([&]{
-		return &text_;
+		return &get_text_();
 	});
 }
 
 void cwin::control::with_text::get_text(const std::function<void(const std::wstring &)> &callback) const{
 	post_or_execute_task([=]{
-		callback(text_);
+		callback(get_text_());
 	});
 }
 
@@ -96,6 +96,10 @@ void cwin::control::with_text::set_text_(const std::wstring &value){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(value.data()));
 	update_size_();
+}
+
+const std::wstring &cwin::control::with_text::get_text_() const{
+	return text_;
 }
 
 void cwin::control::with_text::set_font_(HFONT value){

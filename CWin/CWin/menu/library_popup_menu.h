@@ -22,6 +22,8 @@ namespace cwin::menu{
 
 		virtual void find(UINT id, const std::function<void(library_item *)> &callback) const;
 
+		virtual void find(UINT id, const std::function<void(library_item &)> &callback) const;
+
 	protected:
 		virtual void after_create_() override;
 
