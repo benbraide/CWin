@@ -1,6 +1,6 @@
 #pragma once
 
-#include "system_menu_item.h"
+#include "system_popup_menu.h"
 #include "action_menu_item.h"
 
 namespace cwin::menu{
@@ -44,5 +44,13 @@ namespace cwin::ui{
 	template <>
 	struct parent_type<menu::system_action_item>{
 		using value = menu::system_popup;
+	};
+
+	template <>
+	struct create_compatible_object<menu::action_item>{
+		template <typename parent_type, typename... args_types>
+		static std::shared_ptr<menu::action_item> get(parent_type &parent, args_types &&... args){
+			return create_conditional_object<menu::action_item, menu::system_popup, menu::system_action_item>::get(parent, std::forward<args_types>(args)...);
+		}
 	};
 }

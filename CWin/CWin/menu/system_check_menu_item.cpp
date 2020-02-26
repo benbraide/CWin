@@ -1,8 +1,6 @@
 #include "../ui/ui_window_surface.h"
 #include "../events/menu_events.h"
 
-#include "system_popup_menu.h"
-#include "system_radio_menu_group.h"
 #include "system_check_menu_item.h"
 
 cwin::menu::system_check_item::system_check_item(system_popup &parent)

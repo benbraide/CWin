@@ -1,7 +1,6 @@
 #include "../ui/ui_window_surface.h"
 #include "../events/menu_events.h"
 
-#include "system_popup_menu.h"
 #include "system_action_menu_item.h"
 
 cwin::menu::default_system_action_item::default_system_action_item(system_popup &parent, UINT index){

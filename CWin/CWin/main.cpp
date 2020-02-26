@@ -42,7 +42,7 @@
 #include "control/toolbar_control.h"
 #include "control/action_toolbar_control_item.h"
 #include "control/status_bar_control.h"
-#include "control/edit_control.h"
+#include "control/text_input_control.h"
 #include "control/label_control.h"
 
 #include "audio/pcm_audio_source.h"
@@ -62,7 +62,7 @@ struct audio_player_info{
 
 	cwin::control::label *progress_key;
 	cwin::control::label *progress_value;
-	cwin::control::edit *input;
+	cwin::control::text_input *input;
 	
 	cwin::control::push_button *browse_btn;
 	cwin::control::push_button *load_unload_btn;
@@ -106,34 +106,34 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	tool_tip.create();
 	window.insert_object([](cwin::menu::system_popup &popup){
-		popup.insert_object<cwin::menu::system_separator>(nullptr);
+		popup.insert_object<cwin::menu::separator>();
 
-		popup.insert_object([](cwin::menu::system_action_item &item){
+		popup.insert_object([](cwin::menu::action_item &item){
 			item.set_text(L"Custom System Item");
 		});
 		
-		popup.insert_object([](cwin::menu::system_check_item &item){
+		popup.insert_object([](cwin::menu::check_item &item){
 			item.set_text(L"Custom System Check Item");
 		});
 		
-		popup.insert_object<cwin::menu::system_separator>(nullptr);
+		popup.insert_object<cwin::menu::separator>();
 		
-		popup.insert_object([](cwin::menu::system_radio_group &group){
-			group.insert_object([](cwin::menu::system_check_item &item){
+		popup.insert_object([](cwin::menu::radio_group &group){
+			group.insert_object([](cwin::menu::check_item &item){
 				item.set_text(L"First Custom System Radio Item");
 			});
 
-			group.insert_object([](cwin::menu::system_check_item &item){
+			group.insert_object([](cwin::menu::check_item &item){
 				item.set_text(L"Second Custom System Radio Item");
 			});
 		});
 
-		popup.insert_object<cwin::menu::system_separator>(nullptr);
+		popup.insert_object<cwin::menu::separator>();
 
-		popup.insert_object([](cwin::menu::system_link_item &link){
+		popup.insert_object([](cwin::menu::link_item &link){
 			link.set_text(L"Custom System Link Item");
 
-			link.add([](cwin::menu::system_action_item &item){
+			link.add([](cwin::menu::action_item &item){
 				item.set_text(L"Custom System Action Sub Item");
 			});
 		});
@@ -490,7 +490,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				}, 0u);
 			});
 
-			page.insert_object([&](cwin::control::edit &ctrl){
+			page.insert_object([&](cwin::control::text_input &ctrl){
 				player_info.input = &ctrl;
 
 				ctrl.set_min_width(250);

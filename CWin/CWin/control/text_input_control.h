@@ -5,13 +5,21 @@
 #include "control_with_text.h"
 
 namespace cwin::control{
-	class edit : public with_text{
+	class text_input : public with_text{
 	public:
-		explicit edit(tree &parent);
+		explicit text_input(tree &parent);
 
-		edit(tree &parent, std::size_t index);
+		text_input(tree &parent, std::size_t index);
 
-		virtual ~edit();
+		virtual ~text_input();
+
+		virtual void set_size(const SIZE &value) override;
+
+		virtual void set_width(int value) override;
+
+		virtual void offset_size(const SIZE &value) override;
+
+		virtual void offset_width(int value) override;
 
 		virtual void set_min_width(int value);
 
@@ -32,15 +40,13 @@ namespace cwin::control{
 		virtual void get_change_poll_interval(const std::function<void(const std::chrono::milliseconds &)> &callback)const;
 
 	protected:
-		virtual void added_event_handler_(const std::type_info &type, unsigned __int64 id, unsigned __int64 talk_id, std::size_t count) override;
-
-		virtual void removed_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count) override;
-
 		virtual void after_create_() override;
 
 		virtual void after_destroy_() override;
 
 		virtual DWORD get_persistent_styles_() const override;
+
+		virtual const wchar_t *get_caption_() const override;
 
 		virtual const wchar_t *get_theme_name_() const override;
 
@@ -65,8 +71,6 @@ namespace cwin::control{
 
 		mutable bool is_dirty_ = false;
 		unsigned __int64 timer_id_ = 0u;
-
-		std::size_t change_listeners_count_ = 0u;
-		std::chrono::milliseconds change_poll_interval_ = std::chrono::milliseconds(50);
+		std::chrono::milliseconds change_poll_interval_ = std::chrono::milliseconds(5);
 	};
 }

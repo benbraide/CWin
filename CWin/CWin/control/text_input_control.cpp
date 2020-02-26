@@ -8,23 +8,39 @@
 #include "../events/interrupt_events.h"
 #include "../events/io_events.h"
 
-#include "edit_control.h"
+#include "text_input_control.h"
 
-cwin::control::edit::edit(tree &parent)
-	: edit(parent, static_cast<std::size_t>(-1)){}
+cwin::control::text_input::text_input(tree &parent)
+	: text_input(parent, static_cast<std::size_t>(-1)){}
 
-cwin::control::edit::edit(tree &parent, std::size_t index)
+cwin::control::text_input::text_input(tree &parent, std::size_t index)
 	: with_text(parent, index, MSFTEDIT_CLASS, ICC_STANDARD_CLASSES){
 	padding_ = SIZE{ 0, 8 };
 
 	insert_object([&](menu::library_popup &popup){
 		bind_(popup, [&](events::after_create &){
 			popup.insert_object([&](menu::action_item &item){
-				item.set_text(L"&Redo");
+				item.set_text(L"R&edo");
 				bind_(item, [=](events::menu::select &){
 					SendMessageW(handle_, EM_REDO, 0, 0);
 				});
 			}, 1u);
+
+			popup.find(771u, [&](menu::library_item &item){//Delete
+				bind_(dynamic_cast<menu::library_action_item &>(item), [=](events::menu::select &e){
+					e.prevent_default();
+
+					CHARRANGE range{};
+					SendMessageW(handle_, EM_EXGETSEL, 0, reinterpret_cast<LPARAM>(&range));
+
+					if (range.cpMin == range.cpMax){//No selection
+						range.cpMax = (range.cpMin + 1);
+						SendMessageW(handle_, EM_EXSETSEL, 0, reinterpret_cast<LPARAM>(&range));
+					}
+
+					SendMessageW(handle_, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(L""));
+				});
+			});
 
 			popup.find(177u, [&](menu::library_item &item){//Select all
 				bind_(dynamic_cast<menu::library_action_item &>(item), [=](events::menu::select &e){
@@ -69,28 +85,30 @@ cwin::control::edit::edit(tree &parent, std::size_t index)
 	});
 	
 	bind_default_([=](events::io::mouse_cursor &e){
-		if (e.get_hit_target() == HTCLIENT)
+		if (e.get_hit_target() != HTCLIENT)
+			return;
+
+		auto absolute_position = e.get_position();
+		compute_absolute_to_relative_(absolute_position);
+
+		POINTL position{ absolute_position.x, absolute_position.y };
+		auto index = (SendMessageW(handle_, EM_CHARFROMPOS, 0, reinterpret_cast<LPARAM>(&position)));
+
+		if (static_cast<std::size_t>(index) < text_.size()){
+			CHARRANGE range{};
+			SendMessageW(handle_, EM_EXGETSEL, 0, reinterpret_cast<LPARAM>(&range));
+
+			if (range.cpMin != range.cpMax && range.cpMin <= index && index < range.cpMax)
+				e.set_result(LoadCursorW(nullptr, IDC_ARROW));
+			else//No selection
+				e.set_result(LoadCursorW(nullptr, IDC_IBEAM));
+		}
+		else
 			e.set_result(LoadCursorW(nullptr, IDC_IBEAM));
 	});
 	
 	bind_default_([=](events::interrupt::notify &e){
 		switch (e.get_info().code){
-		case EN_CLIPFORMAT:
-			if (is_dirty_)
-				break;
-
-			if (change_listeners_count_ != 0u)
-				get_text_();
-
-			if (!is_dirty_){
-				is_dirty_ = true;
-				events_.trigger<events::control::dirty_content>();
-			}
-
-			if (change_listeners_count_ != 0u)
-				events_.trigger<events::control::content_change>();
-
-			break;
 		case EN_REQUESTRESIZE:
 			request_resize_(e.get_info_as<REQRESIZE>());
 			break;
@@ -102,83 +120,99 @@ cwin::control::edit::edit(tree &parent, std::size_t index)
 	update_size_();
 }
 
-cwin::control::edit::~edit(){
+cwin::control::text_input::~text_input(){
 	force_destroy_();
 }
 
-void cwin::control::edit::set_min_width(int value){
+void cwin::control::text_input::set_size(const SIZE &value){
+	post_or_execute_task([=]{
+		min_width_ = max_width_ = value.cx;
+		with_text::set_size(value);
+	});
+}
+
+void cwin::control::text_input::set_width(int value){
+	post_or_execute_task([=]{
+		min_width_ = max_width_ = value;
+		with_text::set_width(value);
+	});
+}
+
+void cwin::control::text_input::offset_size(const SIZE &value){
+	post_or_execute_task([=]{
+		min_width_ = max_width_ = (size_.cx + value.cx);
+		with_text::offset_size(value);
+	});
+}
+
+void cwin::control::text_input::offset_width(int value){
+	post_or_execute_task([=]{
+		min_width_ = max_width_ = (size_.cx + value);
+		with_text::offset_width(value);
+	});
+}
+
+void cwin::control::text_input::set_min_width(int value){
 	post_or_execute_task([=]{
 		min_width_ = value;
 		update_size_();
 	});
 }
 
-int cwin::control::edit::get_min_width() const{
+int cwin::control::text_input::get_min_width() const{
 	return execute_task([&]{
 		return min_width_;
 	});
 }
 
-void cwin::control::edit::get_min_width(const std::function<void(int)> &callback) const{
+void cwin::control::text_input::get_min_width(const std::function<void(int)> &callback) const{
 	post_or_execute_task([=]{
 		callback(min_width_);
 	});
 }
 
-void cwin::control::edit::set_max_width(int value){
+void cwin::control::text_input::set_max_width(int value){
 	post_or_execute_task([=]{
 		max_width_ = value;
 		update_size_();
 	});
 }
 
-int cwin::control::edit::get_max_width() const{
+int cwin::control::text_input::get_max_width() const{
 	return execute_task([&]{
 		return max_width_;
 	});
 }
 
-void cwin::control::edit::get_max_width(const std::function<void(int)> &callback) const{
+void cwin::control::text_input::get_max_width(const std::function<void(int)> &callback) const{
 	post_or_execute_task([=]{
 		callback(max_width_);
 	});
 }
 
-void cwin::control::edit::set_change_poll_interval(const std::chrono::milliseconds &value){
+void cwin::control::text_input::set_change_poll_interval(const std::chrono::milliseconds &value){
 	post_or_execute_task([=]{
 		set_change_poll_interval_(value);
 	});
 }
 
-const std::chrono::milliseconds &cwin::control::edit::get_change_poll_interval() const{
+const std::chrono::milliseconds &cwin::control::text_input::get_change_poll_interval() const{
 	return *execute_task([&]{
 		return &change_poll_interval_;
 	});
 }
 
-void cwin::control::edit::get_change_poll_interval(const std::function<void(const std::chrono::milliseconds &)> &callback) const{
+void cwin::control::text_input::get_change_poll_interval(const std::function<void(const std::chrono::milliseconds &)> &callback) const{
 	post_or_execute_task([=]{
 		callback(change_poll_interval_);
 	});
 }
 
-void cwin::control::edit::added_event_handler_(const std::type_info &type, unsigned __int64 id, unsigned __int64 talk_id, std::size_t count){
-	with_text::added_event_handler_(type, id, talk_id, count);
-	if (type == typeid(events::control::content_change))
-		change_listeners_count_ = count;
-}
-
-void cwin::control::edit::removed_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count){
-	with_text::removed_event_handler_(type, id, count);
-	if (type == typeid(events::control::content_change))
-		change_listeners_count_ = count;
-}
-
-void cwin::control::edit::after_create_(){
+void cwin::control::text_input::after_create_(){
 	with_text::after_create_();
 
-	SendMessageW(handle_, EM_SETEVENTMASK, 0, (ENM_REQUESTRESIZE | ENM_CLIPFORMAT));
-	SendMessageW(handle_, EM_SETEDITSTYLE, (SES_EMULATESYSEDIT | SES_EXTENDBACKCOLOR), (0 ));
+	SendMessageW(handle_, EM_SETEVENTMASK, 0, ENM_REQUESTRESIZE);
+	SendMessageW(handle_, EM_SETTEXTMODE, TEXTMODE::TM_PLAINTEXT, 0);
 
 	CHARFORMATW format{ sizeof(CHARFORMATW) };
 	SendMessageW(handle_, EM_GETCHARFORMAT, SCF_DEFAULT, reinterpret_cast<LPARAM>(&format));
@@ -200,10 +234,11 @@ void cwin::control::edit::after_create_(){
 	ReleaseDC(handle_, device);
 
 	update_size_(false);
+	set_text_(text_);
 	bind_change_poll_();
 }
 
-void cwin::control::edit::after_destroy_(){
+void cwin::control::text_input::after_destroy_(){
 	if (font_ != nullptr){
 		DeleteObject(font_);
 		font_ = nullptr;
@@ -212,23 +247,27 @@ void cwin::control::edit::after_destroy_(){
 	with_text::after_destroy_();
 }
 
-DWORD cwin::control::edit::get_persistent_styles_() const{
+DWORD cwin::control::text_input::get_persistent_styles_() const{
 	return (with_text::get_persistent_styles_() | WS_BORDER | ES_AUTOHSCROLL | ES_NOHIDESEL);
 }
 
-const wchar_t *cwin::control::edit::get_theme_name_() const{
+const wchar_t *cwin::control::text_input::get_caption_() const{
+	return L"";
+}
+
+const wchar_t *cwin::control::text_input::get_theme_name_() const{
 	return L"EDIT";
 }
 
-int cwin::control::edit::get_theme_part_id_() const{
+int cwin::control::text_input::get_theme_part_id_() const{
 	return EP_BACKGROUND;
 }
 
-int cwin::control::edit::get_theme_state_id_() const{
+int cwin::control::text_input::get_theme_state_id_() const{
 	return EBS_NORMAL;
 }
 
-const std::wstring &cwin::control::edit::get_text_() const{
+const std::wstring &cwin::control::text_input::get_text_() const{
 	if (handle_ == nullptr || !is_dirty_)
 		return with_text::get_text_();
 
@@ -239,15 +278,17 @@ const std::wstring &cwin::control::edit::get_text_() const{
 	SendMessageW(handle_, EM_GETTEXTRANGE, 0, reinterpret_cast<LPARAM>(&range));
 
 	is_dirty_ = false;
+	SendMessageW(handle_, EM_SETMODIFY, FALSE, 0);
+
 	return text_;
 }
 
-SIZE cwin::control::edit::compute_size_() const{
+SIZE cwin::control::text_input::compute_size_() const{
 	auto value = with_text::compute_size_();
 	return SIZE{ (value.cx + 7), value.cy };
 }
 
-SIZE cwin::control::edit::compute_additional_size_(const SIZE &computed_size) const{
+SIZE cwin::control::text_input::compute_additional_size_(const SIZE &computed_size) const{
 	if (0 < max_width_ && max_width_ < computed_size.cx)
 		return SIZE{ (max_width_ - computed_size.cx), 0 };
 
@@ -257,7 +298,10 @@ SIZE cwin::control::edit::compute_additional_size_(const SIZE &computed_size) co
 	return SIZE{};
 }
 
-void cwin::control::edit::request_resize_(REQRESIZE &info){
+void cwin::control::text_input::request_resize_(REQRESIZE &info){
+	if (max_width_ <= min_width_)
+		return;
+
 	auto &size = get_size_();
 	SIZE new_size{ ((info.rc.right - info.rc.left) + padding_.cx + 7), ((info.rc.bottom - info.rc.top) + padding_.cy) };
 
@@ -273,32 +317,29 @@ void cwin::control::edit::request_resize_(REQRESIZE &info){
 		set_size_(new_size);
 }
 
-void cwin::control::edit::set_change_poll_interval_(const std::chrono::milliseconds &value){
+void cwin::control::text_input::set_change_poll_interval_(const std::chrono::milliseconds &value){
 	if (value != change_poll_interval_){
 		change_poll_interval_ = value;
-		if (handle_ != nullptr)
+		if (handle_ != nullptr && change_poll_interval_.count() != 0)
 			bind_change_poll_();
 	}
 }
 
-void cwin::control::edit::bind_change_poll_(){
+void cwin::control::text_input::bind_change_poll_(){
 	events_.trigger<events::timer>(change_poll_interval_, [=](unsigned __int64 id){
-		if (handle_ == nullptr || (timer_id_ != 0u && id != timer_id_)){
+		if (handle_ == nullptr || change_poll_interval_.count() == 0){
+			timer_id_ = 0;
+			is_dirty_ = false;
+			return false;
+		}
+
+		if (timer_id_ != 0u && id != timer_id_){
 			timer_id_ = 0;
 			return false;
 		}
 
 		timer_id_ = id;
-		if (is_dirty_ && change_listeners_count_ == 0u)
-			return true;
-
-		GETTEXTLENGTHEX info{ GTL_NUMCHARS };
-		std::wstring text(SendMessageW(handle_, EM_GETTEXTLENGTHEX, reinterpret_cast<WPARAM>(&info), 0), L'\0');
-
-		TEXTRANGEW range{ CHARRANGE{ 0, -1 }, text.data() };
-		SendMessageW(handle_, EM_GETTEXTRANGE, 0, reinterpret_cast<LPARAM>(&range));
-
-		if (text == text_)//No changes
+		if (SendMessageW(handle_, EM_GETMODIFY, 0, 0) == FALSE)
 			return true;
 
 		if (!is_dirty_){
@@ -306,10 +347,8 @@ void cwin::control::edit::bind_change_poll_(){
 			events_.trigger<events::control::dirty_content>();
 		}
 
-		if (change_listeners_count_ != 0u){
-			text_ = text;
-			events_.trigger<events::control::content_change>();
-		}
+		SendMessageW(handle_, EM_SETMODIFY, FALSE, 0);
+		events_.trigger<events::control::content_change>();
 
 		return true;
 	}, 0u);

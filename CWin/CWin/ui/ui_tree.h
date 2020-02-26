@@ -233,7 +233,7 @@ namespace cwin::ui{
 			if (compatible_self == nullptr)
 				throw exception::not_supported();
 
-			return std::make_shared<object_type>(*compatible_self, std::forward<args_types>(args)...);
+			return create_compatible_object<object_type>::get(*compatible_self, std::forward<args_types>(args)...);
 		}
 
 		template <typename object_type, typename... args_types>

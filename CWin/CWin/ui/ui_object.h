@@ -353,10 +353,28 @@ namespace cwin::ui{
 	};
 
 	template <class object_type>
-	struct create_object{
+	struct create_compatible_object{
 		template <typename parent_type, typename... args_types>
 		static std::shared_ptr<object_type> get(parent_type &parent, args_types &&... args){
 			return std::make_shared<object_type>(parent, std::forward<args_types>(args)...);
+		}
+	};
+
+	template <class object_type, class target_parent_type, class target_object_type>
+	struct create_conditional_object{
+		template <typename parent_type, typename... args_types>
+		static std::shared_ptr<object_type> get(parent_type &parent, args_types &&... args){
+			if (auto target_parent = dynamic_cast<target_parent_type *>(&parent); target_parent != nullptr)
+				return std::make_shared<target_object_type>(*target_parent, std::forward<args_types>(args)...);
+			return std::make_shared<object_type>(parent, std::forward<args_types>(args)...);
+		}
+	};
+
+	template <class object_type>
+	struct create_object{
+		template <typename parent_type, typename... args_types>
+		static std::shared_ptr<object_type> get(parent_type &parent, args_types &&... args){
+			return create_compatible_object<object_type>::get(parent, std::forward<args_types>(args)...);
 		}
 	};
 }

@@ -1,4 +1,3 @@
-#include "system_popup_menu.h"
 #include "system_link_menu_item.h"
 
 cwin::menu::system_link_item::system_link_item(system_popup &parent)

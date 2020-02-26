@@ -93,9 +93,10 @@ const wchar_t *cwin::control::with_text::get_caption_() const{
 
 void cwin::control::with_text::set_text_(const std::wstring &value){
 	text_ = value;
+	update_size_();
+
 	if (handle_ != nullptr)
 		SendMessageW(handle_, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(value.data()));
-	update_size_();
 }
 
 const std::wstring &cwin::control::with_text::get_text_() const{

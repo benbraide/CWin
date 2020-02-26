@@ -2,7 +2,7 @@
 
 #include "../utility/random_number_generator.h"
 
-#include "system_check_menu_item.h"
+#include "system_menu_item.h"
 #include "popup_menu.h"
 
 namespace cwin::ui{
@@ -41,19 +41,5 @@ namespace cwin::ui{
 	template <>
 	struct parent_type<menu::system_popup>{
 		using value = window_surface;
-	};
-
-	template <>
-	struct create_object<menu::system_check_item>{
-		template <typename... args_types>
-		static std::shared_ptr<menu::system_check_item> get(tree &parent, args_types &&... args){
-			if (auto compatible_parent = dynamic_cast<menu::system_popup *>(&parent); compatible_parent != nullptr)
-				return std::make_shared<menu::system_check_item>(*compatible_parent, std::forward<args_types>(args)...);
-
-			if (auto compatible_parent = dynamic_cast<menu::system_radio_group *>(&parent); compatible_parent != nullptr)
-				return std::make_shared<menu::system_check_item>(*compatible_parent, std::forward<args_types>(args)...);
-
-			throw exception::not_supported();
-		}
 	};
 }

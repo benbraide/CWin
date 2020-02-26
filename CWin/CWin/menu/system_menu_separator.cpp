@@ -1,4 +1,3 @@
-#include "system_popup_menu.h"
 #include "system_menu_separator.h"
 
 cwin::menu::default_system_separator::default_system_separator(system_popup &parent, UINT index){
