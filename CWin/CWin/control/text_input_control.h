@@ -1,11 +1,9 @@
 #pragma once
 
-#include <textserv.h>
-
-#include "control_with_text.h"
+#include "edit_control.h"
 
 namespace cwin::control{
-	class text_input : public with_text{
+	class text_input : public edit{
 	public:
 		explicit text_input(tree &parent);
 
@@ -33,28 +31,26 @@ namespace cwin::control{
 
 		virtual void get_max_width(const std::function<void(int)> &callback) const;
 
-		virtual void set_change_poll_interval(const std::chrono::milliseconds &value);
+		virtual void enable_password();
 
-		virtual const std::chrono::milliseconds &get_change_poll_interval()const;
+		virtual void disable_password();
 
-		virtual void get_change_poll_interval(const std::function<void(const std::chrono::milliseconds &)> &callback)const;
+		virtual bool is_password() const;
+
+		virtual void is_password(const std::function<void(bool)> &callback) const;
+
+		virtual void set_password_char(wchar_t value);
+
+		virtual wchar_t get_password_char() const;
+
+		virtual void get_password_char(const std::function<void(wchar_t)> &callback) const;
 
 	protected:
 		virtual void after_create_() override;
 
-		virtual void after_destroy_() override;
-
 		virtual DWORD get_persistent_styles_() const override;
 
 		virtual const wchar_t *get_caption_() const override;
-
-		virtual const wchar_t *get_theme_name_() const override;
-
-		virtual int get_theme_part_id_() const override;
-
-		virtual int get_theme_state_id_() const override;
-
-		virtual const std::wstring &get_text_() const override;
 
 		virtual SIZE compute_size_() const override;
 
@@ -62,15 +58,14 @@ namespace cwin::control{
 
 		virtual void request_resize_(REQRESIZE &info);
 
-		virtual void set_change_poll_interval_(const std::chrono::milliseconds &value);
+		virtual void set_password_state_(bool value);
 
-		virtual void bind_change_poll_();
+		virtual void set_password_char_(wchar_t value);
 
 		int min_width_ = 200;
 		int max_width_ = 200;
 
-		mutable bool is_dirty_ = false;
-		unsigned __int64 timer_id_ = 0u;
-		std::chrono::milliseconds change_poll_interval_ = std::chrono::milliseconds(5);
+		bool is_password_ = false;
+		wchar_t password_char_ = L'*';
 	};
 }
