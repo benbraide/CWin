@@ -24,6 +24,17 @@ namespace cwin::menu{
 
 		virtual void get_types(std::size_t index, const std::function<void(UINT)> &callback) const;
 		
+		virtual menu::item *find_item(UINT id) const;
+
+		virtual void find_item(UINT id, const std::function<void(menu::item *)> &callback) const;
+
+		template <typename callback_type>
+		void find_item(UINT id, const callback_type &callback) const{
+			post_or_execute_task([=]{
+				find_item_(id, utility::object_to_function_traits::get(callback));
+			});
+		}
+
 		template <typename callback_type>
 		void traverse_items(const callback_type &callback) const{
 			post_or_execute_task([=]{
@@ -80,6 +91,14 @@ namespace cwin::menu{
 
 		virtual bool inserting_child_(object &child) override;
 
+		virtual menu::item *find_item_(UINT id) const;
+
+		template <typename object_type>
+		void find_item_(UINT id, const std::function<void(object_type &)> &callback) const{
+			if (auto target_item = dynamic_cast<object_type *>(find_item_(id)); target_item != nullptr)
+				callback(*target_item);
+		}
+
 		template <typename object_type>
 		bool traverse_items_(const std::function<bool(object_type &)> &callback) const{
 			return ui::tree::traverse_offspring_<menu::item>([&](menu::item &offspring){
@@ -110,6 +129,6 @@ namespace cwin::menu{
 
 		virtual UINT get_types_(std::size_t index) const;
 
-		std::size_t owner_drawn_children_count_ = 0u;
+		std::function<bool(menu::item &, UINT)> find_callback_;
 	};
 }

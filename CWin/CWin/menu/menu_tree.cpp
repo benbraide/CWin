@@ -34,8 +34,36 @@ void cwin::menu::tree::get_types(std::size_t index, const std::function<void(UIN
 	});
 }
 
+cwin::menu::item *cwin::menu::tree::find_item(UINT id) const{
+	return execute_task([&]{
+		return find_item_(id);
+	});
+}
+
+void cwin::menu::tree::find_item(UINT id, const std::function<void(menu::item *)> &callback) const{
+	post_or_execute_task([=]{
+		callback(find_item_(id));
+	});
+}
+
 bool cwin::menu::tree::inserting_child_(object &child){
 	return (dynamic_cast<menu::item *>(&child) != nullptr || dynamic_cast<menu::tree *>(&child) != nullptr || dynamic_cast<hook::object *>(&child) != nullptr);
+}
+
+cwin::menu::item *cwin::menu::tree::find_item_(UINT id) const{
+	if (find_callback_ == nullptr)
+		return nullptr;
+
+	menu::item *found = nullptr;
+	traverse_items_<menu::item>([&](menu::item &item){
+		if (!find_callback_(item, id))
+			return true;
+
+		found = &item;
+		return false;
+	});
+
+	return found;
 }
 
 UINT cwin::menu::tree::get_states_(std::size_t index) const{

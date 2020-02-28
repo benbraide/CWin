@@ -112,28 +112,31 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 }
 
 LRESULT cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, LPARAM lparam){
-	auto result = ui::window_surface_manager::call_default(target, WM_INITMENUPOPUP, reinterpret_cast<WPARAM>(handle), lparam);
 	auto menu_target = find_(handle, true);
-
 	if (menu_target == nullptr)
-		return result;
+		return ui::window_surface_manager::call_default(target, WM_INITMENUPOPUP, reinterpret_cast<WPARAM>(handle), lparam);
 
+	auto result = ui::window_surface_manager::call_default(target, WM_INITMENUPOPUP, reinterpret_cast<WPARAM>(handle), lparam);
 	if (!menu_target->get_events().trigger_then_report_prevented_default<events::menu::init>()){
 		menu_target->traverse_offspring([&](menu::item &offspring){
 			events::menu::init_item e(*menu_target, offspring);
 			menu_target->get_events().trigger(e);
 
-			if (!e.prevented_default()){//Update state
-				switch (static_cast<events::menu::init_item::state_type>(e.get_result())){
-				case events::menu::init_item::state_type::disable:
-					offspring.add_states(MFS_DISABLED);
-					break;
-				case events::menu::init_item::state_type::enable:
-					offspring.remove_states(MFS_DISABLED);
-					break;
-				default:
-					break;
-				}
+			if (!e.prevented_default()){//Send to offspring
+				events::menu::init_item e2(offspring);
+				offspring.get_events().trigger(e2);
+				e.set_result(e2.get_result_as<events::menu::init_item::state_type>());
+			}
+
+			switch (e.get_result_as<events::menu::init_item::state_type>()){
+			case events::menu::init_item::state_type::disable:
+				offspring.add_states(MFS_DISABLED);
+				break;
+			case events::menu::init_item::state_type::enable:
+				offspring.remove_states(MFS_DISABLED);
+				break;
+			default:
+				break;
 			}
 		});
 	}
@@ -178,7 +181,7 @@ bool cwin::menu::manager::system_command_(ui::window_surface &target, UINT code,
 		return false;
 
 	active_context_ = nullptr;
-	if (auto target_item = dynamic_cast<item *>(menu_target->find(code)); target_item != nullptr)
+	if (auto target_item = menu_target->find_item(code); target_item != nullptr)
 		target_item->get_events().trigger<events::menu::select>();
 
 	return true;

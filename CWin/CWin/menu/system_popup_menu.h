@@ -18,10 +18,6 @@ namespace cwin::menu{
 
 		virtual ~system_popup();
 
-		virtual system_item *find(UINT id) const;
-
-		virtual void find(UINT id, const std::function<void(system_item *)> &callback) const;
-
 	protected:
 		friend class system_item;
 
@@ -30,8 +26,6 @@ namespace cwin::menu{
 		virtual void create_() override;
 
 		virtual void destroy_() override;
-
-		virtual system_item *find_(UINT id) const;
 
 		utility::random_integral_number_generator random_generator_;
 	};

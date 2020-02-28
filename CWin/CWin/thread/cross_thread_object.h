@@ -36,5 +36,6 @@ namespace cwin::thread{
 		virtual void unbound_events_(unsigned __int64 target_talk_id);
 
 		object &thread_;
+		unsigned __int64 talk_id_ = 0u;
 	};
 }

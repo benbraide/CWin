@@ -331,6 +331,17 @@ WNDPROC cwin::thread::object::get_message_entry(){
 	return nullptr;
 }
 
+unsigned __int64 cwin::thread::object::generate_talk_id_(cross_object &target){
+	auto value = reinterpret_cast<unsigned __int64>(&target);
+	for (auto tries = 0; queue_.is_blacklisted(value) || find_item_(value) != nullptr; ++tries){
+		if (tries == std::numeric_limits<int>::max())
+			throw exception::failed_to_generate_talk_id();
+		value = random_generator_(static_cast<unsigned __int64>(1));
+	}
+
+	return value;
+}
+
 void cwin::thread::object::add_item_(item &item){
 	items_[item.get_talk_id()] = (item_info{ &item });
 }

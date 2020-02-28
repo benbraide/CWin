@@ -53,3 +53,12 @@ cwin::thread::exception::failed_to_remove_timer::~failed_to_remove_timer() = def
 cwin::thread::exception::code cwin::thread::exception::failed_to_remove_timer::get_code() const{
 	return code::failed_to_remove_timer;
 }
+
+cwin::thread::exception::failed_to_generate_talk_id::failed_to_generate_talk_id()
+	: base("Failed to generate talk id for an object"){}
+
+cwin::thread::exception::failed_to_generate_talk_id::~failed_to_generate_talk_id() = default;
+
+cwin::thread::exception::code cwin::thread::exception::failed_to_generate_talk_id::get_code() const{
+	return code::failed_to_generate_talk_id;
+}

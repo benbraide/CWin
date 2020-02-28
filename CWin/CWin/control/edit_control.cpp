@@ -17,43 +17,43 @@ cwin::control::edit::edit(tree &parent, std::size_t index)
 	: with_text(parent, index, MSFTEDIT_CLASS, ICC_STANDARD_CLASSES){
 	insert_object_<menu::library_popup>([&](menu::library_popup &popup){
 		bind_(popup, [&](events::after_create &){
-			popup.insert_object([&](menu::action_item &item){
-				item.set_text(L"R&edo");
-				bind_(item, [=](events::menu::select &){
-					redo_();
+			popup.find_item(772u, [&](menu::library_action_item &item){//Undo
+				bind_(item, [=](events::menu::init_item &e){
+					return (can_undo_() ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
 				});
-			}, 1u);
+			});
+			
+			popup.find_item(770u, [&](menu::library_action_item &item){//Paste
+				bind_(item, [=](events::menu::init_item &e){
+					return (can_paste_() ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
+				});
+			});
 
-			popup.find(771u, [&](menu::library_item &item){//Delete
-				bind_(dynamic_cast<menu::library_action_item &>(item), [=](events::menu::select &e){
+			popup.find_item(771u, [&](menu::library_action_item &item){//Delete
+				bind_(item, [=](events::menu::select &e){
 					e.prevent_default();
 					del_();
 				});
 			});
 
-			popup.find(177u, [&](menu::library_item &item){//Select all
-				bind_(dynamic_cast<menu::library_action_item &>(item), [=](events::menu::select &e){
+			popup.find_item(177u, [&](menu::library_action_item &item){//Select all
+				bind_(item, [=](events::menu::select &e){
 					e.prevent_default();
 					select_all_();
 				});
 			});
-		});
 
-		bind_(popup, [&](events::menu::init_item &e){
-			if (auto library_item = dynamic_cast<menu::library_item *>(&e.get_target()); library_item != nullptr){
-				switch (library_item->get_id()){
-				case 772u://Undo
-					return (can_undo_() ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
-				case 770u://Paste
-					return (can_paste_() ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
-				default:
-					break;
-				}
+			popup.insert_object([&](menu::action_item &item){
+				item.set_text(L"R&edo");
 
-				return e.get_result_as<events::menu::init_item::state_type>();
-			}
+				bind_(item, [=](events::menu::init_item &){
+					return (can_redo_() ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
+				});
 
-			return (can_redo_() ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
+				bind_(item, [=](events::menu::select &){
+					redo_();
+				});
+			}, 1u);
 		});
 
 		return true;

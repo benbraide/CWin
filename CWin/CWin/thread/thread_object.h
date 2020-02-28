@@ -149,6 +149,8 @@ namespace cwin::thread{
 
 		object();
 
+		unsigned __int64 generate_talk_id_(cross_object &target);
+
 		void add_item_(item &item);
 
 		void remove_item_(unsigned __int64 talk_id);

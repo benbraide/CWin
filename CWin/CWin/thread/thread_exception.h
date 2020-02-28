@@ -11,6 +11,7 @@ namespace cwin::thread::exception{
 		get_message_failure,
 		failed_to_add_timer,
 		failed_to_remove_timer,
+		failed_to_generate_talk_id,
 	};
 
 	class base : public exception_base{
@@ -72,6 +73,15 @@ namespace cwin::thread::exception{
 		failed_to_remove_timer();
 
 		virtual ~failed_to_remove_timer();
+
+		virtual code get_code() const override;
+	};
+
+	class failed_to_generate_talk_id : public base{
+	public:
+		failed_to_generate_talk_id();
+
+		virtual ~failed_to_generate_talk_id();
 
 		virtual code get_code() const override;
 	};

@@ -36,14 +36,14 @@ void cwin::menu::system_item::generate_id_() const{
 	auto id = id_;
 	id_ = 0u;
 
-	if (id != 0u && !is_reserved_(id) && top_popup_ancestor->find_(id) == nullptr){//Previous ID is valid
+	if (id != 0u && !is_reserved_(id) && top_popup_ancestor->find_item_(id) == nullptr){//Previous ID is valid
 		id_ = id;
 		return;
 	}
 
-	for (auto tries = 0; tries < 99; ++tries){
+	for (auto tries = 0; tries < std::numeric_limits<int>::max(); ++tries){
 		id = (top_popup_ancestor->random_generator_(1u, 0xEFFFu) & 0xFF00u);
-		if (is_reserved_(id) || top_popup_ancestor->find_(id) != nullptr)
+		if (is_reserved_(id) || top_popup_ancestor->find_item_(id) != nullptr)
 			id = 0;
 		else//ID is unique
 			break;

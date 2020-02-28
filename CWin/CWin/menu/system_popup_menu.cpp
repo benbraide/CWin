@@ -7,25 +7,25 @@
 #include "system_popup_menu.h"
 
 cwin::menu::system_popup::system_popup(ui::window_surface &owner)
-	: popup(owner, false){}
+	: popup(owner, false){
+	find_callback_ = [](menu::item &item, UINT id){
+		if (auto system_item = dynamic_cast<menu::system_item *>(&item); system_item != nullptr)
+			return (system_item->id_ == id);
+		return false;
+	};
+}
 
 cwin::menu::system_popup::system_popup(link_item &link)
-	: popup(link){}
+	: popup(link){
+	find_callback_ = [](menu::item &item, UINT id){
+		if (auto system_item = dynamic_cast<menu::system_item *>(&item); system_item != nullptr)
+			return (system_item->id_ == id);
+		return false;
+	};
+}
 
 cwin::menu::system_popup::~system_popup(){
 	force_destroy_();
-}
-
-cwin::menu::system_item *cwin::menu::system_popup::find(UINT id) const{
-	return execute_task([&]{
-		return find_(id);
-	});
-}
-
-void cwin::menu::system_popup::find(UINT id, const std::function<void(system_item *)> &callback) const{
-	post_or_execute_task([=]{
-		callback(find_(id));
-	});
 }
 
 bool cwin::menu::system_popup::inserting_child_(ui::object &child){
@@ -79,17 +79,4 @@ void cwin::menu::system_popup::destroy_(){
 	}
 	else
 		popup::destroy_();
-}
-
-cwin::menu::system_item *cwin::menu::system_popup::find_(UINT id) const{
-	system_item *found = nullptr;
-	traverse_items_<system_item>([&](system_item &offspring){
-		if (offspring.id_ != id)
-			return true;
-
-		found = &offspring;
-		return false;
-	});
-
-	return found;
 }

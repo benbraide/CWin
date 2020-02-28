@@ -18,20 +18,12 @@ namespace cwin::menu{
 
 		virtual ~library_popup();
 
-		virtual library_item *find(UINT id) const;
-
-		virtual void find(UINT id, const std::function<void(library_item *)> &callback) const;
-
-		virtual void find(UINT id, const std::function<void(library_item &)> &callback) const;
-
 	protected:
 		virtual void after_create_() override;
 
 		virtual void destroy_() override;
 
 		virtual HMENU create_handle_() const override;
-
-		virtual library_item *find_(UINT id) const;
 
 		std::wstring name_;
 		std::variant<std::wstring, WORD> menu_name_;
