@@ -29,7 +29,7 @@ cwin::control::status_bar::object::object(ui::tree &parent, std::size_t index)
 			return;
 		}
 
-		traverse_children_<status_bar::item>([&](status_bar::item &child){
+		traverse_children_<status_bar::item>([&](status_bar::item &child, std::size_t, std::size_t){
 			if (child.active_index_ == -1)
 				return true;
 
@@ -141,7 +141,7 @@ void cwin::control::status_bar::object::refresh_(){
 	auto client_size = compute_client_size_();
 	auto fixed_width = 0, shared_count = 0;
 
-	traverse_children_<status_bar::item>([&](status_bar::item &child){
+	traverse_children_<status_bar::item>([&](status_bar::item &child, std::size_t, std::size_t){
 		if (child.active_index_ == -1)
 			return true;
 

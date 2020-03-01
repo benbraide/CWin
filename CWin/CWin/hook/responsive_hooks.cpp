@@ -427,9 +427,27 @@ void cwin::hook::relative_placement::get_offset(const std::function<void(const P
 }
 
 cwin::ui::surface &cwin::hook::relative_placement::get_sibling(ui::surface &target, sibling_type type){
-	auto sibling = dynamic_cast<ui::surface *>((type == sibling_type::previous) ? target.get_previous_sibling() : target.get_next_sibling());
+	ui::surface *sibling = nullptr;
+	switch (type){
+	case sibling_type::previous:
+		sibling = target.get_previous_sibling<ui::surface>();
+		break;
+	case sibling_type::next:
+		sibling = target.get_next_sibling<ui::surface>();
+		break;
+	case sibling_type::first:
+		sibling = target.get_first_sibling<ui::surface>();
+		break;
+	case sibling_type::last:
+		sibling = target.get_last_sibling<ui::surface>();
+		break;
+	default:
+		break;
+	}
+
 	if (sibling == nullptr)
 		throw ui::exception::not_supported();
+
 	return *sibling;
 }
 

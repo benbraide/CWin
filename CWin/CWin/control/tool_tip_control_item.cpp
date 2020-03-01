@@ -269,7 +269,7 @@ void cwin::control::tool_tip_item::destroy_(){
 
 	HWND window_handle = nullptr;
 	if (auto window_target = dynamic_cast<ui::window_surface *>(&target_); window_target == nullptr){
-		if (auto window_ancestor = target_.get_matching_ancestor<ui::window_surface>(); window_ancestor != nullptr)
+		if (auto window_ancestor = target_.get_ancestor<ui::window_surface>(0u); window_ancestor != nullptr)
 			window_handle = window_ancestor->get_handle();
 	}
 	else//Window target

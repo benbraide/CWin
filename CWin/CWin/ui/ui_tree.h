@@ -41,23 +41,53 @@ namespace cwin::ui{
 
 		virtual void find_child(const object &child, const std::function<void(std::size_t)> &callback) const;
 
-		template <typename object_type>
-		object_type *find_first_of(std::size_t index = 0u) const{
+		template <typename object_type = object>
+		object_type *get_child(std::size_t index) const{
 			return execute_task([&]{
-				return find_first_of_<object_type>(index);
+				return get_child_<object_type>(index);
 			});
 		}
 
-		template <typename object_type>
-		void find_first_of(const std::function<void(object_type *)> &callback, std::size_t index = 0u) const{
+		template <typename callback_type>
+		void get_child(std::size_t index, const callback_type &callback) const{
 			post_or_execute_task([=]{
-				callback(find_first_of_<object_type>(index));
+				get_child_(index, utility::object_to_function_traits::get(callback));
+			});
+		}
+		
+		template <typename object_type = object>
+		object_type *reverse_get_child(std::size_t index) const{
+			return execute_task([&]{
+				return reverse_get_child_<object_type>(index);
 			});
 		}
 
-		virtual object *get_child_at(std::size_t index) const;
+		template <typename callback_type>
+		void reverse_get_child(std::size_t index, const callback_type &callback) const{
+			post_or_execute_task([=]{
+				reverse_get_child_(index, utility::object_to_function_traits::get(callback));
+			});
+		}
 
-		virtual void get_child_at(std::size_t index, const std::function<void(object *)> &callback) const;
+		template <typename object_type = object>
+		object_type *get_first_child() const{
+			return get_child<object_type>(0u);
+		}
+
+		template <typename callback_type>
+		void get_first_child(const callback_type &callback) const{
+			get_child(0u, callback);
+		}
+
+		template <typename object_type = object>
+		object_type *get_last_child() const{
+			return reverse_get_child<object_type>(0u);
+		}
+
+		template <typename callback_type>
+		void get_last_child(const callback_type &callback) const{
+			reverse_get_child(0u, callback);
+		}
 
 		template <typename object_type>
 		std::size_t get_children_count() const{
@@ -133,18 +163,32 @@ namespace cwin::ui{
 			}
 
 			template <typename object_type>
-			static void call_traverse_children(const tree &target, const std::function<bool(object_type &)> &callback){
+			static void call_traverse_children(const tree &target, const std::function<bool(object_type &, std::size_t, std::size_t)> &callback){
 				target.traverse_children_(callback);
+			}
+
+			template <typename object_type>
+			static void call_traverse_children(const tree &target, const std::function<bool(object_type &)> &callback){
+				target.traverse_children_<object_type>([&](object_type &value, std::size_t, std::size_t){
+					return callback(value);
+				});
 			}
 
 			template <typename object_type>
 			static void call_traverse_offspring(const tree &target, const std::function<bool(object_type &)> &callback){
 				target.traverse_offspring_(callback);
 			}
+			
+			template <typename object_type>
+			static void call_reverse_traverse_children(const tree &target, const std::function<bool(object_type &, std::size_t, std::size_t)> &callback){
+				target.reverse_traverse_children_(callback);
+			}
 
 			template <typename object_type>
 			static void call_reverse_traverse_children(const tree &target, const std::function<bool(object_type &)> &callback){
-				target.reverse_traverse_children_(callback);
+				target.reverse_traverse_children_<object_type>([&](object_type &value, std::size_t, std::size_t){
+					return callback(value);
+				});
 			}
 
 			template <typename object_type>
@@ -164,8 +208,16 @@ namespace cwin::ui{
 			}
 
 			template <typename object_type>
+			static void call_traverse_children(const tree &target, const std::function<void(object_type &, std::size_t, std::size_t)> &callback){
+				tree_call_forwarder<bool>::call_traverse_children<object_type>(target, [&](object_type &value, std::size_t index, std::size_t matched_index){
+					callback(value, index, matched_index);
+					return true;
+				});
+			}
+			
+			template <typename object_type>
 			static void call_traverse_children(const tree &target, const std::function<void(object_type &)> &callback){
-				tree_call_forwarder<bool>::call_traverse_children<object_type>(target, [&](object_type &value){
+				tree_call_forwarder<bool>::call_traverse_children<object_type>(target, [&](object_type &value, std::size_t, std::size_t){
 					callback(value);
 					return true;
 				});
@@ -180,8 +232,16 @@ namespace cwin::ui{
 			}
 
 			template <typename object_type>
+			static void call_reverse_traverse_children(const tree &target, const std::function<void(object_type &, std::size_t, std::size_t)> &callback){
+				tree_call_forwarder<bool>::call_reverse_traverse_children<object_type>(target, [&](object_type &value, std::size_t index, std::size_t matched_index){
+					callback(value, index, matched_index);
+					return true;
+				});
+			}
+			
+			template <typename object_type>
 			static void call_reverse_traverse_children(const tree &target, const std::function<void(object_type &)> &callback){
-				tree_call_forwarder<bool>::call_reverse_traverse_children<object_type>(target, [&](object_type &value){
+				tree_call_forwarder<bool>::call_reverse_traverse_children<object_type>(target, [&](object_type &value, std::size_t, std::size_t){
 					callback(value);
 					return true;
 				});
@@ -264,25 +324,60 @@ namespace cwin::ui{
 		virtual std::size_t find_child_(const object &child) const;
 
 		template <typename object_type>
-		object_type *find_first_of_(std::size_t index) const{
-			if (children_.empty())
-				return nullptr;
-
-			object_type *matched = nullptr;
-			for (auto child : children_){
-				if ((matched = dynamic_cast<object_type *>(child)) != nullptr){
-					if (index == 0u)
-						break;
-
-					matched = nullptr;
-					--index;
+		object_type *get_child_(std::size_t index) const{
+			object_type *value = nullptr;
+			traverse_children_<object_type>([&](object_type &child, std::size_t, std::size_t matched_index){
+				if (index <= matched_index){
+					value = &child;
+					return false;
 				}
-			}
 
-			return matched;
+				return true;
+			});
+
+			return value;
 		}
 
-		virtual object *get_child_at_(std::size_t index) const;
+		template <typename object_type>
+		void get_child_(std::size_t index, const std::function<void(object_type *)> &callback) const{
+			callback(get_child_<object_type>(index));
+		}
+
+		template <typename object_type>
+		void get_child_(std::size_t index, const std::function<void(object_type &)> &callback) const{
+			get_child_<object_type>(index, [&](object_type *value){
+				if (value != nullptr)
+					callback(*value);
+			});
+		}
+		
+		template <typename object_type>
+		object_type *reverse_get_child_(std::size_t index) const{
+			object_type *value = nullptr;
+			reverse_traverse_children_<object_type>([&](object_type &child, std::size_t, std::size_t matched_index){
+				if (index <= matched_index){
+					value = &child;
+					return false;
+				}
+
+				return true;
+			});
+
+			return value;
+		}
+
+		template <typename object_type>
+		void reverse_get_child_(std::size_t index, const std::function<void(object_type *)> &callback) const{
+			callback(reverse_get_child_<object_type>(index));
+		}
+
+		template <typename object_type>
+		void reverse_get_child_(std::size_t index, const std::function<void(object_type &)> &callback) const{
+			reverse_get_child_<object_type>(index, [&](object_type *value){
+				if (value != nullptr)
+					callback(*value);
+			});
+		}
 
 		template <typename object_type>
 		std::size_t get_children_count_() const{
@@ -303,40 +398,56 @@ namespace cwin::ui{
 			if (children_.empty() || children_.size() <= value)
 				return value;
 
-			std::size_t child_index = 0u, item_index = 0u;
-			for (auto child : children_){
-				if (dynamic_cast<object_type *>(child) != nullptr){
-					if (value <= item_index)
-						break;
-					++item_index;
-				}
+			std::size_t child_index = 0u;
+			traverse_children_<object_type>([&](object_type &child, std::size_t index, std::size_t matched_index){
+				child_index = index;
+				if (value <= matched_index)
+					return false;
 
-				++child_index;
-			}
+				return true;
+			});
 
 			return child_index;
 		}
 
 		template <typename object_type>
-		void traverse_children_(const std::function<bool(object_type &)> &callback) const{
+		void traverse_children_(const std::function<bool(object_type &, std::size_t, std::size_t)> &callback) const{
 			if (children_.empty())
 				return;
 
+			std::size_t index = 0u, matched_index = 0u;
 			for (auto child : children_){
-				if (auto target_child = dynamic_cast<object_type *>(child); target_child != nullptr && !callback(*target_child))
+				if (auto target_child = dynamic_cast<object_type *>(child); target_child != nullptr && !callback(*target_child, index, matched_index++))
 					break;
+				++index;
+			}
+		}
+
+		template <typename object_type>
+		void traverse_children_(const std::function<bool(object_type &)> &callback) const{
+			traverse_children_<object_type>([&](object_type &value, std::size_t, std::size_t){
+				return callback(value);
+			});
+		}
+		
+		template <typename object_type>
+		void reverse_traverse_children_(const std::function<bool(object_type &, std::size_t, std::size_t)> &callback) const{
+			if (children_.empty())
+				return;
+
+			std::size_t index = (children_.size() - 1u), matched_index = 0u;
+			for (auto child = children_.rbegin(); child != children_.rend(); ++child){
+				if (auto target_child = dynamic_cast<object_type *>(*child); target_child != nullptr && !callback(*target_child, index, matched_index++))
+					break;
+				--index;
 			}
 		}
 		
 		template <typename object_type>
 		void reverse_traverse_children_(const std::function<bool(object_type &)> &callback) const{
-			if (children_.empty())
-				return;
-
-			for (auto child = children_.rbegin(); child != children_.rend(); ++child){
-				if (auto target_child = dynamic_cast<object_type *>(*child); target_child != nullptr && !callback(*target_child))
-					break;
-			}
+			reverse_traverse_children_<object_type>([&](object_type &value, std::size_t, std::size_t){
+				return callback(value);
+			});
 		}
 		
 		template <typename object_type>

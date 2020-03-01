@@ -54,18 +54,6 @@ void cwin::ui::tree::find_child(const object &child, const std::function<void(st
 	});
 }
 
-cwin::ui::tree::object *cwin::ui::tree::get_child_at(std::size_t index) const{
-	return execute_task([&]{
-		return get_child_at_(index);
-	});
-}
-
-void cwin::ui::tree::get_child_at(std::size_t index, const std::function<void(object *)> &callback) const{
-	post_or_execute_task([=]{
-		callback(get_child_at_(index));
-	});
-}
-
 void cwin::ui::tree::after_create_(){
 	object::after_create_();
 	for (auto item : auto_create_objects_){
@@ -247,8 +235,4 @@ std::size_t cwin::ui::tree::find_child_(const object &child) const{
 	});
 
 	return ((it == children_.end()) ? static_cast<std::size_t>(-1) : static_cast<std::size_t>(std::distance(children_.begin(), it)));
-}
-
-cwin::ui::tree::object *cwin::ui::tree::get_child_at_(std::size_t index) const{
-	return ((!children_.empty() && index < children_.size()) ? *std::next(children_.begin(), index) : nullptr);
 }

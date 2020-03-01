@@ -396,7 +396,7 @@ const POINT &cwin::ui::surface::get_position_() const{
 
 POINT cwin::ui::surface::compute_absolute_position_() const{
 	auto value = get_position_();
-	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+	if (auto surface_ancestor = get_ancestor_<surface>(0u); surface_ancestor != nullptr)
 		surface_ancestor->compute_relative_to_absolute_(value);
 	return value;
 }
@@ -410,7 +410,7 @@ RECT cwin::ui::surface::compute_dimension_() const{
 
 RECT cwin::ui::surface::compute_absolute_dimension_() const{
 	auto dimension = compute_dimension_();
-	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+	if (auto surface_ancestor = get_ancestor_<surface>(0u); surface_ancestor != nullptr)
 		surface_ancestor->compute_relative_to_absolute_(dimension);
 	return dimension;
 }
@@ -420,7 +420,7 @@ SIZE cwin::ui::surface::compute_client_size_() const{
 }
 
 void cwin::ui::surface::compute_relative_to_absolute_(POINT &value) const{
-	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+	if (auto surface_ancestor = get_ancestor_<surface>(0u); surface_ancestor != nullptr)
 		surface_ancestor->compute_relative_to_absolute_(value);
 
 	auto &position = get_position_();
@@ -432,7 +432,7 @@ void cwin::ui::surface::compute_relative_to_absolute_(POINT &value) const{
 
 void cwin::ui::surface::compute_relative_to_absolute_(RECT &value) const{
 	auto &position = get_position_();
-	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+	if (auto surface_ancestor = get_ancestor_<surface>(0u); surface_ancestor != nullptr)
 		surface_ancestor->compute_relative_to_absolute_(value);
 
 	POINT offset{};
@@ -442,7 +442,7 @@ void cwin::ui::surface::compute_relative_to_absolute_(RECT &value) const{
 }
 
 void cwin::ui::surface::compute_absolute_to_relative_(POINT &value) const{
-	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+	if (auto surface_ancestor = get_ancestor_<surface>(0u); surface_ancestor != nullptr)
 		surface_ancestor->compute_absolute_to_relative_(value);
 
 	auto &position = get_position_();
@@ -454,7 +454,7 @@ void cwin::ui::surface::compute_absolute_to_relative_(POINT &value) const{
 
 void cwin::ui::surface::compute_absolute_to_relative_(RECT &value) const{
 	auto &position = get_position_();
-	if (auto surface_ancestor = get_matching_ancestor<surface>(); surface_ancestor != nullptr)
+	if (auto surface_ancestor = get_ancestor_<surface>(0u); surface_ancestor != nullptr)
 		surface_ancestor->compute_absolute_to_relative_(value);
 
 	POINT offset{};
@@ -496,7 +496,7 @@ const cwin::ui::surface::handle_bound_info &cwin::ui::surface::get_client_bound_
 }
 
 const cwin::ui::surface::handle_bound_info &cwin::ui::surface::get_ancestor_client_bound_(POINT &offset) const{
-	auto surface_ancestor = get_matching_ancestor_<surface>(nullptr);
+	auto surface_ancestor = get_ancestor_<surface>(0u);
 	if (surface_ancestor == nullptr)
 		throw exception::not_supported();
 

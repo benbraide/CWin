@@ -76,7 +76,7 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 	popup *context_value = nullptr;
 	auto moused = top_moused;
 
-	for (; moused != nullptr; moused = moused->get_matching_ancestor<ui::visible_surface>()){
+	for (; moused != nullptr; moused = moused->get_ancestor<ui::visible_surface>(0u)){
 		events::menu::context e(*moused, *top_moused);
 		moused->get_events().trigger(e);
 
@@ -105,7 +105,7 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 	}
 
 	auto window_moused = dynamic_cast<ui::window_surface *>(moused);
-	if (window_moused != nullptr || (window_moused = moused->get_matching_ancestor<ui::window_surface>()) != nullptr)
+	if (window_moused != nullptr || (window_moused = moused->get_ancestor<ui::window_surface>(0u)) != nullptr)
 		TrackPopupMenu(context_value->get_handle(), (GetSystemMetrics(SM_MENUDROPALIGNMENT) | TPM_RIGHTBUTTON), position.x, position.y, 0, window_moused->get_handle(), nullptr);
 
 	return true;

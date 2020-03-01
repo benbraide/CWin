@@ -111,7 +111,7 @@ void cwin::menu::item::create_(){
 	if (active_index_ != static_cast<UINT>(-1))
 		return;
 
-	auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr);
+	auto object_ancestor = get_ancestor_<menu::object>(0u);
 	if (object_ancestor == nullptr || !object_ancestor->is_created())
 		throw ui::exception::not_supported();
 
@@ -152,7 +152,7 @@ void cwin::menu::item::destroy_(){
 	if (active_index_ == static_cast<UINT>(-1))
 		return;
 
-	auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr);
+	auto object_ancestor = get_ancestor_<menu::object>(0u);
 	if (object_ancestor == nullptr)
 		throw ui::exception::not_supported();
 
@@ -199,7 +199,7 @@ void cwin::menu::item::set_states_(UINT value){
 	states_ = value;
 	auto computed_states = get_computed_states_();
 
-	if (auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr); object_ancestor != nullptr && is_created_()){
+	if (auto object_ancestor = get_ancestor_<menu::object>(0u); object_ancestor != nullptr && is_created_()){
 		MENUITEMINFOW info{
 			sizeof(MENUITEMINFOW),
 			MIIM_STATE,
@@ -234,7 +234,7 @@ UINT cwin::menu::item::get_persistent_states_() const{
 }
 
 void cwin::menu::item::update_types_(){
-	if (auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr); object_ancestor != nullptr && is_created_()){
+	if (auto object_ancestor = get_ancestor_<menu::object>(0u); object_ancestor != nullptr && is_created_()){
 		MENUITEMINFOW info{
 			sizeof(MENUITEMINFOW),
 			MIIM_FTYPE,

@@ -90,7 +90,7 @@ void cwin::control::check_button::check_(){
 	events_.trigger<events::control::check>();
 
 	if (is_radio_()){//Remove checks from siblings
-		traverse_siblings_<check_button>([](check_button &offspring, bool){
+		traverse_siblings_<check_button>([](check_button &offspring, bool, std::size_t, std::size_t){
 			offspring.uncheck_(true);
 			return true;
 		});

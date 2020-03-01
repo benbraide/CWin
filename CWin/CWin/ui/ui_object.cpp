@@ -6,11 +6,11 @@ cwin::ui::tree *cwin::ui::object_helper::get_ancestor(tree &parent){
 	return parent.get_parent();
 }
 
-void cwin::ui::object_helper::traverse_children(tree &parent, const std::function<bool(object &)> &callback){
+void cwin::ui::object_helper::traverse_children(tree &parent, const std::function<bool(object &, std::size_t, std::size_t)> &callback){
 	parent.traverse_children(callback);
 }
 
-void cwin::ui::object_helper::reverse_traverse_children(tree &parent, const std::function<bool(object &)> &callback){
+void cwin::ui::object_helper::reverse_traverse_children(tree &parent, const std::function<bool(object &, std::size_t, std::size_t)> &callback){
 	parent.reverse_traverse_children(callback);
 }
 
@@ -59,30 +59,6 @@ void cwin::ui::object::get_parent(const std::function<void(tree *)> &callback) c
 	});
 }
 
-cwin::ui::tree *cwin::ui::object::get_ancestor(std::size_t index) const{
-	return execute_task([&]{
-		return get_ancestor_(index);
-	});
-}
-
-void cwin::ui::object::get_ancestor(std::size_t index, const std::function<void(tree *)> &callback) const{
-	post_or_execute_task([=]{
-		callback(get_ancestor_(index));
-	});
-}
-
-cwin::ui::tree *cwin::ui::object::get_top_ancestor() const{
-	return execute_task([&]{
-		return get_top_ancestor_();
-	});
-}
-
-void cwin::ui::object::get_top_ancestor(const std::function<void(tree *)> &callback) const{
-	post_or_execute_task([=]{
-		callback(get_top_ancestor_());
-	});
-}
-
 bool cwin::ui::object::is_ancestor(const tree &target) const{
 	return execute_task([&]{
 		return is_ancestor_(target);
@@ -110,30 +86,6 @@ std::size_t cwin::ui::object::get_index() const{
 void cwin::ui::object::get_index(const std::function<void(std::size_t)> &callback) const{
 	post_or_execute_task([=]{
 		callback(get_index_());
-	});
-}
-
-cwin::ui::object *cwin::ui::object::get_previous_sibling() const{
-	return execute_task([&]{
-		return get_previous_sibling_();
-	});
-}
-
-void cwin::ui::object::get_previous_sibling(const std::function<void(object *)> &callback) const{
-	post_or_execute_task([=]{
-		callback(get_previous_sibling_());
-	});
-}
-
-cwin::ui::object *cwin::ui::object::get_next_sibling() const{
-	return execute_task([&]{
-		return get_next_sibling_();
-	});
-}
-
-void cwin::ui::object::get_next_sibling(const std::function<void(object *)> &callback) const{
-	post_or_execute_task([=]{
-		callback(get_next_sibling_());
 	});
 }
 
@@ -231,24 +183,6 @@ cwin::ui::tree *cwin::ui::object::get_parent_() const{
 	return parent_;
 }
 
-cwin::ui::tree *cwin::ui::object::get_ancestor_(std::size_t index) const{
-	auto ancestor = parent_;
-	for (; ancestor != nullptr && 0u < index; --index)
-		ancestor = ancestor->parent_;
-
-	return ancestor;
-}
-
-cwin::ui::tree *cwin::ui::object::get_top_ancestor_() const{
-	auto ancestor = parent_, previous_ancestor = parent_;
-	while (ancestor != nullptr){
-		previous_ancestor = ancestor;
-		ancestor = ancestor->parent_;
-	}
-
-	return previous_ancestor;
-}
-
 bool cwin::ui::object::is_ancestor_(const tree &target) const{
 	for (auto ancestor = parent_; ancestor != nullptr; ancestor = ancestor->parent_){
 		if (ancestor == &target)
@@ -282,14 +216,6 @@ void cwin::ui::object::changed_index_(std::size_t old_value){
 
 std::size_t cwin::ui::object::get_index_() const{
 	return ((parent_ == nullptr) ? index_ : parent_->find_child_(*this));
-}
-
-cwin::ui::object *cwin::ui::object::get_previous_sibling_() const{
-	return ((parent_ == nullptr) ? nullptr : parent_->get_child_at_(parent_->find_child_(*this) - 1u));
-}
-
-cwin::ui::object *cwin::ui::object::get_next_sibling_() const{
-	return ((parent_ == nullptr) ? nullptr : parent_->get_child_at_(parent_->find_child_(*this) + 1u));
 }
 
 void cwin::ui::object::create_(){

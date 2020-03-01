@@ -25,7 +25,7 @@ void cwin::menu::system_item::generate_id_() const{
 	if (item_self == nullptr)
 		return;
 
-	auto popup_ancestor = item_self->get_matching_ancestor<popup>();
+	auto popup_ancestor = item_self->get_ancestor<popup>(0u);
 	if (popup_ancestor == nullptr)
 		return;
 

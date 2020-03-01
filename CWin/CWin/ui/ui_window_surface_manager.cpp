@@ -144,7 +144,7 @@ cwin::ui::window_surface *cwin::ui::window_surface_manager::find_(HWND key, bool
 }
 
 bool cwin::ui::window_surface_manager::is_dialog_message_(MSG &msg){
-	for (auto focused = mouse_info_.focused; focused != nullptr; focused = focused->get_matching_ancestor<window_surface>()){
+	for (auto focused = mouse_info_.focused; focused != nullptr; focused = focused->get_ancestor<window_surface>(0u)){
 		if (focused->is_dialog_message_(msg))
 			return true;
 	}
@@ -533,12 +533,15 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 		if (mouse_info_.target == &target)
 			mouse_info_.target = nullptr;
 
-		for (auto window_ancestor = target.get_matching_ancestor<window_surface>(); window_ancestor != nullptr; window_ancestor = window_ancestor->get_matching_ancestor<window_surface>()){
-			if (window_ancestor->hit_test_(position) != HTNOWHERE)
-				break;
-			else if (window_ancestor->io_hook_ != nullptr)//Outside ancestor
-				window_ancestor->io_hook_->mouse_leave_();
-		}
+		target.traverse_ancestors([&](window_surface &ancestor){
+			if (ancestor.hit_test_(position) != HTNOWHERE)
+				return false;
+
+			if (ancestor.io_hook_ != nullptr)//Outside ancestor
+				ancestor.io_hook_->mouse_leave_();
+
+			return true;
+		});
 	}
 }
 

@@ -11,20 +11,8 @@ namespace cwin::ui{
 		explicit sibling(std::size_t index)
 			: index_(index){}
 
-		virtual object_type &get(const object_type &target) const{
-			auto index = index_;
-			object_type *value = nullptr;
-
-			target.traverse_siblings([&](object_type &sibling){
-				if (index == 0u){
-					value = &sibling;
-					return false;
-				}
-
-				--index;
-				return true;
-			});
-
+		virtual object_type &get(const object &target) const{
+			auto value = target.get_sibling<object_type>(index_);
 			if (value == nullptr)
 				throw ui::exception::not_supported();
 
@@ -36,28 +24,28 @@ namespace cwin::ui{
 	};
 
 	template <class object_type>
+	class reverse_sibling : public sibling<object_type>{
+	public:
+		using base_type = sibling<object_type>;
+		using base_type::base_type;
+
+		virtual object_type &get(const object &target) const override{
+			auto value = target.reverse_get_sibling<object_type>(base_type::index_);
+			if (value == nullptr)
+				throw ui::exception::not_supported();
+
+			return *value;
+		}
+	};
+
+	template <class object_type>
 	class previous_sibling : public sibling<object_type>{
 	public:
 		using base_type = sibling<object_type>;
 		using base_type::base_type;
 
-		virtual object_type &get(const object_type &target) const override{
-			auto index = base_type::index_;
-			object_type *value = nullptr;
-
-			target.reverse_traverse_siblings([&](object_type &sibling, bool is_previous){
-				if (!is_previous)
-					return true;
-
-				if (index == 0u){
-					value = &sibling;
-					return false;
-				}
-
-				--index;
-				return true;
-			});
-
+		virtual object_type &get(const object &target) const override{
+			auto value = target.get_previous_sibling<object_type>(base_type::index_);
 			if (value == nullptr)
 				throw ui::exception::not_supported();
 
@@ -71,23 +59,42 @@ namespace cwin::ui{
 		using base_type = sibling<object_type>;
 		using base_type::base_type;
 
-		virtual object_type &get(const object_type &target) const override{
-			auto index = base_type::index_;
-			object_type *value = nullptr;
+		virtual object_type &get(const object &target) const override{
+			auto value = target.get_next_sibling<object_type>(base_type::index_);
+			if (value == nullptr)
+				throw ui::exception::not_supported();
 
-			target.traverse_siblings([&](object_type &sibling, bool is_previous){
-				if (is_previous)
-					return true;
+			return *value;
+		}
+	};
 
-				if (index == 0u){
-					value = &sibling;
-					return false;
-				}
+	template <class object_type>
+	class first_sibling : public sibling<object_type>{
+	public:
+		using base_type = sibling<object_type>;
 
-				--index;
-				return true;
-			});
+		first_sibling()
+			: base_type(0u){}
 
+		virtual object_type &get(const object &target) const override{
+			auto value = target.get_first_sibling<object_type>();
+			if (value == nullptr)
+				throw ui::exception::not_supported();
+
+			return *value;
+		}
+	};
+
+	template <class object_type>
+	class last_sibling : public sibling<object_type>{
+	public:
+		using base_type = sibling<object_type>;
+
+		last_sibling()
+			: base_type(0u){}
+
+		virtual object_type &get(const object &target) const override{
+			auto value = target.get_last_sibling<object_type>();
 			if (value == nullptr)
 				throw ui::exception::not_supported();
 

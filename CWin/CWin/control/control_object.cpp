@@ -28,7 +28,7 @@ cwin::control::object::object(tree &parent, std::size_t index, const std::wstrin
 cwin::control::object::~object() = default;
 
 bool cwin::control::object::is_dialog_message_(MSG &msg) const{
-	if (auto window_ancestor = get_matching_ancestor_<window_surface>(nullptr); window_ancestor != nullptr)
+	if (auto window_ancestor = get_ancestor_<window_surface>(0u); window_ancestor != nullptr)
 		return window_ancestor->is_dialog_message(msg);
 	return false;
 }

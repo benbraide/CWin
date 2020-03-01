@@ -118,7 +118,7 @@ void cwin::menu::check_item::set_checked_bitmap_(HBITMAP value){
 	if (!is_created_())
 		return;
 
-	auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr);
+	auto object_ancestor = get_ancestor_<menu::object>(0u);
 	if (object_ancestor == nullptr)
 		return;
 

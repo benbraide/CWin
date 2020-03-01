@@ -136,7 +136,7 @@ bool cwin::ui::visible_surface::is_occluded_() const{
 	if (!is_visible_())
 		return true;
 
-	if (auto visible_parent = get_matching_ancestor_<visible_surface>(nullptr); visible_parent != nullptr)
+	if (auto visible_parent = get_ancestor_<visible_surface>(0u); visible_parent != nullptr)
 		return visible_parent->is_occluded_();
 
 	return false;

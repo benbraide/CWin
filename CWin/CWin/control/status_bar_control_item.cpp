@@ -70,7 +70,7 @@ void cwin::control::status_bar::item::create_(){
 	if (active_index_ != -1)
 		return;
 
-	auto status_bar_ancestor = get_matching_ancestor_<status_bar::object>(nullptr);
+	auto status_bar_ancestor = get_ancestor_<status_bar::object>(0u);
 	if (status_bar_ancestor == nullptr)
 		throw ui::exception::not_supported();
 
@@ -96,7 +96,7 @@ void cwin::control::status_bar::item::destroy_(){
 	if (active_index_ == -1)
 		return;
 
-	auto status_bar_ancestor = get_matching_ancestor_<status_bar::object>(nullptr);
+	auto status_bar_ancestor = get_ancestor_<status_bar::object>(0u);
 	if (status_bar_ancestor == nullptr)
 		throw ui::exception::not_supported();
 

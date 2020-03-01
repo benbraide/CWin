@@ -59,7 +59,7 @@ cwin::menu::popup *cwin::menu::popup::get_top_() const{
 	if (link_ == nullptr)
 		return const_cast<popup *>(this);
 
-	if (auto popup_ancestor = link_->get_matching_ancestor<popup>(); popup_ancestor != nullptr)
+	if (auto popup_ancestor = link_->get_ancestor<popup>(0u); popup_ancestor != nullptr)
 		return popup_ancestor->get_top_();
 
 	return const_cast<popup *>(this);

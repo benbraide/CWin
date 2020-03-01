@@ -25,18 +25,16 @@ cwin::control::text_input::text_input(tree &parent, std::size_t index)
 	});
 
 	traverse_children_<menu::library_popup>([&](menu::library_popup &popup){
-		bind_(popup, [&](events::menu::init_item &e){
-			if (auto library_item = dynamic_cast<menu::library_item *>(&e.get_target()); library_item != nullptr){
-				switch (library_item->get_id()){
-				case 768u://Cut
-				case 769u://Copy
-					return (is_password_ ? events::menu::init_item::state_type::disable : events::menu::init_item::state_type::enable);
-				default:
-					break;
-				}
-			}
+		popup.find_item(768u, [&](menu::library_action_item &item){//Cut
+			bind_(item, [=](events::menu::init_item &e){
+				return (is_password_ ? events::menu::init_item::state_type::disable : events::menu::init_item::state_type::enable);
+			});
+		});
 
-			return e.get_result_as<events::menu::init_item::state_type>();
+		popup.find_item(769u, [&](menu::library_action_item &item){//Copy
+			bind_(item, [=](events::menu::init_item &e){
+				return (is_password_ ? events::menu::init_item::state_type::disable : events::menu::init_item::state_type::enable);
+			});
 		});
 
 		return true;

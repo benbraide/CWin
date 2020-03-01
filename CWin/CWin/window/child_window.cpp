@@ -11,7 +11,7 @@ cwin::window::child::child(ui::surface &parent, std::size_t index)
 cwin::window::child::~child() = default;
 
 bool cwin::window::child::changing_parent_(tree *value){
-	if (dynamic_cast<ui::window_surface *>(value) == nullptr || value->get_matching_ancestor<ui::window_surface>() == nullptr)
+	if (dynamic_cast<ui::window_surface *>(value) == nullptr || value->get_ancestor<ui::window_surface>(0u) == nullptr)
 		return false;
 
 	return object::changing_parent_(value);

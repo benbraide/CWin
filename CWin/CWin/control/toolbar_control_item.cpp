@@ -111,7 +111,7 @@ void cwin::control::toolbar::item::create_(){
 	if (active_index_ != -1)
 		return;
 
-	auto toolbar_ancestor = get_matching_ancestor_<toolbar::object>(nullptr);
+	auto toolbar_ancestor = get_ancestor_<toolbar::object>(0u);
 	if (toolbar_ancestor == nullptr || !toolbar_ancestor->is_created())
 		throw ui::exception::not_supported();
 
@@ -146,7 +146,7 @@ void cwin::control::toolbar::item::destroy_(){
 	if (active_index_ == -1)
 		return;
 
-	auto toolbar_ancestor = get_matching_ancestor_<toolbar::object>(nullptr);
+	auto toolbar_ancestor = get_ancestor_<toolbar::object>(0u);
 	if (toolbar_ancestor == nullptr)
 		throw ui::exception::not_supported();
 
@@ -185,7 +185,7 @@ void cwin::control::toolbar::item::set_states_(BYTE value){
 	states_ = value;
 	auto computed_states = get_computed_states_();
 
-	if (auto toolbar_ancestor = get_matching_ancestor_<toolbar::object>(nullptr); toolbar_ancestor != nullptr && is_created_()){
+	if (auto toolbar_ancestor = get_ancestor_<toolbar::object>(0u); toolbar_ancestor != nullptr && is_created_()){
 		/*MENUITEMINFOW info{
 			sizeof(MENUITEMINFOW),
 			MIIM_STATE,

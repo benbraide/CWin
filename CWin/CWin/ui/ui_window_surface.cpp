@@ -438,7 +438,7 @@ bool cwin::ui::window_surface::is_dialog_message_(MSG &msg) const{
 }
 
 bool cwin::ui::window_surface::is_top_level_() const{
-	return (get_matching_ancestor_<window_surface>(nullptr) == nullptr);
+	return (get_ancestor_<window_surface>(0u) == nullptr);
 }
 
 void cwin::ui::window_surface::update_styles_(){

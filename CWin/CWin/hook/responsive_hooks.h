@@ -123,6 +123,8 @@ namespace cwin::hook{
 	class relative_placement : public object{
 	public:
 		using sibling = ui::sibling<ui::surface>;
+		using reverse_sibling = ui::reverse_sibling<ui::surface>;
+
 		using previous_sibling = ui::previous_sibling<ui::surface>;
 		using next_sibling = ui::next_sibling<ui::surface>;
 
@@ -141,6 +143,8 @@ namespace cwin::hook{
 		enum class sibling_type{
 			previous,
 			next,
+			first,
+			last,
 		};
 
 		relative_placement(ui::surface &parent, ui::surface &source);

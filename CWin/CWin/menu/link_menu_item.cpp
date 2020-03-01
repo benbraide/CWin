@@ -56,7 +56,7 @@ void cwin::menu::link_item::prepare_info_(MENUITEMINFOW &info) const{
 
 void cwin::menu::link_item::set_text_(const std::wstring &value){
 	text_ = value;
-	if (auto object_ancestor = get_matching_ancestor_<menu::object>(nullptr); object_ancestor != nullptr && is_created_()){
+	if (auto object_ancestor = get_ancestor_<menu::object>(0u); object_ancestor != nullptr && is_created_()){
 		MENUITEMINFOW info{
 			sizeof(MENUITEMINFOW)
 		};
