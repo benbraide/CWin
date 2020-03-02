@@ -134,5 +134,5 @@ void cwin::events::object::trigger_(object &e) const{
 }
 
 void cwin::events::object::trigger_(const target &context, object &e) const{
-	context.get_events().trigger_(e);
+	context.get_events().trigger_(e, true);
 }

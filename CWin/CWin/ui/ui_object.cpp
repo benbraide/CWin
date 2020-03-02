@@ -14,13 +14,51 @@ void cwin::ui::object_helper::reverse_traverse_children(tree &parent, const std:
 	parent.reverse_traverse_children(callback);
 }
 
-cwin::ui::object::object() = default;
+cwin::ui::safe_action::safe_action(const events::action &action)
+	: talk_id_(action.get_talk_id()), handler_(action.get_event_handler()){
+	try{
+		target_ = &action.get_target();
+	}
+	catch (const exception::not_supported &){
+		target_ = nullptr;
+	}
+}
+
+cwin::ui::safe_action::~safe_action() = default;
+
+unsigned __int64 cwin::ui::safe_action::get_talk_id() const{
+	return talk_id_;
+}
+
+cwin::events::target &cwin::ui::safe_action::get_target() const{
+	if (target_ == nullptr)
+		throw exception::not_supported();
+	return *target_;
+}
+
+std::function<void(cwin::events::object &)> cwin::ui::safe_action::get_event_handler() const{
+	if (handler_ == nullptr)
+		return nullptr;
+
+	return [=](events::object &e){
+		try{
+			handler_(e);
+		}
+		catch (const exception::not_supported &){}
+		catch (const exception::action_canceled &){}
+		catch (const exception::action_failed &){}
+	};
+}
+
+cwin::ui::object::object()
+	: create_action(*this, &object::create), destroy_action(*this, &object::create){}
 
 cwin::ui::object::object(tree &parent)
 	: object(parent, static_cast<std::size_t>(-1)){}
 
 cwin::ui::object::object(tree &parent, std::size_t index)
-	: index_(index){
+	: object(){
+	index_ = index;
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error

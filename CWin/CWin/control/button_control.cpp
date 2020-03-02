@@ -37,6 +37,14 @@ cwin::control::button::button(tree &parent, std::size_t index)
 
 cwin::control::button::~button() = default;
 
+void cwin::control::button::trigger_default_event_() const{
+	events_.trigger<events::io::click>();
+}
+
+bool cwin::control::button::is_default_event_(const events::object &e) const{
+	return (dynamic_cast<const events::io::click *>(&e) != nullptr);
+}
+
 bool cwin::control::button::prevent_mouse_click_translation_() const{
 	return true;
 }

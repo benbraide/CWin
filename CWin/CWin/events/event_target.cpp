@@ -1,7 +1,7 @@
 #include "../thread/thread_object.h"
 
 #include "general_events.h"
-#include "event_target.h"
+#include "event_action.h"
 
 cwin::events::target::target(thread::object &thread)
 	: cross_object(thread), events_(*this){
@@ -43,3 +43,11 @@ bool cwin::events::target::adding_default_event_handler_(const std::type_info &t
 void cwin::events::target::added_default_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count){}
 
 void cwin::events::target::removed_default_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count){}
+
+void cwin::events::target::trigger_default_event_() const{
+	throw ui::exception::not_supported();
+}
+
+bool cwin::events::target::is_default_event_(const object &e) const{
+	return false;
+}

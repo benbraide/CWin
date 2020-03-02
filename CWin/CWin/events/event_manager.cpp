@@ -19,7 +19,7 @@ void cwin::events::manager::unbind(unsigned __int64 id){
 
 void cwin::events::manager::trigger(object &e) const{
 	execute_task([&]{
-		trigger_(e);
+		trigger_(e, true);
 	});
 }
 
@@ -155,7 +155,10 @@ bool cwin::events::manager::default_exists_(key_type key, unsigned __int64 id) c
 	return false;
 }
 
-void cwin::events::manager::trigger_(object &e) const{
+void cwin::events::manager::trigger_(object &e, bool check_default) const{
+	if (check_default && dynamic_cast<default_object *>(&e) != nullptr)
+		return target_.trigger_default_event_();
+
 	if (handlers_.empty())
 		return e.do_default();
 
@@ -182,6 +185,11 @@ void cwin::events::manager::trigger_(object &e) const{
 
 			if (e.options_.is_set(object::option_type::stopped_propagation))
 				break;//Propagation stopped
+		}
+
+		if (dynamic_cast<default_object *>(&e) == nullptr && target_.is_default_event_(e)){
+			default_object e2(target_);
+			trigger_(e2, false);
 		}
 
 		--trigger_count_;

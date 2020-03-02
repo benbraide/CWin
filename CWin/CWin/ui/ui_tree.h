@@ -275,14 +275,8 @@ namespace cwin::ui{
 			if (value->is_created())
 				return;
 
-			if (is_created_()){
-				try{
-					value->create();
-				}
-				catch (const exception::not_supported &){}
-				catch (const exception::action_canceled &){}
-				catch (const exception::action_failed &){}
-			}
+			if (is_created_())
+				safe_action(value->create_action).execute();
 			else
 				auto_create_objects_.push_back(value.get());
 		}

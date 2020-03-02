@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../thread/thread_item.h"
+#include "../events/event_action.h"
 
 #include "ui_exception.h"
 
@@ -15,6 +16,42 @@ namespace cwin::ui{
 		static void traverse_children(tree &parent, const std::function<bool(object &, std::size_t, std::size_t)> &callback);
 
 		static void reverse_traverse_children(tree &parent, const std::function<bool(object &, std::size_t, std::size_t)> &callback);
+	};
+
+	class safe_action : public events::action{
+	public:
+		explicit safe_action(const events::action &action);
+
+		virtual ~safe_action();
+
+		virtual unsigned __int64 get_talk_id() const override;
+
+		virtual events::target &get_target() const override;
+
+		virtual std::function<void(events::object &)> get_event_handler() const override;
+
+	protected:
+		unsigned __int64 talk_id_;
+		std::function<void(events::object &)> handler_;
+		events::target *target_;
+	};
+
+	template <class object_type>
+	class simple_action : public events::bound_action{
+	public:
+		simple_action(object_type &target, void (object_type:: *callback)())
+			: bound_action(target), callback_(callback){}
+
+		virtual ~simple_action() = default;
+
+		virtual std::function<void(events::object &)> get_event_handler() const override{
+			return [=](events::object &){
+				(dynamic_cast<object_type &>(target_).*callback_)();
+			};
+		}
+
+	protected:
+		void (object_type:: *callback_)();
 	};
 
 	class object : public thread::item{
@@ -226,6 +263,9 @@ namespace cwin::ui{
 		virtual bool is_disabled() const;
 
 		virtual void is_disabled(const std::function<void(bool)> &callback) const;
+
+		simple_action<object> create_action;
+		simple_action<object> destroy_action;
 
 	protected:
 		friend class tree;

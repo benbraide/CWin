@@ -2,7 +2,7 @@
 
 #include "../thread/cross_thread_object.h"
 
-#include "event_object.h"
+#include "event_action.h"
 
 namespace cwin::hook{
 	class object;
@@ -10,6 +10,7 @@ namespace cwin::hook{
 
 namespace cwin::events{
 	class target;
+	class action;
 
 	class handler{
 	public:
@@ -87,6 +88,13 @@ namespace cwin::events{
 
 		virtual events::target &get_target() const;
 
+		template <typename object_type = default_object>
+		unsigned __int64 bind(const events::action &action){
+			return execute_task([&]{
+				return bind_<object_type>(action);
+			});
+		}
+
 		template <typename handler_type>
 		unsigned __int64 bind(const handler_type &handler, unsigned __int64 talk_id){
 			return execute_task([&]{
@@ -128,7 +136,7 @@ namespace cwin::events{
 		void trigger_then(const std::function<void(utility::small_options &, LRESULT)> &callback, args_types &&... args) const{
 			execute_task([&]{
 				object_type e(target_, std::forward<args_types>(args)...);
-				trigger_(e);
+				trigger_(e, true);
 
 				if (callback != nullptr){
 					utility::small_options options;
@@ -236,6 +244,17 @@ namespace cwin::events{
 		friend class hook::object;
 		friend class thread::object;
 
+		template <typename object_type>
+		unsigned __int64 bind_(const events::action &action){
+			auto handler = action.get_event_handler();
+			if (handler == nullptr)
+				throw ui::exception::not_supported();
+
+			return bind_<object_type, void>([=](object_type &e){
+				handler(e);
+			}, action.get_talk_id());
+		}
+
 		template <typename object_type, typename return_type>
 		unsigned __int64 bind_(const std::function<return_type()> &handler, unsigned __int64 talk_id){
 			return bind_<return_type, object_type>([handler](object_type &){
@@ -272,6 +291,17 @@ namespace cwin::events{
 			alert_target_(false, key, id, talk_id, handler_list.list.size());
 
 			return id;
+		}
+		
+		template <typename object_type>
+		unsigned __int64 bind_default_(const events::action &action){
+			auto handler = action.get_event_handler();
+			if (handler == nullptr)
+				throw ui::exception::not_supported();
+
+			return bind_default_<object_type, void>([=](object_type &e){
+				handler(e);
+			}, action.get_talk_id());
 		}
 
 		template <typename object_type, typename return_type>
@@ -334,7 +364,7 @@ namespace cwin::events{
 			get_options_<second_object_type, other_objects_types...>(callback);
 		}
 
-		virtual void trigger_(object &e) const;
+		virtual void trigger_(object &e, bool check_default) const;
 
 		virtual void trigger_default_(object &e) const;
 

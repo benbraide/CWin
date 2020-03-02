@@ -56,14 +56,9 @@ void cwin::ui::tree::find_child(const object &child, const std::function<void(st
 
 void cwin::ui::tree::after_create_(){
 	object::after_create_();
-	for (auto item : auto_create_objects_){
-		try{
-			item->create();
-		}
-		catch (const exception::not_supported &){}
-		catch (const exception::action_canceled &){}
-		catch (const exception::action_failed &){}
-	}
+
+	for (auto item : auto_create_objects_)
+		safe_action(item->create_action).execute();
 
 	auto_create_objects_.clear();
 }
@@ -73,14 +68,8 @@ bool cwin::ui::tree::before_destroy_(){
 		return false;
 
 	auto children = children_;
-	for (auto child : children){
-		try{
-			child->destroy();
-		}
-		catch (const exception::not_supported &){}
-		catch (const exception::action_canceled &){}
-		catch (const exception::action_failed &){}
-	}
+	for (auto child : children)
+		safe_action(child->destroy_action).execute();
 
 	return true;
 }
@@ -96,14 +85,8 @@ void cwin::ui::tree::after_destroy_(){
 	}
 
 	auto children = children_;
-	for (auto child : children){
-		try{
-			child->destroy();
-		}
-		catch (const exception::not_supported &){}
-		catch (const exception::action_canceled &){}
-		catch (const exception::action_failed &){}
-	}
+	for (auto child : children)
+		safe_action(child->destroy_action).execute();
 
 	object::after_destroy_();
 }

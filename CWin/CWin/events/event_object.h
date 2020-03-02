@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../ui/ui_exception.h"
 #include "../thread/thread_exception.h"
 
 #include "../utility/options.h"
@@ -107,5 +108,12 @@ namespace cwin::events{
 		LRESULT result_ = 0;
 		utility::small_options options_;
 		unsigned __int64 handler_id_ = 0u;
+	};
+
+	class default_object : public object{
+	public:
+		using object::object;
+
+		virtual ~default_object() = default;
 	};
 }

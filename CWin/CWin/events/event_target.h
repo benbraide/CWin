@@ -45,6 +45,10 @@ namespace cwin::events{
 
 		virtual void removed_default_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count);
 
+		virtual void trigger_default_event_() const;
+
+		virtual bool is_default_event_(const object &e) const;
+
 		manager events_;
 	};
 }

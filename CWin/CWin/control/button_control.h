@@ -14,6 +14,10 @@ namespace cwin::control{
 		virtual ~button();
 
 	protected:
+		virtual void trigger_default_event_() const override;
+
+		virtual bool is_default_event_(const events::object &e) const override;
+
 		virtual bool prevent_mouse_click_translation_() const override;
 
 		virtual DWORD get_persistent_styles_() const override;
