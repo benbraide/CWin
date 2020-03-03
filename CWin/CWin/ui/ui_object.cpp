@@ -40,9 +40,9 @@ std::function<void(cwin::events::object &)> cwin::ui::safe_action::get_event_han
 	if (handler_ == nullptr)
 		return nullptr;
 
-	return [=](events::object &e){
+	return [=, handler = handler_](events::object &e){
 		try{
-			handler_(e);
+			handler(e);
 		}
 		catch (const exception::not_supported &){}
 		catch (const exception::action_canceled &){}
@@ -50,15 +50,13 @@ std::function<void(cwin::events::object &)> cwin::ui::safe_action::get_event_han
 	};
 }
 
-cwin::ui::object::object()
-	: create_action(*this, &object::create), destroy_action(*this, &object::create){}
+cwin::ui::object::object() = default;
 
 cwin::ui::object::object(tree &parent)
 	: object(parent, static_cast<std::size_t>(-1)){}
 
 cwin::ui::object::object(tree &parent, std::size_t index)
-	: object(){
-	index_ = index;
+	: index_(index){
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error

@@ -51,6 +51,13 @@ namespace cwin::ui{
 
 		virtual void get_class_name(const std::function<void(const wchar_t *)> &callback) const;
 
+		virtual void focus() const;
+
+		virtual void blur() const;
+
+		simple_action<window_surface> focus_action{ *this, &window_surface::focus };
+		simple_action<window_surface> blur_action{ *this, &window_surface::blur };
+
 	protected:
 		friend class window_surface_manager;
 
@@ -131,6 +138,10 @@ namespace cwin::ui{
 		virtual const wchar_t *get_class_name_() const;
 
 		virtual const wchar_t *get_caption_() const;
+
+		virtual void focus_() const;
+
+		virtual void blur_() const;
 
 		HWND handle_ = nullptr;
 		handle_bound_info handle_bound_{};

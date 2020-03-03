@@ -37,6 +37,12 @@ cwin::control::button::button(tree &parent, std::size_t index)
 
 cwin::control::button::~button() = default;
 
+void cwin::control::button::click() const{
+	post_or_execute_task([=]{
+		click_();
+	});
+}
+
 void cwin::control::button::trigger_default_event_() const{
 	events_.trigger<events::io::click>();
 }
@@ -55,4 +61,12 @@ DWORD cwin::control::button::get_persistent_styles_() const{
 
 const wchar_t *cwin::control::button::get_theme_name_() const{
 	return L"BUTTON";
+}
+
+void cwin::control::button::click_() const{
+	if (handle_ == nullptr)
+		throw ui::exception::not_supported();
+
+	events_.trigger<events::io::click>();
+	focus_();
 }

@@ -13,6 +13,10 @@ namespace cwin::control{
 
 		virtual ~button();
 
+		virtual void click() const;
+
+		ui::simple_action<button> click_action{ *this, &button::click };
+
 	protected:
 		virtual void trigger_default_event_() const override;
 
@@ -23,5 +27,7 @@ namespace cwin::control{
 		virtual DWORD get_persistent_styles_() const override;
 
 		virtual const wchar_t *get_theme_name_() const override;
+
+		virtual void click_() const;
 	};
 }

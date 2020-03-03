@@ -37,6 +37,10 @@ namespace cwin::ui{
 
 		virtual void is_occluded(const std::function<void(bool)> &callback) const;
 
+		simple_action<visible_surface> redraw_action{ *this, &visible_surface::redraw };
+		simple_action<visible_surface> show_action{ *this, &visible_surface::show };
+		simple_action<visible_surface> hide_action{ *this, &visible_surface::hide };
+
 	protected:
 		friend class window_surface_manager;
 		friend class menu::manager;

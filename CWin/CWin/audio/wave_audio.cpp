@@ -58,6 +58,12 @@ void cwin::audio::wave::stop(){
 	});
 }
 
+void cwin::audio::wave::toggle_start(){
+	post_or_execute_task([=]{
+		toggle_start_();
+	});
+}
+
 bool cwin::audio::wave::is_stopped() const{
 	return execute_task([&]{
 		return !state_.is_set(option_type::start);
@@ -112,47 +118,47 @@ void cwin::audio::wave::seek(const std::chrono::nanoseconds &offset){
 	});
 }
 
-void cwin::audio::wave::set_volume(WORD value){
+void cwin::audio::wave::set_volume(float value){
 	set_volume(value, value);
 }
 
-void cwin::audio::wave::set_volume(WORD left, WORD right){
+void cwin::audio::wave::set_volume(float left, float right){
 	post_or_execute_task([=]{
 		set_volume_(left, right);
 	});
 }
 
-DWORD cwin::audio::wave::get_volume() const{
-	return execute_task([&]{
-		return get_volume_();
-	});
-}
-
-void cwin::audio::wave::get_volume(const std::function<void(DWORD)> &callback) const{
-	post_or_execute_task([=]{
-		callback(get_volume_());
-	});
-}
-
-WORD cwin::audio::wave::get_left_volume() const{
+float cwin::audio::wave::get_volume() const{
 	return execute_task([&]{
 		return get_left_volume_();
 	});
 }
 
-void cwin::audio::wave::get_left_volume(const std::function<void(WORD)> &callback) const{
+void cwin::audio::wave::get_volume(const std::function<void(float)> &callback) const{
 	post_or_execute_task([=]{
 		callback(get_left_volume_());
 	});
 }
 
-WORD cwin::audio::wave::get_right_volume() const{
+float cwin::audio::wave::get_left_volume() const{
+	return execute_task([&]{
+		return get_left_volume_();
+	});
+}
+
+void cwin::audio::wave::get_left_volume(const std::function<void(float)> &callback) const{
+	post_or_execute_task([=]{
+		callback(get_left_volume_());
+	});
+}
+
+float cwin::audio::wave::get_right_volume() const{
 	return execute_task([&]{
 		return get_right_volume_();
 	});
 }
 
-void cwin::audio::wave::get_right_volume(const std::function<void(WORD)> &callback) const{
+void cwin::audio::wave::get_right_volume(const std::function<void(float)> &callback) const{
 	post_or_execute_task([=]{
 		callback(get_right_volume_());
 	});
@@ -433,6 +439,13 @@ void cwin::audio::wave::stop_(){
 		throw ui::exception::action_failed();
 }
 
+void cwin::audio::wave::toggle_start_(){
+	if (state_.is_set(option_type::start))
+		stop_();
+	else
+		start_();
+}
+
 void cwin::audio::wave::pause_(){
 	if (handle_ == nullptr)
 		throw ui::exception::not_supported();
@@ -480,24 +493,18 @@ void cwin::audio::wave::seek_(const std::chrono::nanoseconds &offset){
 	flush_();
 }
 
-void cwin::audio::wave::set_volume_(WORD left, WORD right){
-	if (handle_ == nullptr || 100u < left || 100u < right || !state_.is_set(option_type::volume_control))
+void cwin::audio::wave::set_volume_(float left, float right){
+	if (handle_ == nullptr || !state_.is_set(option_type::volume_control))
 		throw ui::exception::not_supported();
 
-	auto left_value = static_cast<WORD>((left / 100.0f) * std::numeric_limits<WORD>::max());
-	auto right_value = static_cast<WORD>((right / 100.0f) * std::numeric_limits<WORD>::max());
+	auto left_value = static_cast<WORD>(left * std::numeric_limits<WORD>::max());
+	auto right_value = (state_.is_set(option_type::lr_volume) ? static_cast<WORD>(right * std::numeric_limits<WORD>::max()) : left_value);
 
 	if (waveOutSetVolume(handle_, static_cast<DWORD>(MAKELONG(left_value, right_value))) != MMSYSERR_NOERROR)
 		throw ui::exception::action_failed();
 }
 
-DWORD cwin::audio::wave::get_volume_() const{
-	if (!state_.is_set(option_type::volume_control))
-		return get_left_volume_();
-	return static_cast<DWORD>(MAKELONG(get_left_volume_(), get_right_volume_()));
-}
-
-WORD cwin::audio::wave::get_left_volume_() const{
+float cwin::audio::wave::get_left_volume_() const{
 	if (handle_ == nullptr)
 		throw ui::exception::not_supported();
 
@@ -505,18 +512,18 @@ WORD cwin::audio::wave::get_left_volume_() const{
 	if (waveOutGetVolume(handle_, &value) != MMSYSERR_NOERROR)
 		throw ui::exception::action_failed();
 
-	return static_cast<WORD>((LOWORD(value) * 100u) / std::numeric_limits<WORD>::max());
+	return (static_cast<float>(LOWORD(value)) / std::numeric_limits<WORD>::max());
 }
 
-WORD cwin::audio::wave::get_right_volume_() const{
-	if (handle_ == nullptr)
+float cwin::audio::wave::get_right_volume_() const{
+	if (handle_ == nullptr || !state_.is_set(option_type::lr_volume))
 		throw ui::exception::not_supported();
 
 	DWORD value = 0u;
 	if (waveOutGetVolume(handle_, &value) != MMSYSERR_NOERROR)
 		throw ui::exception::action_failed();
 
-	return static_cast<WORD>((HIWORD(value) * 100u) / std::numeric_limits<WORD>::max());
+	return (static_cast<float>(HIWORD(value)) / std::numeric_limits<WORD>::max());
 }
 
 void cwin::audio::wave::set_speed_(float value){

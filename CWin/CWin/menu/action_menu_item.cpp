@@ -1,3 +1,5 @@
+#include "../events/menu_events.h"
+
 #include "menu_object.h"
 #include "action_menu_item.h"
 
@@ -19,6 +21,14 @@ void cwin::menu::action_item::get_text(const std::function<void(const std::wstri
 	post_or_execute_task([=]{
 		callback(text_);
 	});
+}
+
+void cwin::menu::action_item::trigger_default_event_() const{
+	events_.trigger<events::menu::select>();
+}
+
+bool cwin::menu::action_item::is_default_event_(const events::object &e) const{
+	return (dynamic_cast<const events::menu::select *>(&e) != nullptr);
 }
 
 void cwin::menu::action_item::prepare_info_(MENUITEMINFOW &info) const{

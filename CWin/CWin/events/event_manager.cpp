@@ -159,13 +159,7 @@ void cwin::events::manager::trigger_(object &e, bool check_default) const{
 	if (check_default && dynamic_cast<default_object *>(&e) != nullptr)
 		return target_.trigger_default_event_();
 
-	if (handlers_.empty())
-		return e.do_default();
-
 	auto it = handlers_.find(get_key(e));
-	if (it == handlers_.end())
-		return e.do_default();
-
 	auto &queue = thread_.get_queue();
 	auto talk_id = target_.get_talk_id();
 
@@ -173,18 +167,20 @@ void cwin::events::manager::trigger_(object &e, bool check_default) const{
 		const_cast<manager *>(this)->unbind_postponed_();
 		++trigger_count_;
 
-		for (auto &handler_info : it->second.list){//Call listeners
-			if (queue.is_blacklisted(talk_id))
-				return;
+		if (it != handlers_.end()){
+			for (auto &handler_info : it->second.list){//Call listeners
+				if (queue.is_blacklisted(talk_id))
+					return;
 
-			if (queue.is_blacklisted(handler_info.handler->get_talk_id()))
-				continue;
+				if (queue.is_blacklisted(handler_info.handler->get_talk_id()))
+					continue;
 
-			e.handler_id_ = handler_info.id;
-			handler_info.handler->call(e);
+				e.handler_id_ = handler_info.id;
+				handler_info.handler->call(e);
 
-			if (e.options_.is_set(object::option_type::stopped_propagation))
-				break;//Propagation stopped
+				if (e.options_.is_set(object::option_type::stopped_propagation))
+					break;//Propagation stopped
+			}
 		}
 
 		if (dynamic_cast<default_object *>(&e) == nullptr && target_.is_default_event_(e)){
@@ -204,13 +200,7 @@ void cwin::events::manager::trigger_(object &e, bool check_default) const{
 }
 
 void cwin::events::manager::trigger_default_(object &e) const{
-	if (handlers_.empty())
-		return;
-
 	auto it = handlers_.find(get_key(e));
-	if (it == handlers_.end())
-		return;
-
 	auto &queue = thread_.get_queue();
 	auto talk_id = target_.get_talk_id();
 
@@ -218,18 +208,20 @@ void cwin::events::manager::trigger_default_(object &e) const{
 		const_cast<manager *>(this)->unbind_postponed_();
 		++trigger_count_;
 
-		for (auto &handler_info : it->second.default_list){//Do default
-			if (queue.is_blacklisted(talk_id))
-				return;
+		if (it != handlers_.end()){
+			for (auto &handler_info : it->second.default_list){//Do default
+				if (queue.is_blacklisted(talk_id))
+					return;
 
-			if (queue.is_blacklisted(handler_info.handler->get_talk_id()))
-				continue;
+				if (queue.is_blacklisted(handler_info.handler->get_talk_id()))
+					continue;
 
-			e.handler_id_ = handler_info.id;
-			handler_info.handler->call(e);
+				e.handler_id_ = handler_info.id;
+				handler_info.handler->call(e);
 
-			if (e.options_.is_set(object::option_type::stopped_propagation))
-				break;//Propagation stopped
+				if (e.options_.is_set(object::option_type::stopped_propagation))
+					break;//Propagation stopped
+			}
 		}
 
 		--trigger_count_;

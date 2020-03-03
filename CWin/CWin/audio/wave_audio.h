@@ -42,6 +42,8 @@ namespace cwin::audio{
 
 		virtual void stop();
 
+		virtual void toggle_start();
+
 		virtual bool is_stopped() const;
 
 		virtual void is_stopped(const std::function<void(bool)> &callback) const;
@@ -60,21 +62,21 @@ namespace cwin::audio{
 
 		virtual void seek(const std::chrono::nanoseconds &offset);
 
-		virtual void set_volume(WORD value);
+		virtual void set_volume(float value);
 
-		virtual void set_volume(WORD left, WORD right);
+		virtual void set_volume(float left, float right);
 
-		virtual DWORD get_volume() const;
+		virtual float get_volume() const;
 
-		virtual void get_volume(const std::function<void(DWORD)> &callback) const;
+		virtual void get_volume(const std::function<void(float)> &callback) const;
 
-		virtual WORD get_left_volume() const;
+		virtual float get_left_volume() const;
 
-		virtual void get_left_volume(const std::function<void(WORD)> &callback) const;
+		virtual void get_left_volume(const std::function<void(float)> &callback) const;
 
-		virtual WORD get_right_volume() const;
+		virtual float get_right_volume() const;
 
-		virtual void get_right_volume(const std::function<void(WORD)> &callback) const;
+		virtual void get_right_volume(const std::function<void(float)> &callback) const;
 
 		virtual void set_speed(float value);
 
@@ -100,6 +102,14 @@ namespace cwin::audio{
 
 		virtual void compute_progress(const std::function<void(const std::chrono::nanoseconds &)> &callback) const;
 
+		ui::simple_action<wave> start_action{ *this, &wave::start };
+		ui::simple_action<wave> stop_action{ *this, &wave::stop };
+		ui::simple_action<wave> toggle_start_action{ *this, &wave::toggle_start };
+
+		ui::simple_action<wave> pause_action{ *this, &wave::pause };
+		ui::simple_action<wave> resume_action{ *this, &wave::resume };
+		ui::simple_action<wave> toggle_pause_action{ *this, &wave::toggle_pause };
+
 	protected:
 		virtual void create_() override;
 
@@ -119,6 +129,8 @@ namespace cwin::audio{
 
 		virtual void stop_();
 
+		virtual void toggle_start_();
+
 		virtual void pause_();
 
 		virtual void resume_();
@@ -127,13 +139,11 @@ namespace cwin::audio{
 
 		virtual void seek_(const std::chrono::nanoseconds &offset);
 
-		virtual void set_volume_(WORD left, WORD right);
+		virtual void set_volume_(float left, float right);
 
-		virtual DWORD get_volume_() const;
+		virtual float get_left_volume_() const;
 
-		virtual WORD get_left_volume_() const;
-
-		virtual WORD get_right_volume_() const;
+		virtual float get_right_volume_() const;
 
 		virtual void set_speed_(float value);
 

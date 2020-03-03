@@ -14,6 +14,13 @@ cwin::control::status_bar::object::object(ui::tree &parent, std::size_t index)
 	insert_object([](hook::fill &item){
 		item.disable_height();
 	});
+	
+	insert_object<hook::placement>(nullptr, hook::placement::alignment_type::bottom_left);
+
+	set_size_({
+		size_.cx,
+		(measure_text_(L"", reinterpret_cast<HFONT>(SendMessageW(handle_, WM_GETFONT, 0, 0)), 0u).cy + 10)
+	});
 
 	bind_default_([=](events::show &e){
 		if (handle_ == nullptr)
@@ -42,40 +49,15 @@ cwin::control::status_bar::object::object(ui::tree &parent, std::size_t index)
 			return true;
 		});
 	});
+
+	bind_default_([=](events::unknown &e){
+		if (e.get_message().message == WM_SIZE)
+			e.prevent_default();
+	});
 }
 
 cwin::control::status_bar::object::~object(){
 	force_destroy_();
-}
-
-void cwin::control::status_bar::object::enable_top_placement(){
-	post_or_execute_task([=]{
-		if (!is_top_placement_){
-			is_top_placement_ = true;
-			update_styles_();
-		}
-	});
-}
-
-void cwin::control::status_bar::object::disable_top_placement(){
-	post_or_execute_task([=]{
-		if (is_top_placement_){
-			is_top_placement_ = false;
-			update_styles_();
-		}
-	});
-}
-
-bool cwin::control::status_bar::object::top_placement_is_enabled() const{
-	return execute_task([&]{
-		return is_top_placement_;
-	});
-}
-
-void cwin::control::status_bar::object::top_placement_is_enabled(const std::function<void(bool)> &callback) const{
-	post_or_execute_task([=]{
-		callback(is_top_placement_);
-	});
 }
 
 void cwin::control::status_bar::object::refresh(){
@@ -114,10 +96,6 @@ void cwin::control::status_bar::object::size_update_(const SIZE &old_value, cons
 
 DWORD cwin::control::status_bar::object::get_blacklisted_styles_() const{
 	return (control::object::get_blacklisted_styles_() | CCS_LEFT | CCS_TOP | CCS_RIGHT | CCS_BOTTOM);
-}
-
-DWORD cwin::control::status_bar::object::get_persistent_styles_() const{
-	return (control::object::get_persistent_styles_() | (is_top_placement_ ? CCS_TOP : 0u));
 }
 
 void cwin::control::status_bar::object::refresh_(){

@@ -16,6 +16,10 @@ namespace cwin::menu{
 		virtual void get_text(const std::function<void(const std::wstring &)> &callback) const;
 
 	protected:
+		virtual void trigger_default_event_() const override;
+
+		virtual bool is_default_event_(const events::object &e) const override;
+
 		virtual void prepare_info_(MENUITEMINFOW &info) const override;
 
 		virtual void set_text_(const std::wstring &value);

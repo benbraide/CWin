@@ -142,6 +142,14 @@ void cwin::ui::window_surface::get_class_name(const std::function<void(const wch
 	});
 }
 
+void cwin::ui::window_surface::focus() const{
+
+}
+
+void cwin::ui::window_surface::blur() const{
+
+}
+
 void cwin::ui::window_surface::create_(){
 	if (handle_ != nullptr)
 		return;
@@ -517,4 +525,24 @@ const wchar_t *cwin::ui::window_surface::get_class_name_() const{
 
 const wchar_t *cwin::ui::window_surface::get_caption_() const{
 	return L"";
+}
+
+void cwin::ui::window_surface::focus_() const{
+	if (handle_ != nullptr)
+		SetFocus(handle_);
+	else
+		throw exception::not_supported();
+}
+
+void cwin::ui::window_surface::blur_() const{
+	if (handle_ == nullptr)
+		throw exception::not_supported();
+	
+	if (GetFocus() != handle_)
+		return;
+
+	if (auto window_ancestor = get_ancestor_<window_surface>(0u); window_ancestor != nullptr)
+		SetFocus(window_ancestor->handle_);
+	else
+		SetFocus(nullptr);
 }

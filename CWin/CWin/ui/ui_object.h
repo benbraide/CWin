@@ -40,18 +40,27 @@ namespace cwin::ui{
 	class simple_action : public events::bound_action{
 	public:
 		simple_action(object_type &target, void (object_type:: *callback)())
-			: bound_action(target), callback_(callback){}
+			: bound_action(target){
+			handler_ = [=](events::object &){
+				(dynamic_cast<object_type &>(target_).*callback)();
+			};
+		}
+
+		simple_action(object_type &target, void (object_type:: *callback)() const)
+			: bound_action(target){
+			handler_ = [=](events::object &){
+				(dynamic_cast<object_type &>(target_).*callback)();
+			};
+		}
 
 		virtual ~simple_action() = default;
 
 		virtual std::function<void(events::object &)> get_event_handler() const override{
-			return [=](events::object &){
-				(dynamic_cast<object_type &>(target_).*callback_)();
-			};
+			return handler_;
 		}
 
 	protected:
-		void (object_type:: *callback_)();
+		std::function<void(events::object &)> handler_;
 	};
 
 	class object : public thread::item{
@@ -264,8 +273,8 @@ namespace cwin::ui{
 
 		virtual void is_disabled(const std::function<void(bool)> &callback) const;
 
-		simple_action<object> create_action;
-		simple_action<object> destroy_action;
+		simple_action<object> create_action{ *this, &object::create };
+		simple_action<object> destroy_action{ *this, &object::destroy };
 
 	protected:
 		friend class tree;

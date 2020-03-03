@@ -100,9 +100,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 	window.set_size(SIZE{ 900, 500 });
 	window.set_position(POINT{ 30, 30 });
 	window.set_caption(L"Top Level Window");
-
 	window.create();
-	window.show();
 
 	tool_tip.create();
 	window.insert_object([](cwin::menu::system_popup &popup){
@@ -425,10 +423,20 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 			page.insert_object([&](cwin::audio::pcm_source &src){
 				player_info.pcm_source = &src;
+				src.get_events().bind([&](cwin::events::after_destroy &){
+					if (player_info.active_source == player_info.pcm_source)
+						player_info.active_source = nullptr;
+					player_info.pcm_source = nullptr;
+				}, 0u);
 			});
 
 			page.insert_object([&](cwin::audio::asf_source &src){
 				player_info.asf_source = &src;
+				src.get_events().bind([&](cwin::events::after_destroy &){
+					if (player_info.active_source == player_info.asf_source)
+						player_info.active_source = nullptr;
+					player_info.asf_source = nullptr;
+				}, 0u);
 			});
 
 			page.insert_object([&](cwin::control::label &ctrl){
@@ -616,14 +624,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 					POINT{ 0, 5 }
 				);
 
-				ctrl.get_events().bind([&](cwin::events::io::click &){
-					if (player_info.is_file_loaded){
-						if (player_info.output->is_stopped())
-							player_info.output->start();
-						else
-							player_info.output->stop();
-					}
-				}, 0u);
+				ctrl.get_events().bind(cwin::ui::safe_action(player_info.output->toggle_start_action));
 			});
 
 			page.insert_object([&](cwin::control::push_button &ctrl){
@@ -644,10 +645,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 					cwin::hook::relative_placement::sibling_type::previous				//Source
 				);
 
-				ctrl.get_events().bind([&](cwin::events::io::click &){
-					if (player_info.is_file_loaded && !player_info.output->is_stopped())
-						player_info.output->toggle_pause();
-				}, 0u);
+				ctrl.get_events().bind(cwin::ui::safe_action(player_info.output->toggle_pause_action));
 			});
 		});
 
@@ -731,5 +729,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 		rrnw.set_background_color(D2D1::ColorF(D2D1::ColorF::Blue));
 	}, SIZE{ 20, 20 });*/
 
+	window.show();
 	return cwin::app::object::get_thread().run();
 }
