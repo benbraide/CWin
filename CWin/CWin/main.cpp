@@ -482,7 +482,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 					POINT{ 5, 0 }
 				);
 
-				ctrl.get_events().trigger<cwin::events::timer>(std::chrono::seconds(1), [&]{
+				ctrl.get_events().bind([&](cwin::events::tick &){
 					if (!player_info.output->is_created() || player_info.output->is_stopped() || player_info.output->is_paused())
 						return;
 

@@ -60,5 +60,6 @@ namespace cwin::events{
 		virtual bool is_default_event_(const object &e) const;
 
 		manager events_;
+		unsigned __int64 tick_timer_id_ = 0u;
 	};
 }

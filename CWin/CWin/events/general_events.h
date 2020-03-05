@@ -277,4 +277,18 @@ namespace cwin::events{
 		std::function<bool(unsigned __int64)> callback_;
 		unsigned __int64 talk_id_;
 	};
+
+	class async_timer : public timer{
+	public:
+		using timer::timer;
+
+		virtual ~async_timer() = default;
+	};
+
+	class tick : public object{
+	public:
+		using object::object;
+
+		virtual ~tick() = default;
+	};
 }
