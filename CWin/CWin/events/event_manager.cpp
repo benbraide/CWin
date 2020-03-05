@@ -159,20 +159,26 @@ void cwin::events::manager::trigger_(object &e, bool check_default) const{
 	if (check_default && dynamic_cast<default_object *>(&e) != nullptr)
 		return target_.trigger_default_event_();
 
-	auto it = handlers_.find(get_key(e));
 	auto &queue = thread_.get_queue();
 	auto talk_id = target_.get_talk_id();
+
+	if (queue.is_blacklisted(talk_id))
+		return;
 
 	try{
 		const_cast<manager *>(this)->unbind_postponed_();
 		++trigger_count_;
 
-		if (it != handlers_.end()){
+		if (auto it = handlers_.find(get_key(e)); it != handlers_.end()){
+			++it->second.trigger_count;
 			for (auto &handler_info : it->second.list){//Call listeners
 				if (queue.is_blacklisted(talk_id))
 					return;
 
 				if (queue.is_blacklisted(handler_info.handler->get_talk_id()))
+					continue;
+
+				if (handler_info.condition != nullptr && !handler_info.condition(it->second.trigger_count))
 					continue;
 
 				e.handler_id_ = handler_info.id;
@@ -200,20 +206,24 @@ void cwin::events::manager::trigger_(object &e, bool check_default) const{
 }
 
 void cwin::events::manager::trigger_default_(object &e) const{
-	auto it = handlers_.find(get_key(e));
 	auto &queue = thread_.get_queue();
 	auto talk_id = target_.get_talk_id();
+	if (queue.is_blacklisted(talk_id))
+		return;
 
 	try{
 		const_cast<manager *>(this)->unbind_postponed_();
 		++trigger_count_;
 
-		if (it != handlers_.end()){
+		if (auto it = handlers_.find(get_key(e)); it != handlers_.end()){
 			for (auto &handler_info : it->second.default_list){//Do default
 				if (queue.is_blacklisted(talk_id))
 					return;
 
 				if (queue.is_blacklisted(handler_info.handler->get_talk_id()))
+					continue;
+
+				if (handler_info.condition != nullptr && !handler_info.condition(it->second.trigger_count))
 					continue;
 
 				e.handler_id_ = handler_info.id;

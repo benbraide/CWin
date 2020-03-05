@@ -25,12 +25,22 @@ namespace cwin::events{
 
 		template <typename handler_type>
 		unsigned __int64 bind_(events::target &target, const handler_type &handler){
-			return target.get_events().bind_(utility::object_to_function_traits::get(handler), get_talk_id());
+			return target.get_events().bind_(utility::object_to_function_traits::get(handler), get_talk_id(), nullptr);
+		}
+
+		template <typename handler_type>
+		unsigned __int64 bind_with_condition_(events::target &target, const handler_type &handler, const trigger_condition::m_callback_type &condition){
+			return target.get_events().bind_(utility::object_to_function_traits::get(handler), get_talk_id(), condition);
 		}
 
 		template <typename handler_type>
 		unsigned __int64 bind_default_(const handler_type &handler){
 			return events_.bind_default_(utility::object_to_function_traits::get(handler));
+		}
+
+		template <typename handler_type>
+		unsigned __int64 bind_default_with_condition_(const handler_type &handler, const trigger_condition::m_callback_type &condition){
+			return events_.bind_default_(utility::object_to_function_traits::get(handler), condition);
 		}
 
 		virtual bool adding_event_handler_(const std::type_info &type, unsigned __int64 talk_id, std::size_t count);
