@@ -18,16 +18,11 @@ namespace cwin::events::control{
 			indeterminate,
 		};
 
-		changed_check_state(events::target &target, state_type state)
-			: object(target), state_(state){}
+		changed_check_state(events::target &target, state_type state);
 
-		virtual ~changed_check_state() = default;
+		virtual ~changed_check_state();
 
-		virtual state_type get_state() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return state_;
-		}
+		virtual state_type get_state() const;
 
 	protected:
 		state_type state_;
@@ -165,5 +160,17 @@ namespace cwin::events::control{
 		using object::object;
 
 		virtual ~content_change() = default;
+	};
+
+	class request_size : public object{
+	public:
+		request_size(events::target &target, REQRESIZE &info);
+
+		virtual ~request_size();
+
+		virtual REQRESIZE &get_info() const;
+
+	protected:
+		REQRESIZE &info_;
 	};
 }

@@ -61,6 +61,8 @@ namespace cwin::control{
 
 		virtual void get_selection(const std::function<void(const CHARRANGE &)> &callback) const;
 
+		virtual void replace_selection(const std::wstring &value);
+
 		virtual long get_char_at_position(const POINT &value) const;
 
 		virtual void get_char_at_position(const POINT &value, const std::function<void(long)> &callback) const;
@@ -81,6 +83,8 @@ namespace cwin::control{
 		virtual void after_destroy_() override;
 
 		virtual DWORD get_persistent_styles_() const override;
+
+		virtual const wchar_t *get_caption_() const override;
 
 		virtual const wchar_t *get_theme_name_() const override;
 
@@ -106,6 +110,8 @@ namespace cwin::control{
 
 		virtual void copy_();
 
+		virtual bool can_copy_() const;
+
 		virtual void cut_();
 
 		virtual void paste_();
@@ -123,6 +129,8 @@ namespace cwin::control{
 		virtual void collapse_selection_(bool collapse_left);
 
 		virtual CHARRANGE get_selection_() const;
+
+		virtual void replace_selection_(const std::wstring &value);
 
 		virtual long get_char_at_position_(const POINT &value) const;
 

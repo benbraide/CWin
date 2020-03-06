@@ -19,20 +19,26 @@ cwin::control::edit::edit(tree &parent, std::size_t index)
 		bind_(popup, [&](events::after_create &){
 			popup.find_item(772u, [&](menu::library_action_item &item){//Undo
 				bind_(item, [=](events::menu::init_item &e){
-					return (can_undo_() ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
+					return ((!is_read_only_ && can_undo_()) ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
 				});
 			});
 			
 			popup.find_item(770u, [&](menu::library_action_item &item){//Paste
 				bind_(item, [=](events::menu::init_item &e){
-					return (can_paste_() ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
+					return ((!is_read_only_ && can_paste_()) ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
 				});
 			});
 
 			popup.find_item(771u, [&](menu::library_action_item &item){//Delete
+				bind_(item, [=](events::menu::init_item &e){
+					return (!is_read_only_ ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
+				});
+
 				bind_(item, [=](events::menu::select &e){
-					e.prevent_default();
-					del_();
+					if (!is_read_only_){
+						e.prevent_default();
+						del_();
+					}
 				});
 			});
 
@@ -43,11 +49,23 @@ cwin::control::edit::edit(tree &parent, std::size_t index)
 				});
 			});
 
+			popup.find_item(768u, [&](menu::library_action_item &item){//Cut
+				bind_(item, [=](events::menu::init_item &e){
+					return ((!is_read_only_ && can_copy_()) ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
+				});
+			});
+
+			popup.find_item(769u, [&](menu::library_action_item &item){//Copy
+				bind_(item, [=](events::menu::init_item &e){
+					return (can_copy_() ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
+				});
+			});
+
 			popup.insert_object([&](menu::action_item &item){
 				item.set_text(L"R&edo");
 
 				bind_(item, [=](events::menu::init_item &){
-					return (can_redo_() ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
+					return ((!is_read_only_ && can_redo_()) ? events::menu::init_item::state_type::enable : events::menu::init_item::state_type::disable);
 				});
 
 				bind_(item, [=](events::menu::select &){
@@ -87,6 +105,16 @@ cwin::control::edit::edit(tree &parent, std::size_t index)
 		}
 		else
 			e.set_result(LoadCursorW(nullptr, IDC_IBEAM));
+	});
+
+	bind_default_([=](events::interrupt::notify &e){
+		switch (e.get_info().code){
+		case EN_REQUESTRESIZE:
+			events_.trigger<events::control::request_size>(e.get_info_as<REQRESIZE>());
+			break;
+		default:
+			break;
+		}
 	});
 }
 
@@ -244,6 +272,12 @@ void cwin::control::edit::get_selection(const std::function<void(const CHARRANGE
 	});
 }
 
+void cwin::control::edit::replace_selection(const std::wstring &value){
+	post_or_execute_task([=]{
+		replace_selection_(value);
+	});
+}
+
 long cwin::control::edit::get_char_at_position(const POINT &value) const{
 	return execute_task([&]{
 		return get_char_at_position_(value);
@@ -288,9 +322,10 @@ void cwin::control::edit::get_change_poll_interval(const std::function<void(cons
 
 void cwin::control::edit::after_create_(){
 	with_text::after_create_();
-
 	SendMessageW(handle_, EM_SETEVENTMASK, 0, ENM_REQUESTRESIZE);
-	SendMessageW(handle_, EM_SETTEXTMODE, TEXTMODE::TM_PLAINTEXT, 0);
+
+	if (is_read_only_)
+		SendMessageW(handle_, EM_SETREADONLY, TRUE, 0);
 
 	CHARFORMATW format{ sizeof(CHARFORMATW) };
 	SendMessageW(handle_, EM_GETCHARFORMAT, SCF_DEFAULT, reinterpret_cast<LPARAM>(&format));
@@ -326,6 +361,10 @@ void cwin::control::edit::after_destroy_(){
 
 DWORD cwin::control::edit::get_persistent_styles_() const{
 	return (with_text::get_persistent_styles_() | WS_BORDER | ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_NOHIDESEL);
+}
+
+const wchar_t *cwin::control::edit::get_caption_() const{
+	return L"";
 }
 
 const wchar_t *cwin::control::edit::get_theme_name_() const{
@@ -405,6 +444,10 @@ void cwin::control::edit::copy_(){
 		throw ui::exception::not_supported();
 }
 
+bool cwin::control::edit::can_copy_() const{
+	return true;
+}
+
 void cwin::control::edit::cut_(){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, WM_CUT, 0, 0);
@@ -473,6 +516,13 @@ CHARRANGE cwin::control::edit::get_selection_() const{
 	return range;
 }
 
+void cwin::control::edit::replace_selection_(const std::wstring &value){
+	if (handle_ != nullptr)
+		SendMessageW(handle_, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(value.c_str()));
+	else
+		throw ui::exception::not_supported();
+}
+
 long cwin::control::edit::get_char_at_position_(const POINT &value) const{
 	if (handle_ == nullptr)
 		throw ui::exception::not_supported();
@@ -521,8 +571,11 @@ void cwin::control::edit::set_change_poll_interval_(const std::chrono::milliseco
 }
 
 void cwin::control::edit::bind_change_poll_(){
+	if (is_read_only_)
+		return;
+
 	events_.trigger<events::timer>(change_poll_interval_, [=](unsigned __int64 id){
-		if (handle_ == nullptr || change_poll_interval_.count() == 0){
+		if (is_read_only_ || handle_ == nullptr || change_poll_interval_.count() == 0){
 			timer_id_ = 0;
 			is_dirty_ = false;
 			return false;

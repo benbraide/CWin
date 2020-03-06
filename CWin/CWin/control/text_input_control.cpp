@@ -14,30 +14,8 @@ cwin::control::text_input::text_input(tree &parent, std::size_t index)
 	: edit(parent, index){
 	padding_ = SIZE{ 0, 8 };
 
-	bind_default_([=](events::interrupt::notify &e){
-		switch (e.get_info().code){
-		case EN_REQUESTRESIZE:
-			request_resize_(e.get_info_as<REQRESIZE>());
-			break;
-		default:
-			break;
-		}
-	});
-
-	traverse_children_<menu::library_popup>([&](menu::library_popup &popup){
-		popup.find_item(768u, [&](menu::library_action_item &item){//Cut
-			bind_(item, [=](events::menu::init_item &e){
-				return (is_password_ ? events::menu::init_item::state_type::disable : events::menu::init_item::state_type::enable);
-			});
-		});
-
-		popup.find_item(769u, [&](menu::library_action_item &item){//Copy
-			bind_(item, [=](events::menu::init_item &e){
-				return (is_password_ ? events::menu::init_item::state_type::disable : events::menu::init_item::state_type::enable);
-			});
-		});
-
-		return true;
+	bind_default_([=](events::control::request_size &e){
+		request_resize_(e.get_info());
 	});
 
 	update_size_();
@@ -156,10 +134,8 @@ void cwin::control::text_input::get_password_char(const std::function<void(wchar
 }
 
 void cwin::control::text_input::after_create_(){
-	edit::after_create_();
-
-	SendMessageW(handle_, EM_SETEVENTMASK, 0, ENM_REQUESTRESIZE);
 	SendMessageW(handle_, EM_SETTEXTMODE, TEXTMODE::TM_PLAINTEXT, 0);
+	edit::after_create_();
 
 	if (is_password_)//Password mode
 		SendMessageW(handle_, EM_SETPASSWORDCHAR, static_cast<WPARAM>(password_char_), 0);
@@ -170,10 +146,6 @@ void cwin::control::text_input::after_create_(){
 
 DWORD cwin::control::text_input::get_persistent_styles_() const{
 	return (edit::get_persistent_styles_() & ~ES_AUTOVSCROLL);
-}
-
-const wchar_t *cwin::control::text_input::get_caption_() const{
-	return L"";
 }
 
 SIZE cwin::control::text_input::compute_size_() const{
@@ -189,6 +161,10 @@ SIZE cwin::control::text_input::compute_additional_size_(const SIZE &computed_si
 		return SIZE{ (min_width_ - computed_size.cx), 0 };
 
 	return SIZE{};
+}
+
+bool cwin::control::text_input::can_copy_() const{
+	return !is_password_;
 }
 
 void cwin::control::text_input::request_resize_(REQRESIZE &info){

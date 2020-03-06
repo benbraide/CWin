@@ -43,6 +43,7 @@
 #include "control/action_toolbar_control_item.h"
 #include "control/status_bar_control.h"
 #include "control/text_input_control.h"
+#include "control/text_box_control.h"
 #include "control/label_control.h"
 
 #include "audio/pcm_audio_source.h"
@@ -646,6 +647,13 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 				);
 
 				ctrl.get_events().bind(cwin::ui::safe_action(player_info.output->toggle_pause_action));
+			});
+
+			page.insert_object([&](cwin::control::text_box &ctrl){
+				ctrl.set_size(SIZE{ 200, 180 });
+				ctrl.set_position(POINT{ 30, 200 });
+				ctrl.push_line(L"First line of text");
+				ctrl.push_line(L"This is another line that should be long");
 			});
 		});
 
