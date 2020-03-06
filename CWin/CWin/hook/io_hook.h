@@ -39,6 +39,8 @@ namespace cwin::hook{
 
 		virtual void mouse_leave_();
 
+		virtual void mouse_client_leave_();
+
 		virtual void mouse_enter_();
 
 		virtual void mouse_move_();
@@ -79,6 +81,7 @@ namespace cwin::hook{
 
 		bool is_dragging_offspring_ = false;
 		bool is_dragging_non_client_ = false;
+		bool is_inside_client_ = false;
 
 		std::function<void(const SIZE &, bool)> size_callback_;
 		std::function<void(const POINT &, bool)> position_callback_;
@@ -93,6 +96,38 @@ namespace cwin::hook{
 	protected:
 		virtual void after_mouse_drag_(const SIZE &delta) override;
 	};
+
+	class hover : public object{
+	public:
+		explicit hover(ui::visible_surface &parent);
+
+		virtual ~hover();
+
+		virtual void set_tick_count(unsigned __int64 value);
+
+		virtual unsigned __int64 get_tick_count() const;
+
+		virtual void get_tick_count(const std::function<void(unsigned __int64)> &callback) const;
+
+	protected:
+		virtual void do_hover_();
+
+		virtual void end_hover_();
+
+		unsigned __int64 tick_count_ = 3u;
+		unsigned __int64 current_tick_count_ = 0u;
+		bool mouse_is_inside_target_ = false;
+	};
+
+	class hide_cursor : public object{
+	public:
+		explicit hide_cursor(ui::visible_surface &parent);
+
+		virtual ~hide_cursor();
+
+	protected:
+		bool is_hidden_ = false;
+	};
 }
 
 namespace cwin::ui{
@@ -103,6 +138,16 @@ namespace cwin::ui{
 
 	template <>
 	struct parent_type<hook::client_drag>{
+		using value = visible_surface;
+	};
+
+	template <>
+	struct parent_type<hook::hover>{
+		using value = visible_surface;
+	};
+
+	template <>
+	struct parent_type<hook::hide_cursor>{
 		using value = visible_surface;
 	};
 }

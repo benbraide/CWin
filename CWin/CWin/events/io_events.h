@@ -63,6 +63,13 @@ namespace cwin::events::io{
 		virtual ~mouse_leave() = default;
 	};
 
+	class mouse_client_leave : public mouse_leave{
+	public:
+		using mouse_leave::mouse_leave;
+
+		virtual ~mouse_client_leave() = default;
+	};
+
 	class mouse_enter : public object{
 	public:
 		mouse_enter(events::target &target, const POINT &position);
@@ -75,6 +82,13 @@ namespace cwin::events::io{
 
 	protected:
 		POINT position_;
+	};
+
+	class mouse_client_enter : public mouse_enter{
+	public:
+		using mouse_enter::mouse_enter;
+
+		virtual ~mouse_client_enter() = default;
 	};
 
 	class mouse_move : public object{
@@ -198,6 +212,13 @@ namespace cwin::events::io{
 		using object::object;
 
 		virtual ~mouse_hover() = default;
+	};
+
+	class mouse_hover_end : public object{
+	public:
+		using object::object;
+
+		virtual ~mouse_hover_end() = default;
 	};
 
 	class click : public object{

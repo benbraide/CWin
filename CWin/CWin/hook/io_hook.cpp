@@ -1,5 +1,6 @@
 #include "../ui/ui_window_surface.h"
 #include "../thread/thread_object.h"
+#include "../events/general_events.h"
 
 #include "io_hook.h"
 
@@ -142,7 +143,15 @@ void cwin::hook::io::mouse_leave_(){
 	is_dragging_offspring_ = false;
 	is_dragging_non_client_ = false;
 
+	mouse_client_leave_();
 	parent_->get_events().trigger<events::io::mouse_leave>();
+}
+
+void cwin::hook::io::mouse_client_leave_(){
+	if (is_inside_client_){
+		parent_->get_events().trigger<events::io::mouse_client_leave>();
+		is_inside_client_ = false;
+	}
 }
 
 void cwin::hook::io::mouse_enter_(){
@@ -160,6 +169,11 @@ void cwin::hook::io::mouse_move_(){
 
 	UINT hit_target = HTNOWHERE;
 	ui::visible_surface *mouse_over = nullptr;
+
+	if (!is_inside_client_){
+		parent_->get_events().trigger<events::io::mouse_client_enter>(position);
+		is_inside_client_ = true;
+	}
 
 	if (mouse_press_ == nullptr){
 		visible_target->reverse_traverse_children([&](ui::visible_surface &child){//Find child under mouse
@@ -200,8 +214,11 @@ void cwin::hook::io::mouse_move_(){
 			}
 		}
 		else if (hit_target != HTNOWHERE){//Non-client
-
+			if (mouse_over_->io_hook_ != nullptr)
+				mouse_over_->io_hook_->mouse_client_leave_();
 		}
+		else if (mouse_over_->io_hook_ != nullptr)
+			mouse_over_->io_hook_->mouse_client_leave_();
 	}
 
 	if (pressed_button_ != mouse_button_type::nil && dynamic_cast<ui::window_surface *>(parent_) != nullptr){
@@ -418,4 +435,99 @@ cwin::hook::client_drag::~client_drag() = default;
 
 void cwin::hook::client_drag::after_mouse_drag_(const SIZE &delta){
 	offset_position_(delta);
+}
+
+cwin::hook::hover::hover(ui::visible_surface &parent){
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
+
+	parent.get_events().bind([=](events::io::mouse_move &){
+		mouse_is_inside_target_ = true;
+		end_hover_();
+	});
+
+	parent.get_events().bind([=](events::io::mouse_leave &){
+		end_hover_();
+		mouse_is_inside_target_ = false;
+	});
+	
+	parent.get_events().bind([=](events::io::mouse_client_leave &){
+		end_hover_();
+		mouse_is_inside_target_ = false;
+	});
+
+	parent.get_events().bind([=](events::io::mouse_down &){
+		end_hover_();
+	});
+
+	parent.get_events().bind([=](events::io::mouse_up &){
+		end_hover_();
+	});
+
+	parent.get_events().bind([=](events::io::mouse_wheel &){
+		end_hover_();
+	});
+
+	parent.get_events().bind([=](events::tick &){
+		if (mouse_is_inside_target_ && parent_ != nullptr && current_tick_count_ < tick_count_ && ++current_tick_count_ == tick_count_)
+			do_hover_();
+	});
+}
+
+cwin::hook::hover::~hover(){
+	end_hover_();
+}
+
+void cwin::hook::hover::set_tick_count(unsigned __int64 value){
+	post_or_execute_task([=]{
+		tick_count_ = value;
+	});
+}
+
+unsigned __int64 cwin::hook::hover::get_tick_count() const{
+	return execute_task([&]{
+		return tick_count_;
+	});
+}
+
+void cwin::hook::hover::get_tick_count(const std::function<void(unsigned __int64)> &callback) const{
+	post_or_execute_task([=]{
+		callback(tick_count_);
+	});
+}
+
+void cwin::hook::hover::do_hover_(){
+	parent_->get_events().trigger<events::io::mouse_hover>();
+}
+
+void cwin::hook::hover::end_hover_(){
+	if (mouse_is_inside_target_ && parent_ != nullptr && current_tick_count_ != 0u && tick_count_ <= current_tick_count_)
+		parent_->get_events().trigger<events::io::mouse_hover_end>();
+	current_tick_count_ = 0u;
+}
+
+cwin::hook::hide_cursor::hide_cursor(ui::visible_surface &parent){
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
+
+	parent.get_events().bind([=](events::io::mouse_hover &){
+		ShowCursor(FALSE);
+		is_hidden_ = true;
+	});
+
+	parent.get_events().bind([=](events::io::mouse_hover_end &){
+		is_hidden_ = false;
+		ShowCursor(TRUE);
+	});
+}
+
+cwin::hook::hide_cursor::~hide_cursor(){
+	if (is_hidden_){
+		is_hidden_ = false;
+		ShowCursor(TRUE);
+	}
 }

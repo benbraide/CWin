@@ -518,8 +518,12 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 			}
 		}
 		else if ((track_info_.dwFlags & TME_NONCLIENT) == 0u){
+			if (target.io_hook_ != nullptr)
+				target.io_hook_->mouse_client_leave_();
+
 			track_info_.dwFlags = (TME_LEAVE | TME_NONCLIENT);
 			track_info_.hwndTrack = target.handle_;
+
 			TrackMouseEvent(&track_info_);
 		}
 		else
@@ -534,7 +538,11 @@ void cwin::ui::window_surface_manager::mouse_leave_(window_surface &target){
 			mouse_info_.target = nullptr;
 
 		target.traverse_ancestors([&](window_surface &ancestor){
-			if (ancestor.hit_test_(position) != HTNOWHERE)
+			auto hit_target = ancestor.hit_test_(position);
+			if (hit_target != HTCLIENT)
+				ancestor.io_hook_->mouse_client_leave_();
+
+			if (hit_target != HTNOWHERE)
 				return false;
 
 			if (ancestor.io_hook_ != nullptr)//Outside ancestor
