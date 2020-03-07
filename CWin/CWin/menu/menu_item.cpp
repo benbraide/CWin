@@ -1,13 +1,29 @@
 #include "../events/general_events.h"
+#include "../events/drawing_events.h"
 
 #include "menu_object.h"
 
-cwin::menu::item::item() = default;
+cwin::menu::item::item(){
+	bind_default_([=](events::measure_item &e){
+		e.set_value(measure_(SIZE{ static_cast<int>(e.get_info().itemWidth), static_cast<int>(e.get_info().itemHeight) }));
+	});
+
+	bind_default_([=](events::erase_background &e){
+		e.prevent_default();
+		erase_background_(*reinterpret_cast<DRAWITEMSTRUCT *>(e.get_message().lParam), e.get_info(), e.get_render());
+	});
+
+	bind_default_([=](events::paint &e){
+		e.prevent_default();
+		paint_(*reinterpret_cast<DRAWITEMSTRUCT *>(e.get_message().lParam), e.get_info(), e.get_render());
+	});
+}
 
 cwin::menu::item::item(tree &parent)
 	: item(parent, static_cast<std::size_t>(-1)){}
 
-cwin::menu::item::item(tree &parent, std::size_t index){
+cwin::menu::item::item(tree &parent, std::size_t index)
+	: item(){
 	index_ = parent.resolve_child_index<item>(index);
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
@@ -83,6 +99,18 @@ void cwin::menu::item::get_types(const std::function<void(UINT)> &callback) cons
 	post_or_execute_task([=]{
 		callback(get_types_());
 	});
+}
+
+void cwin::menu::item::added_event_handler_(const std::type_info &type, unsigned __int64 id, unsigned __int64 talk_id, std::size_t count){
+	ui::object::added_event_handler_(type, id, talk_id, count);
+	if (count == 1u && type == typeid(events::paint))
+		update_types_();
+}
+
+void cwin::menu::item::removed_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count){
+	ui::object::removed_event_handler_(type, id, count);
+	if (count == 0u && type == typeid(events::paint))
+		update_types_();
 }
 
 bool cwin::menu::item::changing_parent_(ui::tree *value){
@@ -247,7 +275,37 @@ void cwin::menu::item::update_types_(){
 }
 
 UINT cwin::menu::item::get_types_() const{
+	UINT value = 0u;
+	if (events_.get_bound_count<events::paint>() != 0u)
+		value = MFT_OWNERDRAW;
+
 	if (auto tree_parent = dynamic_cast<menu::tree *>(parent_); tree_parent != nullptr)
-		return tree_parent->get_types_(get_resolved_index_());
-	return 0u;
+		return (tree_parent->get_types_(get_resolved_index_()) | value);
+
+	return value;
 }
+
+SIZE cwin::menu::item::measure_(const SIZE &current_value) const{
+	return current_value;
+}
+
+void cwin::menu::item::erase_background_(DRAWITEMSTRUCT &info, const PAINTSTRUCT &paint_info, ID2D1RenderTarget &render) const{
+	COLORREF color = 0u;
+	if ((info.itemState & ODS_SELECTED) == 0u)
+		color = GetSysColor(COLOR_MENU);
+	else if (is_enabled_)
+		color = GetSysColor(COLOR_MENUHILIGHT);
+	else//Disabled
+		color = GetSysColor(COLOR_MENUHILIGHT);
+
+	render.BeginDraw();
+	render.Clear(D2D1::ColorF(
+		(GetRValue(color) / 255.0f),
+		(GetGValue(color) / 255.0f),
+		(GetBValue(color) / 255.0f)
+	));
+
+	render.EndDraw();
+}
+
+void cwin::menu::item::paint_(DRAWITEMSTRUCT &info, const PAINTSTRUCT &paint_info, ID2D1RenderTarget &render) const{}

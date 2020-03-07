@@ -40,6 +40,10 @@ namespace cwin::menu{
 
 		item();
 
+		virtual void added_event_handler_(const std::type_info &type, unsigned __int64 id, unsigned __int64 talk_id, std::size_t count) override;
+
+		virtual void removed_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count) override;
+
 		virtual bool changing_parent_(ui::tree *value) override;
 
 		virtual void changed_parent_(ui::tree *old_value) override;
@@ -69,6 +73,12 @@ namespace cwin::menu{
 		virtual UINT get_types_() const;
 
 		virtual void prepare_info_(MENUITEMINFOW &info) const = 0;
+
+		virtual SIZE measure_(const SIZE &current_value) const;
+
+		virtual void erase_background_(DRAWITEMSTRUCT &info, const PAINTSTRUCT &paint_info, ID2D1RenderTarget &render) const;
+
+		virtual void paint_(DRAWITEMSTRUCT &info, const PAINTSTRUCT &paint_info, ID2D1RenderTarget &render) const;
 
 		HBITMAP bitmap_ = nullptr;
 		UINT active_index_ = static_cast<UINT>(-1);

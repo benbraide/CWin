@@ -5,7 +5,7 @@
 
 cwin::menu::tree *cwin::menu::tree_helper::get_popup(item &item){
 	auto link_item = dynamic_cast<menu::link_item *>(&item);
-	return ((link_item == nullptr) ? nullptr : link_item->get_popup());
+	return ((link_item == nullptr) ? nullptr : &link_item->get_popup());
 }
 
 cwin::menu::tree::~tree() = default;

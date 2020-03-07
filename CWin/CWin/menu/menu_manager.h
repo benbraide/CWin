@@ -32,6 +32,10 @@ namespace cwin::menu{
 
 		void uninit_(ui::window_surface &target, HMENU handle, bool is_system);
 
+		LRESULT measure_item_(ui::window_surface &target, MEASUREITEMSTRUCT &info);
+
+		LRESULT draw_item_(ui::window_surface &target, DRAWITEMSTRUCT &info);
+
 		void select_(ui::window_surface &target, HMENU handle, std::size_t index);
 
 		bool system_command_(ui::window_surface &target, UINT code, const POINT &position);
@@ -42,6 +46,7 @@ namespace cwin::menu{
 		object *active_context_ = nullptr;
 		std::shared_ptr<object> context_ref_;
 
+		object *init_target_ = nullptr;
 		cache_info cache_{};
 	};
 }

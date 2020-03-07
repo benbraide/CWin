@@ -1,5 +1,6 @@
 #include "../app/app_object.h"
 #include "../events/menu_events.h"
+#include "../events/drawing_events.h"
 
 #include "../ui/ui_window_surface.h"
 #include "../hook/io_hook.h"
@@ -38,6 +39,10 @@ cwin::menu::object *cwin::menu::manager::find_(HMENU key, bool cache){
 
 LRESULT cwin::menu::manager::dispatch_(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam, ui::window_surface_manager::mouse_info &mouse_info){
 	switch (message){
+	case WM_MEASUREITEM:
+		return measure_item_(target, *reinterpret_cast<MEASUREITEMSTRUCT *>(lparam));
+	case WM_DRAWITEM:
+		return draw_item_(target, *reinterpret_cast<DRAWITEMSTRUCT *>(lparam));
 	case WM_CONTEXTMENU:
 		if (reinterpret_cast<HWND>(wparam) == target.get_handle() && context_(target, POINT{ GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam) }, mouse_info))
 			return 0;
@@ -112,15 +117,14 @@ bool cwin::menu::manager::context_(ui::window_surface &target, POINT position, u
 }
 
 LRESULT cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, LPARAM lparam){
-	auto menu_target = find_(handle, true);
-	if (menu_target == nullptr)
+	if ((init_target_ = find_(handle, true)) == nullptr)
 		return ui::window_surface_manager::call_default(target, WM_INITMENUPOPUP, reinterpret_cast<WPARAM>(handle), lparam);
 
 	auto result = ui::window_surface_manager::call_default(target, WM_INITMENUPOPUP, reinterpret_cast<WPARAM>(handle), lparam);
-	if (!menu_target->get_events().trigger_then_report_prevented_default<events::menu::init>()){
-		menu_target->traverse_offspring([&](menu::item &offspring){
-			events::menu::init_item e(*menu_target, offspring);
-			menu_target->get_events().trigger(e);
+	if (!init_target_->get_events().trigger_then_report_prevented_default<events::menu::init>()){
+		init_target_->traverse_offspring([&](menu::item &offspring){
+			events::menu::init_item e(*init_target_, offspring);
+			init_target_->get_events().trigger(e);
 
 			if (!e.prevented_default()){//Send to offspring
 				events::menu::init_item e2(offspring);
@@ -141,7 +145,7 @@ LRESULT cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, LPA
 		});
 	}
 
-	if (auto popup_target = dynamic_cast<popup *>(menu_target); popup_target != nullptr){
+	if (auto popup_target = dynamic_cast<popup *>(init_target_); popup_target != nullptr){
 		if (auto top_popup = popup_target->get_top(); top_popup == nullptr || top_popup == popup_target)
 			active_context_ = top_popup;
 	}
@@ -152,6 +156,50 @@ LRESULT cwin::menu::manager::init_(ui::window_surface &target, HMENU handle, LPA
 void cwin::menu::manager::uninit_(ui::window_surface &target, HMENU handle, bool is_system){
 	if (auto menu_target = find_(handle, true); menu_target != nullptr)
 		menu_target->get_events().trigger<events::menu::uninit>();
+}
+
+LRESULT cwin::menu::manager::measure_item_(ui::window_surface &target, MEASUREITEMSTRUCT &info){
+	if (init_target_ == nullptr)
+		return ui::window_surface_manager::call_default(target, WM_MEASUREITEM, 0, reinterpret_cast<LPARAM>(&info));
+
+	auto item = reinterpret_cast<menu::item *>(info.itemData);
+	if (item == nullptr)
+		return ui::window_surface_manager::call_default(target, WM_MEASUREITEM, 0, reinterpret_cast<LPARAM>(&info));
+
+	item->get_events().trigger<events::measure_item>(info);
+	return TRUE;
+}
+
+LRESULT cwin::menu::manager::draw_item_(ui::window_surface &target, DRAWITEMSTRUCT &info){
+	if (init_target_ == nullptr)
+		return ui::window_surface_manager::call_default(target, WM_DRAWITEM, 0, reinterpret_cast<LPARAM>(&info));
+
+	auto item = reinterpret_cast<menu::item *>(info.itemData);
+	if (item == nullptr)
+		return ui::window_surface_manager::call_default(target, WM_DRAWITEM, 0, reinterpret_cast<LPARAM>(&info));
+
+	PAINTSTRUCT paint_info{
+		info.hDC,
+		TRUE,
+		info.rcItem
+	};
+
+	MSG msg{
+		target.get_handle(),
+		WM_DRAWITEM,
+		0,
+		reinterpret_cast<LPARAM>(&info)
+	};
+
+	SaveDC(paint_info.hdc);
+	item->get_events().trigger<events::erase_background>(msg, nullptr, paint_info);
+	RestoreDC(paint_info.hdc, -1);
+
+	SaveDC(paint_info.hdc);
+	item->get_events().trigger<events::paint>(msg, nullptr, paint_info);
+	RestoreDC(paint_info.hdc, -1);
+
+	return TRUE;
 }
 
 void cwin::menu::manager::select_(ui::window_surface &target, HMENU handle, std::size_t index){

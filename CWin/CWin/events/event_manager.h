@@ -212,7 +212,7 @@ namespace cwin::events{
 					return it->second.list.size();
 
 				return static_cast<std::size_t>(0);
-			}, this, thread::queue::highest_task_priority);
+			});
 		}
 
 		template <typename object_type>

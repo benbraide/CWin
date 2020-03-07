@@ -27,6 +27,6 @@ void cwin::menu::system_link_item::prepare_info_(MENUITEMINFOW & info) const{
 	}
 }
 
-std::shared_ptr<cwin::menu::popup> cwin::menu::system_link_item::create_popup_(){
-	return std::make_shared<system_popup>(*this);
+std::shared_ptr<cwin::menu::popup> cwin::menu::system_link_item::create_popup_() const{
+	return std::make_shared<system_popup>(*const_cast<system_link_item *>(this));
 }

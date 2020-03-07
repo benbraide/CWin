@@ -17,7 +17,7 @@ namespace cwin::menu{
 
 		virtual void prepare_info_(MENUITEMINFOW &info) const override;
 
-		virtual std::shared_ptr<popup> create_popup_() override;
+		virtual std::shared_ptr<popup> create_popup_() const override;
 	};
 }
 

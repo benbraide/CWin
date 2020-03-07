@@ -13,7 +13,7 @@ namespace cwin::events{
 
 		virtual const PAINTSTRUCT &get_info() const;
 
-		virtual ID2D1RenderTarget *get_render() const;
+		virtual ID2D1RenderTarget &get_render() const;
 
 	protected:
 		PAINTSTRUCT info_{};
@@ -65,5 +65,21 @@ namespace cwin::events{
 		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
 
 		std::wstring value_;
+	};
+
+	class measure_item : public object{
+	public:
+		measure_item(events::target &target, MEASUREITEMSTRUCT &info);
+
+		virtual ~measure_item();
+
+		virtual MEASUREITEMSTRUCT &get_info() const;
+
+		virtual void set_value(const SIZE &value);
+
+	protected:
+		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
+
+		MEASUREITEMSTRUCT &info_;
 	};
 }

@@ -12,7 +12,10 @@ cwin::events::draw::draw(events::target &target, const PAINTSTRUCT &info)
 
 cwin::events::draw::draw(events::target &target, const MSG &message_info, WNDPROC default_callback, const PAINTSTRUCT &info)
 	: message_object(target, message_info, default_callback), info_(info){
-	render_ = thread_.get_device_render_target();
+	if ((render_ = thread_.get_device_render_target()) != nullptr){
+		render_->SetTransform(D2D1::IdentityMatrix());
+		render_->BindDC(info_.hdc, &info_.rcPaint);
+	}
 }
 
 cwin::events::draw::~draw() = default;
@@ -23,10 +26,14 @@ const PAINTSTRUCT &cwin::events::draw::get_info() const{
 	return info_;
 }
 
-ID2D1RenderTarget *cwin::events::draw::get_render() const{
+ID2D1RenderTarget &cwin::events::draw::get_render() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
-	return render_;
+
+	if (render_ == nullptr)
+		throw ui::exception::not_supported();
+
+	return *render_;
 }
 
 cwin::events::erase_background::~erase_background() = default;
@@ -162,6 +169,36 @@ bool cwin::events::get_caption::handle_set_result_(const void *value, const std:
 		value_ = *static_cast<const std::wstring_view *>(value);
 	else if (type == typeid(const wchar_t *) || type == typeid(wchar_t *))
 		value_ = *static_cast<wchar_t* const*>(value);
+	else
+		throw exception::bad_value();
+
+	return true;
+}
+
+cwin::events::measure_item::measure_item(events::target &target, MEASUREITEMSTRUCT &info)
+	: object(target), info_(info){}
+
+cwin::events::measure_item::~measure_item() = default;
+
+MEASUREITEMSTRUCT &cwin::events::measure_item::get_info() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return info_;
+}
+
+void cwin::events::measure_item::set_value(const SIZE &value){
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+
+	info_.itemWidth = value.cx;
+	info_.itemHeight = value.cy;
+}
+
+bool cwin::events::measure_item::handle_set_result_(const void *value, const std::type_info &type){
+	if (type == typeid(SIZE)){
+		info_.itemWidth = static_cast<const SIZE *>(value)->cx;
+		info_.itemHeight = static_cast<const SIZE *>(value)->cy;
+	}
 	else
 		throw exception::bad_value();
 

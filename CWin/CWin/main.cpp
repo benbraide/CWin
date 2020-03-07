@@ -162,7 +162,9 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	window.insert_object([](cwin::menu::popup &popup){
 		popup.insert_object([](cwin::menu::action_item &item){
-			item.set_text(L"First Action Item");
+			item.set_text(L"First Action Item Random Added");
+
+			item.get_events().bind([](cwin::events::paint &){});
 		});
 
 		popup.insert_object([](cwin::menu::action_item &item){
@@ -196,6 +198,12 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 		});
 
 		popup.insert_object([](cwin::menu::separator &){});
+
+		popup.insert_object([](cwin::menu::link_item &link){
+			link.set_text(L"Owner-drawn Link Item");
+
+			link.get_events().bind([](cwin::events::paint &){});
+		});
 
 		popup.insert_object([](cwin::menu::link_item &link){
 			link.set_text(L"First Link Item");
