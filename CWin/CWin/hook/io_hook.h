@@ -43,21 +43,21 @@ namespace cwin::hook{
 
 		virtual void mouse_enter_();
 
-		virtual void mouse_move_();
+		virtual void mouse_move_(io **top);
 
-		virtual bool mouse_drag_begin_();
+		virtual bool mouse_drag_begin_(io **top);
 
 		virtual void mouse_drag_(const SIZE &delta);
 
 		virtual void mouse_drag_non_client_(const SIZE &delta, UINT hit_target);
 
-		virtual void mouse_down_(mouse_button_type button);
+		virtual void mouse_down_(mouse_button_type button, io **top);
 
-		virtual void mouse_up_(mouse_button_type button);
+		virtual void mouse_up_(mouse_button_type button, io **top);
 
-		virtual void mouse_dbl_click_(mouse_button_type button);
+		virtual void mouse_dbl_click_(mouse_button_type button, io **top);
 
-		virtual void mouse_wheel_(const SIZE &delta);
+		virtual void mouse_wheel_(const SIZE &delta, io **top);
 
 		virtual bool check_drag_state_() const;
 

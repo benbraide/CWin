@@ -45,7 +45,7 @@ cwin::ui::surface::surface(tree &parent)
 
 cwin::ui::surface::surface(tree &parent, std::size_t index)
 	: surface(){
-	index_ = index;
+	index_ = parent.resolve_child_index<surface>(index);
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error

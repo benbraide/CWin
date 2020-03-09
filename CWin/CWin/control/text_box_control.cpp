@@ -23,8 +23,18 @@ void cwin::control::text_box::set_read_only_state_(bool value){}
 void cwin::control::text_box::push_line_(const std::wstring &value){
 	if (handle_ != nullptr){
 		select_(CHARRANGE{ -1, -1 });
-		replace_selection_(value + L"\r\n");
+		if (get_selection_().cpMax == 0)
+			replace_selection_(value);
+		else
+			replace_selection_(L"\r\n" + value);
 	}
+	else if (text_.empty())
+		text_ += value;
 	else
-		text_ += (value + L"\r\n");
+		text_ += (L"\r\n" + value);
+}
+
+void cwin::control::text_box::after_create_(){
+	text_area::after_create_();
+	SendMessageW(handle_, EM_SHOWSCROLLBAR, SB_VERT, TRUE);
 }

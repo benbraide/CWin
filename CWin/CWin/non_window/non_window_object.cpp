@@ -11,7 +11,7 @@ cwin::non_window::object::object(tree &parent)
 
 cwin::non_window::object::object(tree &parent, std::size_t index)
 	: object(){
-	index_ = index;
+	index_ = parent.resolve_child_index<object>(index);
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error

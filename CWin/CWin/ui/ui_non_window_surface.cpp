@@ -50,16 +50,6 @@ void cwin::ui::non_window_surface::create_(){
 	if (handle_ != nullptr)
 		return;
 
-	traverse_ancestors_<surface>([](surface &ancestor){
-		if (!ancestor.is_created())
-			throw ui::exception::not_supported();
-
-		if (dynamic_cast<window_surface *>(&ancestor) != nullptr)
-			return false;
-
-		return true;
-	});
-
 	auto &current_size = get_size_();
 	if ((handle_ = reinterpret_cast<HRGN>(events_.trigger_then_report_result<events::interrupt::resize_non_client_handle>(handle_, current_size))) == nullptr)
 		throw exception::action_failed();

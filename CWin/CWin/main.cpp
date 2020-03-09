@@ -50,6 +50,9 @@
 #include "audio/asf_audio_source.h"
 #include "audio/wave_audio.h"
 
+#include "test/non_window_test.h"
+#include "test/events_test.h"
+
 struct audio_player_info{
 	cwin::control::tab_item *page;
 	cwin::audio::wave *output;
@@ -85,7 +88,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 	cwin::app::object::init();
 	audio_player_info player_info{};
 
-	CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&player_info.file_diag));
+	/*CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&player_info.file_diag));
 	COMDLG_FILTERSPEC filters[] = {
 		{ L"PCM", L"*.wav;" },
 		{ L"ASF", L"*.mp3;*.asf" }
@@ -93,7 +96,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 
 	player_info.file_diag->SetFileTypes(2u, filters);
 	player_info.file_diag->SetFileTypeIndex(2u);
-	player_info.file_diag->SetTitle(L"Select Song File");
+	player_info.file_diag->SetTitle(L"Select Song File");*/
 
 	cwin::control::tool_tip tool_tip;
 	cwin::window::top_level window;
@@ -215,7 +218,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 	});
 
 	window.insert_object([&](cwin::control::tab &tab){
-		tab.insert_object([&](cwin::control::tab_item &page){
+		tab.insert_object<cwin::test::non_window>();
+		tab.insert_object<cwin::test::events>();
+
+		/*tab.insert_object([&](cwin::control::tab_item &page){
 			page.set_caption(L"First Tab Page");
 
 			page.insert_object([&](cwin::control::push_button &ctrl){
@@ -682,7 +688,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 					}, 0u);
 				}, 0.36f);
 			});
-		}, 1u);
+		}, 1u);*/
 	});
 
 	/*window.insert_object([](cwin::grid::fill_object &grid){
