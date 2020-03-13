@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../utility/traits.h"
 #include "../thread/cross_thread_object.h"
 
 #include "event_action.h"
@@ -62,6 +63,61 @@ namespace cwin::events{
 		callback_type callback_;
 	};
 
+	template <class value_type>
+	struct toggle_value{
+		static value_type get(value_type value){
+			return ((value == value_type(0)) ? value_type(1) : value_type(0));
+		}
+	};
+
+	template <>
+	struct toggle_value<bool>{
+		static bool get(bool value){
+			return !value;
+		}
+	};
+
+	template <class handler_type, std::size_t>
+	struct object_type_base{
+		using value = object;
+	};
+
+	template <class handler_type>
+	struct object_type_base<handler_type, 0u>{
+		using value = default_object;
+	};
+
+	template <class handler_type>
+	struct object_type_base<handler_type, 1u>{
+		using value = std::remove_const_t<std::remove_reference_t<typename utility::object_to_function_traits::traits<handler_type>::template args<0>::type>>;
+	};
+
+	template <class handler_type>
+	struct object_type{
+		using value = typename object_type_base<handler_type, utility::object_to_function_traits::traits<handler_type>::arg_count>::value;
+	};
+
+	template <class handler_type, bool>
+	struct talk_id_value_base{
+		static unsigned __int64 get(const handler_type &handler, unsigned __int64 talk_id){
+			return talk_id;
+		}
+	};
+
+	template <class handler_type>
+	struct talk_id_value_base<handler_type, true>{
+		static unsigned __int64 get(const action &handler, unsigned __int64 talk_id){
+			return ((talk_id == 0u) ? handler.get_talk_id() : talk_id);
+		}
+	};
+
+	template <class handler_type>
+	struct talk_id_value{
+		static unsigned __int64 get(const handler_type &handler, unsigned __int64 talk_id){
+			return talk_id_value_base<handler_type, std::bool_constant<std::is_base_of_v<action, handler_type> || std::is_same_v<handler_type, action>>::value>::template get(handler, talk_id);
+		}
+	};
+
 	class manager : public thread::cross_object{
 	public:
 		struct handler_info{
@@ -93,24 +149,44 @@ namespace cwin::events{
 
 		template <typename handler_type>
 		unsigned __int64 bind(const handler_type &handler, unsigned __int64 talk_id = 0u){
-			return bind_forwarder<handler_type>::template call(*this, handler, talk_id, nullptr);
+			return bind<typename object_type<handler_type>::value, handler_type>(handler, talk_id);
 		}
 		
 		template <typename object_type, typename handler_type>
 		unsigned __int64 bind(const handler_type &handler, unsigned __int64 talk_id = 0u){
-			return bind_forwarder<handler_type>::template call<object_type>(*this, handler, talk_id, nullptr);
+			return bind_with_condition<object_type, handler_type>(handler, nullptr, talk_id);
 		}
 		
 		template <typename handler_type>
 		unsigned __int64 bind_with_condition(const handler_type &handler, const trigger_condition::m_callback_type &condition, unsigned __int64 talk_id = 0u){
-			return bind_forwarder<handler_type>::template call(*this, handler, talk_id, condition);
+			return bind_with_condition<typename object_type<handler_type>::value, handler_type>(handler, condition, talk_id);
 		}
 
 		template <typename object_type, typename handler_type>
 		unsigned __int64 bind_with_condition(const handler_type &handler, const trigger_condition::m_callback_type &condition, unsigned __int64 talk_id = 0u){
-			return bind_forwarder<handler_type>::template call<object_type>(*this, handler, talk_id, condition);
+			return execute_task([&]{
+				return bind_<object_type, typename events::object_type<handler_type>::value>(
+					utility::object_to_function_traits::get(handler),
+					talk_id_value<handler_type>::template get(handler, talk_id),
+					condition
+				);
+			});
 		}
 		
+		template <typename value_type, typename object_type = default_object>
+		unsigned __int64 bind_set(value_type &value_ref, const value_type &value, unsigned __int64 talk_id = 0u){
+			return bind([&value_ref, value](object_type &){
+				value_ref = value;
+			}, talk_id);
+		}
+		
+		template <typename value_type, typename object_type = default_object>
+		unsigned __int64 bind_toggle(value_type &value_ref, unsigned __int64 talk_id = 0u){
+			return bind([&value_ref](object_type &){
+				value_ref = toggle_value<value_type>::get(value_ref);
+			}, talk_id);
+		}
+
 		virtual void unbind(unsigned __int64 id);
 
 		virtual void trigger(object &e) const;
@@ -232,73 +308,38 @@ namespace cwin::events{
 		friend class hook::object;
 		friend class thread::object;
 
-		template <class handler_type>
-		struct bind_forwarder{
-			static unsigned __int64 call(manager &target, const handler_type &handler, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition){
-				return do_call<handler_type>(target, handler, talk_id, condition, std::bool_constant<std::is_base_of_v<events::action, handler_type> || std::is_same_v<handler_type, events::action>>());
-			}
-
-			template <typename object_type>
-			static unsigned __int64 call(manager &target, const handler_type &handler, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition){
-				return do_call<object_type, handler_type, void>(target, handler, talk_id, condition, std::bool_constant<std::is_base_of_v<events::action, handler_type> || std::is_same_v<handler_type, events::action>>());
-			}
-
-			template <typename handler_type>
-			static unsigned __int64 do_call(manager &target, const handler_type &handler, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition, std::false_type){
-				return target.execute_task([&]{
-					return target.bind_(utility::object_to_function_traits::get(handler), talk_id, condition);
-				});
-			}
-
-			template <typename handler_type>
-			static unsigned __int64 do_call(manager &target, const handler_type &action, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition, std::true_type){
-				return call<default_object>(target, action, talk_id, condition);
-			}
-
-			template <typename object_type, typename handler_type, typename void_type>
-			static unsigned __int64 do_call(manager &target, const handler_type &handler, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition, std::false_type){
-				return target.execute_task([&]{
-					return target.bind_<object_type>(utility::object_to_function_traits::get(handler), talk_id, condition);
-				});
-			}
-
-			template <typename object_type, typename handler_type, typename void_type>
-			static unsigned __int64 do_call(manager &target, const handler_type &action, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition, std::true_type){
-				auto handler = action.get_event_handler();
-				if (handler == nullptr)
-					throw ui::exception::not_supported();
-
-				return target.execute_task([&]{
-					return target.bind_<object_type, void>([=](object_type &e){
-						handler(e);
-					}, action.get_talk_id(), condition);
-				});
-			}
-		};
-
 		template <typename object_type, typename return_type>
 		unsigned __int64 bind_(const std::function<return_type()> &handler, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition){
-			return bind_<return_type, object_type>([handler](object_type &){
+			return bind_<object_type, object_type, return_type>([handler](object_type &){
+				return handler();
+			}, talk_id, condition);
+		}
+		
+		template <typename object_type, typename arg_type, typename return_type>
+		unsigned __int64 bind_(const std::function<return_type()> &handler, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition){
+			return bind_<object_type, object_type, return_type>([handler](object_type &){
 				return handler();
 			}, talk_id, condition);
 		}
 
-		template <typename object_type, typename return_type>
-		unsigned __int64 bind_(const std::function<return_type(const object_type &)> &handler, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition){
-			return bind_<return_type, object_type>([handler](object_type &e){
+		template <typename object_type, typename arg_type, typename return_type>
+		unsigned __int64 bind_(const std::function<return_type(const arg_type &)> &handler, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition){
+			return bind_<object_type, arg_type, return_type>([handler](arg_type &e){
 				return handler(e);
 			}, talk_id, condition);
 		}
 
-		template <typename object_type, typename return_type>
-		unsigned __int64 bind_(const std::function<return_type(object_type &)> &handler, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition){
-			auto key = get_key<object_type>();
+		template <typename object_type, typename arg_type, typename return_type>
+		unsigned __int64 bind_(const std::function<return_type(arg_type &)> &handler, unsigned __int64 talk_id, const trigger_condition::m_callback_type &condition){
+			static_assert(std::is_same_v<arg_type, object_type> || std::is_base_of_v<arg_type, object_type>);
+
+			auto key = get_key<typename std::conditional<std::is_same_v<object_type, object>, default_object, object_type>::type>();
 			auto &handler_list = handlers_[key];
 
 			if (!alert_target_(true, key, 0u, talk_id, handler_list.list.size()))
 				return 0u;//Rejected
 
-			auto handler_object = std::make_shared<events::typed_handler<object_type &, return_type>>(handler, talk_id);
+			auto handler_object = std::make_shared<events::typed_handler<arg_type &, return_type>>(handler, talk_id);
 			if (handler_object == nullptr)
 				return 0u;
 

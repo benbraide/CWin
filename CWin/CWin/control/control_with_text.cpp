@@ -1,6 +1,26 @@
 #include "../events/general_events.h"
+#include "../events/interrupt_events.h"
 
 #include "control_with_text.h"
+
+cwin::control::with_text::with_text(const std::wstring &class_name, DWORD common_id)
+	: object(class_name, common_id){
+	bind_default_([=](events::interrupt::set_text &e){
+		set_text_(e.get_value());
+	});
+}
+
+cwin::control::with_text::with_text(tree &parent, const std::wstring &class_name, DWORD common_id)
+	: with_text(parent, static_cast<std::size_t>(-1), class_name, common_id){}
+
+cwin::control::with_text::with_text(tree &parent, std::size_t index, const std::wstring &class_name, DWORD common_id)
+	: with_text(class_name, common_id){
+	index_ = parent.resolve_child_index<object>(index);
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
+}
 
 cwin::control::with_text::~with_text() = default;
 

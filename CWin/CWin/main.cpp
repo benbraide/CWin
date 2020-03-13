@@ -52,6 +52,7 @@
 
 #include "test/non_window_test.h"
 #include "test/events_test.h"
+#include "test/controls_test.h"
 
 struct audio_player_info{
 	cwin::control::tab_item *page;
@@ -220,6 +221,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 	window.insert_object([&](cwin::control::tab &tab){
 		tab.insert_object<cwin::test::non_window>();
 		tab.insert_object<cwin::test::events>();
+		tab.insert_object<cwin::test::controls>();
 
 		/*tab.insert_object([&](cwin::control::tab_item &page){
 			page.set_caption(L"First Tab Page");

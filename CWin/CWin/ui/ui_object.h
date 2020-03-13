@@ -18,22 +18,11 @@ namespace cwin::ui{
 		static void reverse_traverse_children(tree &parent, const std::function<bool(object &, std::size_t, std::size_t)> &callback);
 	};
 
-	class safe_action : public events::action{
+	class safe_action : public events::proxy_action{
 	public:
-		explicit safe_action(const events::action &action);
+		explicit safe_action(const events::action &target);
 
 		virtual ~safe_action();
-
-		virtual unsigned __int64 get_talk_id() const override;
-
-		virtual events::target &get_target() const override;
-
-		virtual std::function<void(events::object &)> get_event_handler() const override;
-
-	protected:
-		unsigned __int64 talk_id_;
-		std::function<void(events::object &)> handler_;
-		events::target *target_;
 	};
 
 	template <class object_type>
@@ -41,26 +30,26 @@ namespace cwin::ui{
 	public:
 		simple_action(object_type &target, void (object_type:: *callback)())
 			: bound_action(target){
-			handler_ = [=](events::object &){
+			handler_ = [=](){
 				(dynamic_cast<object_type &>(target_).*callback)();
 			};
 		}
 
 		simple_action(object_type &target, void (object_type:: *callback)() const)
 			: bound_action(target){
-			handler_ = [=](events::object &){
+			handler_ = [=](){
 				(dynamic_cast<object_type &>(target_).*callback)();
 			};
 		}
 
 		virtual ~simple_action() = default;
 
-		virtual std::function<void(events::object &)> get_event_handler() const override{
+		virtual std::function<void()> get_event_handler() const override{
 			return handler_;
 		}
 
 	protected:
-		std::function<void(events::object &)> handler_;
+		std::function<void()> handler_;
 	};
 
 	class object : public thread::item{

@@ -270,4 +270,16 @@ namespace cwin::events::interrupt{
 
 		virtual ~is_big_border_handle() = default;
 	};
+
+	class set_text : public object{
+	public:
+		set_text(target &context, const std::wstring &value);
+
+		virtual ~set_text();
+
+		virtual const std::wstring &get_value() const;
+
+	protected:
+		std::wstring value_;
+	};
 }

@@ -34,3 +34,14 @@ const D2D1_RECT_F &cwin::events::interrupt::draw_background::get_area() const{
 		throw thread::exception::outside_context();
 	return area_;
 }
+
+cwin::events::interrupt::set_text::set_text(target &context, const std::wstring &value)
+	: object(context), value_(value){}
+
+cwin::events::interrupt::set_text::~set_text() = default;
+
+const std::wstring &cwin::events::interrupt::set_text::get_value() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return value_;
+}

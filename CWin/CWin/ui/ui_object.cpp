@@ -14,41 +14,19 @@ void cwin::ui::object_helper::reverse_traverse_children(tree &parent, const std:
 	parent.reverse_traverse_children(callback);
 }
 
-cwin::ui::safe_action::safe_action(const events::action &action)
-	: talk_id_(action.get_talk_id()), handler_(action.get_event_handler()){
-	try{
-		target_ = &action.get_target();
-	}
-	catch (const exception::not_supported &){
-		target_ = nullptr;
-	}
-}
-
-cwin::ui::safe_action::~safe_action() = default;
-
-unsigned __int64 cwin::ui::safe_action::get_talk_id() const{
-	return talk_id_;
-}
-
-cwin::events::target &cwin::ui::safe_action::get_target() const{
-	if (target_ == nullptr)
-		throw exception::not_supported();
-	return *target_;
-}
-
-std::function<void(cwin::events::object &)> cwin::ui::safe_action::get_event_handler() const{
-	if (handler_ == nullptr)
-		return nullptr;
-
-	return [=, handler = handler_](events::object &e){
+cwin::ui::safe_action::safe_action(const events::action &target)
+	: proxy_action(target){
+	handler_ = [handler = handler_](){
 		try{
-			handler(e);
+			handler();
 		}
 		catch (const exception::not_supported &){}
 		catch (const exception::action_canceled &){}
 		catch (const exception::action_failed &){}
 	};
 }
+
+cwin::ui::safe_action::~safe_action() = default;
 
 cwin::ui::object::object() = default;
 

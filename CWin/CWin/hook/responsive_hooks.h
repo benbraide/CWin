@@ -3,6 +3,7 @@
 #include <variant>
 
 #include "../ui/ui_sibling.h"
+#include "../utility/common_types.h"
 
 #include "hook_object.h"
 
@@ -61,17 +62,7 @@ namespace cwin::hook{
 
 	class placement : public parent_size{
 	public:
-		enum class alignment_type{
-			top_left,
-			top_center,
-			top_right,
-			center_left,
-			center,
-			center_right,
-			bottom_left,
-			bottom_center,
-			bottom_right,
-		};
+		using alignment_type = utility::alignment_type;
 
 		explicit placement(ui::surface &parent);
 

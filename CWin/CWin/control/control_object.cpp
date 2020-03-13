@@ -14,11 +14,11 @@ cwin::control::object::object(const std::wstring &class_name, DWORD common_id)
 }
 
 cwin::control::object::object(tree &parent, const std::wstring &class_name, DWORD common_id)
-	: window_surface(parent, static_cast<std::size_t>(-1)){}
+	: object(parent, static_cast<std::size_t>(-1), class_name, common_id){}
 
 cwin::control::object::object(tree &parent, std::size_t index, const std::wstring &class_name, DWORD common_id)
 	: object(class_name, common_id){
-	index_ = index;
+	index_ = parent.resolve_child_index<object>(index);
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error

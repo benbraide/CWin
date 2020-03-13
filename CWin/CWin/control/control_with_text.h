@@ -5,7 +5,11 @@
 namespace cwin::control{
 	class with_text : public object{
 	public:
-		using object::object;
+		with_text(const std::wstring &class_name, DWORD common_id);
+
+		with_text(tree &parent, const std::wstring &class_name, DWORD common_id);
+
+		with_text(tree &parent, std::size_t index, const std::wstring &class_name, DWORD common_id);
 
 		virtual ~with_text();
 

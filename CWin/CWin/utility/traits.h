@@ -89,6 +89,9 @@ namespace cwin::utility{
 		template <typename object_type>
 		using traits = function_or_function_object_traits<object_type>;
 
+		template <typename object_type, std::size_t index>
+		using args = typename traits<object_type>::template args<index>;
+
 		template <typename object_type>
 		static typename traits<object_type>::function_type get(const object_type &object){
 			return object;

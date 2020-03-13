@@ -59,6 +59,8 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 			inner_item.get_first_child([](hook::color_background &bg){
 				bg.set_color(D2D1::ColorF(D2D1::ColorF::Blue));
 			});
+
+			inner_item.insert_object<hook::label_overlay>(nullptr, L"NW Label", hook::label_overlay::alignment_type::center);
 		}, SIZE{ 20, 20 });
 
 		item.insert_object([](cwin::non_window::ellipsis &inner_item){

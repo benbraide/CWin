@@ -454,6 +454,8 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		RestoreDC(paint_info_.hdc, -1);
 
 		SaveDC(paint_info_.hdc);
+		SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
+
 		target.get_events().trigger<events::paint>(paint_info);
 		RestoreDC(paint_info_.hdc, -1);
 	}
