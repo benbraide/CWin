@@ -16,9 +16,9 @@ void cwin::ui::object_helper::reverse_traverse_children(tree &parent, const std:
 
 cwin::ui::safe_action::safe_action(const events::action &target)
 	: proxy_action(target){
-	handler_ = [handler = handler_](){
+	handler_ = [handler = handler_](events::object &e){
 		try{
-			handler();
+			handler(e);
 		}
 		catch (const exception::not_supported &){}
 		catch (const exception::action_canceled &){}

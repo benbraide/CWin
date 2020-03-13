@@ -11,11 +11,13 @@ namespace cwin::events{
 
 		virtual unsigned __int64 get_talk_id() const;
 
+		virtual void execute(events::object &e) const;
+
 		virtual void execute() const;
 
 		virtual events::target &get_target() const;
 
-		virtual std::function<void()> get_event_handler() const;
+		virtual std::function<void(events::object &)> get_event_handler() const;
 	};
 
 	class bound_action : public action{
@@ -42,11 +44,11 @@ namespace cwin::events{
 
 		virtual events::target &get_target() const override;
 
-		virtual std::function<void()> get_event_handler() const override;
+		virtual std::function<void(events::object &)> get_event_handler() const override;
 
 	protected:
 		unsigned __int64 talk_id_;
-		std::function<void()> handler_;
+		std::function<void(events::object &)> handler_;
 		events::target *target_;
 	};
 

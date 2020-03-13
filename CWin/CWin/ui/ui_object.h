@@ -30,26 +30,26 @@ namespace cwin::ui{
 	public:
 		simple_action(object_type &target, void (object_type:: *callback)())
 			: bound_action(target){
-			handler_ = [=](){
+			handler_ = [=](events::object &){
 				(dynamic_cast<object_type &>(target_).*callback)();
 			};
 		}
 
 		simple_action(object_type &target, void (object_type:: *callback)() const)
 			: bound_action(target){
-			handler_ = [=](){
+			handler_ = [=](events::object &){
 				(dynamic_cast<object_type &>(target_).*callback)();
 			};
 		}
 
 		virtual ~simple_action() = default;
 
-		virtual std::function<void()> get_event_handler() const override{
+		virtual std::function<void(events::object &)> get_event_handler() const override{
 			return handler_;
 		}
 
 	protected:
-		std::function<void()> handler_;
+		std::function<void(events::object &)> handler_;
 	};
 
 	class object : public thread::item{

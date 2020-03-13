@@ -62,4 +62,11 @@ namespace cwin::events{
 		manager events_;
 		unsigned __int64 tick_timer_id_ = 0u;
 	};
+
+	class non_target : public target{
+	public:
+		using target::target;
+
+		virtual ~non_target() = default;
+	};
 }

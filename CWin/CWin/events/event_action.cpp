@@ -6,27 +6,31 @@
 cwin::events::action::~action() = default;
 
 std::function<void(cwin::events::object &)> cwin::events::action::operator ()()const{
-	return [handler = get_event_handler()](object &){
-		handler();
-	};
+	return get_event_handler();
 }
 
 unsigned __int64 cwin::events::action::get_talk_id() const{
 	return 0u;
 }
 
-void cwin::events::action::execute() const{
+void cwin::events::action::execute(events::object &e) const{
 	if (auto handler = get_event_handler(); handler != nullptr)
-		handler();
+		handler(e);
 	else
 		throw ui::exception::not_supported();
+}
+
+void cwin::events::action::execute() const{
+	auto &target = get_target();
+	events::object e(target);
+	execute(e);
 }
 
 cwin::events::target &cwin::events::action::get_target() const{
 	throw ui::exception::not_supported();
 }
 
-std::function<void()> cwin::events::action::get_event_handler() const{
+std::function<void(cwin::events::object &)> cwin::events::action::get_event_handler() const{
 	return nullptr;
 }
 
@@ -65,15 +69,17 @@ cwin::events::target &cwin::events::proxy_action::get_target() const{
 	return *target_;
 }
 
-std::function<void()> cwin::events::proxy_action::get_event_handler() const{
+std::function<void(cwin::events::object &)> cwin::events::proxy_action::get_event_handler() const{
 	return handler_;
 }
 
 cwin::events::posted_action::posted_action(const action &target)
 	: proxy_action(target){
-	handler_ = [talk_id = talk_id_, handler = handler_](){
+	handler_ = [talk_id = talk_id_, handler = handler_](events::object &){
 		app::object::get_thread().get_queue().post_task([=]{
-			handler();
+			non_target target(app::object::get_thread());
+			events::object e(target);
+			handler(e);
 		}, talk_id, thread::queue::highest_task_priority);
 	};
 }
