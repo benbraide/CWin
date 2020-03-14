@@ -92,29 +92,57 @@ namespace cwin::events{
 		using value = std::remove_const_t<std::remove_reference_t<typename utility::object_to_function_traits::traits<handler_type>::template args<0>::type>>;
 	};
 
-	template <class handler_type>
-	struct object_type{
+	template <class handler_type, bool>
+	struct object_type_base2{
 		using value = typename object_type_base<handler_type, utility::object_to_function_traits::traits<handler_type>::arg_count>::value;
 	};
 
+	template <class handler_type>
+	struct object_type_base2<handler_type, true>{
+		using value = events::object;
+	};
+
+	template <class handler_type>
+	struct object_type{
+		using value = typename object_type_base2<handler_type, std::bool_constant<std::is_base_of_v<action, handler_type> || std::is_same_v<handler_type, action>>::value>::value;
+	};
+
 	template <class handler_type, bool>
-	struct talk_id_value_base{
-		static unsigned __int64 get(const handler_type &handler, unsigned __int64 talk_id){
+	struct resolve_handler_base{
+		using value_type = typename utility::object_to_function_traits::traits<handler_type>::function_type;
+
+		static value_type get_value(const handler_type &handler){
+			return utility::object_to_function_traits::get(handler);
+		}
+
+		static unsigned __int64 get_talk_id(const handler_type &handler, unsigned __int64 talk_id){
 			return talk_id;
 		}
 	};
 
 	template <class handler_type>
-	struct talk_id_value_base<handler_type, true>{
-		static unsigned __int64 get(const action &handler, unsigned __int64 talk_id){
+	struct resolve_handler_base<handler_type, true>{
+		using value_type = action::handler_type;
+
+		static value_type get_value(const action &handler){
+			return handler.get_handler();
+		}
+
+		static unsigned __int64 get_talk_id(const action &handler, unsigned __int64 talk_id){
 			return ((talk_id == 0u) ? handler.get_talk_id() : talk_id);
 		}
 	};
 
 	template <class handler_type>
-	struct talk_id_value{
-		static unsigned __int64 get(const handler_type &handler, unsigned __int64 talk_id){
-			return talk_id_value_base<handler_type, std::bool_constant<std::is_base_of_v<action, handler_type> || std::is_same_v<handler_type, action>>::value>::template get(handler, talk_id);
+	struct resolve_handler{
+		using base_type = resolve_handler_base<handler_type, std::bool_constant<std::is_base_of_v<action, handler_type> || std::is_same_v<handler_type, action>>::value>;
+
+		static typename base_type::value_type get_value(const handler_type &handler){
+			return base_type::template get_value(handler);
+		}
+
+		static unsigned __int64 get_talk_id(const handler_type &handler, unsigned __int64 talk_id){
+			return base_type::template get_talk_id(handler, talk_id);
 		}
 	};
 
@@ -166,8 +194,8 @@ namespace cwin::events{
 		unsigned __int64 bind_with_condition(const handler_type &handler, const trigger_condition::m_callback_type &condition, unsigned __int64 talk_id = 0u){
 			return execute_task([&]{
 				return bind_<object_type, typename events::object_type<handler_type>::value>(
-					utility::object_to_function_traits::get(handler),
-					talk_id_value<handler_type>::template get(handler, talk_id),
+					resolve_handler<handler_type>::template get_value(handler),
+					resolve_handler<handler_type>::template get_talk_id(handler, talk_id),
 					condition
 				);
 			});
@@ -363,7 +391,7 @@ namespace cwin::events{
 
 		template <typename object_type>
 		unsigned __int64 bind_default_(const events::action &action, const trigger_condition::m_callback_type &condition){
-			auto handler = action.get_event_handler();
+			auto handler = action.get_handler();
 			if (handler == nullptr)
 				throw ui::exception::not_supported();
 

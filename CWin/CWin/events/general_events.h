@@ -182,45 +182,54 @@ namespace cwin::events{
 		virtual ~after_bounds_change() = default;
 	};
 
-	template <class pair_type, bool, bool>
-	class pair_change : public object{
+	template <class value_type>
+	class change : public object{
 	public:
-		pair_change(events::target &target, const pair_type &value)
-			: pair_change(target, value, value){}
+		change(events::target &target, const value_type &value)
+			: change(target, value, value){}
 
-		pair_change(events::target &target, const pair_type &old_value, const pair_type &value)
+		change(events::target &target, const value_type &old_value, const value_type &value)
 			: object(target), old_value_(old_value), value_(value){}
 
-		virtual ~pair_change() = default;
+		virtual ~change() = default;
 
-		virtual const pair_type &get_old_value() const{
+		virtual const value_type &get_old_value() const{
 			if (!is_thread_context())
 				throw thread::exception::outside_context();
 			return old_value_;
 		}
 
-		virtual const pair_type &get_value() const{
+		virtual const value_type &get_value() const{
 			if (!is_thread_context())
 				throw thread::exception::outside_context();
 			return value_;
 		}
 
 	protected:
-		pair_type old_value_;
-		pair_type value_;
+		value_type old_value_;
+		value_type value_;
 	};
 
-	using before_size_change = pair_change<SIZE, true, true>;
-	using after_size_change = pair_change<SIZE, true, false>;
-	using after_size_update = pair_change<SIZE, false, false>;
+	template <class value_type, int>
+	class change_proxy : public change<value_type>{
+	public:
+		using base_type = change<value_type>;
+		using base_type::base_type;
 
-	using before_position_change = pair_change<POINT, true, true>;
-	using after_position_change = pair_change<POINT, true, false>;
-	using after_position_update = pair_change<POINT, false, false>;
+		virtual ~change_proxy() = default;
+	};
 
-	using before_background_color_change = pair_change<D2D1_COLOR_F, true, true>;
-	using after_background_color_change = pair_change<D2D1_COLOR_F, true, false>;
-	using after_background_color_update = pair_change<D2D1_COLOR_F, false, false>;
+	using before_size_change = change_proxy<SIZE, 0>;
+	using after_size_change = change_proxy<SIZE, 1>;
+	using after_size_update = change_proxy<SIZE, 2>;
+
+	using before_position_change = change_proxy<POINT, 0>;
+	using after_position_change = change_proxy<POINT, 1>;
+	using after_position_update = change_proxy<POINT, 2>;
+
+	using before_background_color_change = change_proxy<D2D1_COLOR_F, 0>;
+	using after_background_color_change = change_proxy<D2D1_COLOR_F, 1>;
+	using after_background_color_update = change_proxy<D2D1_COLOR_F, 2>;
 
 	class timer : public object{
 	public:

@@ -44,12 +44,12 @@ namespace cwin::ui{
 
 		virtual ~simple_action() = default;
 
-		virtual std::function<void(events::object &)> get_event_handler() const override{
+		virtual handler_type get_handler() const override{
 			return handler_;
 		}
 
 	protected:
-		std::function<void(events::object &)> handler_;
+		handler_type handler_;
 	};
 
 	class object : public thread::item{

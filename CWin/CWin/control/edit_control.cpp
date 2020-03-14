@@ -1,3 +1,5 @@
+#include "../thread/thread_object.h"
+
 #include "../menu/action_menu_item.h"
 #include "../menu/library_action_menu_item.h"
 #include "../menu/library_popup_menu.h"
@@ -330,11 +332,12 @@ void cwin::control::edit::after_create_(){
 	CHARFORMATW format{ sizeof(CHARFORMATW) };
 	SendMessageW(handle_, EM_GETCHARFORMAT, SCF_DEFAULT, reinterpret_cast<LPARAM>(&format));
 
-	auto device = GetDC(handle_);
 	LOGFONTW font_info{};
 	std::memcpy(font_info.lfFaceName, format.szFaceName, LF_FACESIZE);
 
-	font_info.lfHeight = -MulDiv(format.yHeight, GetDeviceCaps(device, LOGPIXELSY), 1440);
+	if (auto device = thread_.get_device_context(); device != nullptr)
+		font_info.lfHeight = -MulDiv(format.yHeight, GetDeviceCaps(device, LOGPIXELSY), 1440);
+
 	font_info.lfCharSet = format.bCharSet;
 	font_info.lfPitchAndFamily = format.bPitchAndFamily;
 
@@ -344,9 +347,8 @@ void cwin::control::edit::after_create_(){
 	font_info.lfStrikeOut = (((format.dwEffects & CFE_STRIKEOUT) == 0u) ? FALSE : TRUE);
 
 	font_ = CreateFontIndirectW(&font_info);
-	ReleaseDC(handle_, device);
-
 	limit_ = static_cast<long>(SendMessageW(handle_, EM_GETLIMITTEXT, 0, 0));
+
 	bind_change_poll_();
 }
 

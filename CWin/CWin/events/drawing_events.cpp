@@ -81,7 +81,7 @@ void cwin::events::non_client_paint::do_default_(){
 	if (non_window_context == nullptr || !non_window_context->is_created() || non_window_context->is_occluded())
 		return;
 
-	auto theme = thread_.get_theme();
+	auto theme = thread_.get_theme(L"WINDOW");
 	if (theme == nullptr)
 		return;
 

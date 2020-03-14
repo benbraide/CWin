@@ -10,6 +10,7 @@
 #include "../hook/io_hook.h"
 #include "../hook/background_hooks.h"
 #include "../hook/text_overlay_hook.h"
+#include "../hook/mimic_hooks.h"
 
 #include "../control/tab_control.h"
 

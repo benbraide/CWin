@@ -10,7 +10,7 @@ cwin::hook::label_overlay::label_overlay(ui::visible_surface &parent, const std:
 	: label_overlay(parent, value, alignment, POINT{}){}
 
 cwin::hook::label_overlay::label_overlay(ui::visible_surface &parent, const std::wstring &value, alignment_type alignment, const POINT &offset)
-	: object(parent), value_(value), alignment_(alignment), offset_(offset){
+	: object(parent), value_(value), foreground_color_(D2D1::ColorF(D2D1::ColorF::White)), alignment_(alignment), offset_(offset){
 	bind_(parent, [=](events::paint &e){
 		paint_(e);
 	});
@@ -145,13 +145,33 @@ void cwin::hook::label_overlay::paint_(events::paint &e) const{
 		parent_size.cy
 	};
 
-	auto old_mode = SetBkMode(info.hdc, TRANSPARENT);
-	DrawTextW(info.hdc, value_.data(), static_cast<int>(value_.size()), &region, 0u);
+	SaveDC(info.hdc);
+	prepare_paint_color_(info);
 
-	SetBkMode(info.hdc, old_mode);
+	do_paint_(info, region);
+	RestoreDC(info.hdc, -1);
+}
+
+void cwin::hook::label_overlay::do_paint_(const PAINTSTRUCT &info, RECT &region) const{
+	DrawTextW(info.hdc, value_.data(), static_cast<int>(value_.size()), &region, 0u);
+}
+
+void cwin::hook::label_overlay::prepare_paint_color_(const PAINTSTRUCT &info) const{
+	SetBkMode(info.hdc, TRANSPARENT);
+	SelectObject(info.hdc, font_);
+
+	SetTextColor(info.hdc, RGB(
+		static_cast<int>(foreground_color_.r * 255),
+		static_cast<int>(foreground_color_.g * 255),
+		static_cast<int>(foreground_color_.b * 255)
+	));
 }
 
 void cwin::hook::label_overlay::refresh_() const{
 	if (auto visible_target = dynamic_cast<ui::visible_surface *>(parent_); visible_target != nullptr)
 		visible_target->redraw();
+}
+
+const D2D1_COLOR_F &cwin::hook::label_overlay::get_foreground_color_() const{
+	return foreground_color_;
 }

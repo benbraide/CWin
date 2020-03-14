@@ -94,7 +94,7 @@ namespace cwin::utility{
 
 		template <typename object_type>
 		static typename traits<object_type>::function_type get(const object_type &object){
-			return object;
+			return static_cast<typename traits<object_type>::function_type>(object);
 		}
 	};
 }

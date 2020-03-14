@@ -90,7 +90,9 @@ namespace cwin::thread{
 
 		HRGN get_rgn(HRGN blacklist = nullptr, HRGN other_blacklist = nullptr) const;
 
-		HTHEME get_theme() const;
+		HTHEME get_theme(const std::wstring &name) const;
+
+		HDC get_device_context() const;
 
 		const RECT &get_client_margin() const;
 
@@ -220,7 +222,8 @@ namespace cwin::thread{
 		ID2D1SolidColorBrush *color_brush_ = nullptr;
 
 		HRGN rgns_[3];
-		HTHEME theme_ = nullptr;
+		mutable std::unordered_map<std::wstring, HTHEME> themes_;
+		HDC device_context_ = nullptr;
 
 		RECT client_margin_{};
 		RECT big_client_margin_{};

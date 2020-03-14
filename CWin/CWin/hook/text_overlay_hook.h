@@ -53,10 +53,17 @@ namespace cwin::hook{
 
 		virtual void paint_(events::paint &e) const;
 
+		virtual void do_paint_(const PAINTSTRUCT &info, RECT &region) const;
+
+		virtual void prepare_paint_color_(const PAINTSTRUCT &info) const;
+
 		virtual void refresh_() const;
+
+		virtual const D2D1_COLOR_F &get_foreground_color_() const;
 
 		std::wstring value_;
 		HFONT font_ = nullptr;
+		D2D1_COLOR_F foreground_color_;
 
 		alignment_type alignment_;
 		POINT offset_;

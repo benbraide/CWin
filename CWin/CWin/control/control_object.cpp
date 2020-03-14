@@ -1,4 +1,4 @@
-#include "../thread/thread_object.h"
+#include "../app/app_object.h"
 #include "../events/drawing_events.h"
 
 #include "control_object.h"
@@ -28,7 +28,7 @@ cwin::control::object::object(tree &parent, std::size_t index, const std::wstrin
 cwin::control::object::~object() = default;
 
 SIZE cwin::control::object::measure_themed_text(const std::wstring &value, const wchar_t *theme_name, int part, int state, HDC device, DWORD format_flags){
-	auto theme = OpenThemeData(HWND_DESKTOP, theme_name);
+	auto theme = app::object::get_thread().get_theme(theme_name);
 	if (theme == nullptr)
 		return SIZE{};
 
@@ -38,12 +38,11 @@ SIZE cwin::control::object::measure_themed_text(const std::wstring &value, const
 	if (!value.empty())
 		GetThemeTextExtent(theme, device, part, state, value.data(), -1, format_flags, nullptr, &region);
 
-	CloseThemeData(theme);
 	return SIZE{ (region.right - region.left), (symbols_region.bottom - symbols_region.top) };
 }
 
 SIZE cwin::control::object::measure_themed_text(const std::wstring &value, const wchar_t *theme_name, int part, int state, HFONT font, DWORD format_flags){
-	auto device = GetDC(HWND_DESKTOP);
+	auto device = app::object::get_thread().get_device_context();
 	if (device == nullptr)
 		return SIZE{};
 
@@ -51,9 +50,7 @@ SIZE cwin::control::object::measure_themed_text(const std::wstring &value, const
 	SelectObject(device, font);
 
 	auto size = measure_themed_text(value, theme_name, part, state, device, format_flags);
-
 	RestoreDC(device, -1);
-	ReleaseDC(HWND_DESKTOP, device);
 
 	return size;
 }
@@ -69,7 +66,7 @@ SIZE cwin::control::object::measure_text(const std::wstring &value, HDC device, 
 }
 
 SIZE cwin::control::object::measure_text(const std::wstring &value, HFONT font, DWORD format_flags){
-	auto device = GetDC(HWND_DESKTOP);
+	auto device = app::object::get_thread().get_device_context();
 	if (device == nullptr)
 		return SIZE{};
 
@@ -77,9 +74,7 @@ SIZE cwin::control::object::measure_text(const std::wstring &value, HFONT font, 
 	SelectObject(device, font);
 
 	auto size = measure_text(value, device, format_flags);
-
 	RestoreDC(device, -1);
-	ReleaseDC(HWND_DESKTOP, device);
 
 	return size;
 }

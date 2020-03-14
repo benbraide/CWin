@@ -23,6 +23,14 @@ namespace cwin::hook{
 
 		virtual ~io();
 
+		virtual mouse_button_type get_pressed_button() const;
+
+		virtual void get_pressed_button(const std::function<void(mouse_button_type)> &callback) const;
+
+		virtual bool is_inside_client() const;
+
+		virtual void is_inside_client(const std::function<void(bool)> &callback) const;
+
 		static mouse_button_type get_mouse_button(UINT msg);
 
 	protected:

@@ -2,7 +2,7 @@
 #include "../events/audio_events.h"
 
 cwin::thread::object::object()
-	: queue_(*this), window_manager_(*this), menu_manager_(*this), id_(GetCurrentThreadId()){
+	: queue_(*this), window_manager_(*this), menu_manager_(*this), id_(GetCurrentThreadId()), device_context_(GetDC(HWND_DESKTOP)){
 	CoInitializeEx(nullptr, COINIT::COINIT_APARTMENTTHREADED);
 
 	handle_bound_.handle = CreateRectRgn(0, 0, 0, 0);
@@ -38,47 +38,48 @@ cwin::thread::object::object()
 	}
 
 	SIZE size{};
-	auto device_info = GetDC(HWND_DESKTOP);
+	auto theme = get_theme(L"WINDOW");
 
-	if (device_info != nullptr && (theme_ = OpenThemeData(HWND_DESKTOP, L"Window")) != nullptr){
-		GetThemePartSize(theme_, device_info, WP_SMALLFRAMELEFT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+	if (device_context_ != nullptr && theme != nullptr){
+		GetThemePartSize(theme, device_context_, WP_SMALLFRAMELEFT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
 		client_margin_.left = size.cx;
 
-		GetThemePartSize(theme_, device_info, WP_SMALLFRAMEBOTTOM, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		GetThemePartSize(theme, device_context_, WP_SMALLFRAMEBOTTOM, 0, nullptr, THEMESIZE::TS_TRUE, &size);
 		client_margin_.bottom = size.cy;
 
-		GetThemePartSize(theme_, device_info, WP_SMALLCAPTION, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		GetThemePartSize(theme, device_context_, WP_SMALLCAPTION, 0, nullptr, THEMESIZE::TS_TRUE, &size);
 		client_margin_.top = (size.cy + client_margin_.bottom);
 
-		GetThemePartSize(theme_, device_info, WP_SMALLFRAMERIGHT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		GetThemePartSize(theme, device_context_, WP_SMALLFRAMERIGHT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
 		client_margin_.right = size.cx;
 
-		GetThemePartSize(theme_, device_info, WP_FRAMELEFT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		GetThemePartSize(theme, device_context_, WP_FRAMELEFT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
 		big_client_margin_.left = size.cx;
 
-		GetThemePartSize(theme_, device_info, WP_FRAMEBOTTOM, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		GetThemePartSize(theme, device_context_, WP_FRAMEBOTTOM, 0, nullptr, THEMESIZE::TS_TRUE, &size);
 		big_client_margin_.bottom = size.cy;
 
-		GetThemePartSize(theme_, device_info, WP_CAPTION, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		GetThemePartSize(theme, device_context_, WP_CAPTION, 0, nullptr, THEMESIZE::TS_TRUE, &size);
 		big_client_margin_.top = (size.cy + big_client_margin_.bottom);
 
-		GetThemePartSize(theme_, device_info, WP_FRAMERIGHT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
+		GetThemePartSize(theme, device_context_, WP_FRAMERIGHT, 0, nullptr, THEMESIZE::TS_TRUE, &size);
 		big_client_margin_.right = size.cx;
 	}
-
-	if (device_info != nullptr)
-		ReleaseDC(HWND_DESKTOP, device_info);
 
 	initialize_drawing_();
 }
 
 cwin::thread::object::~object(){
 	uninitialize_drawing_();
-	if (theme_ != nullptr){
-		CloseThemeData(theme_);
-		theme_ = nullptr;
+	if (device_context_ != nullptr){
+		ReleaseDC(HWND_DESKTOP, device_context_);
+		device_context_ = nullptr;
 	}
 
+	for (auto &info : themes_)
+		CloseThemeData(info.second);
+
+	themes_.clear();
 	if (rgns_[0] != nullptr){
 		DeleteObject(rgns_[0]);
 		rgns_[0] = nullptr;
@@ -264,10 +265,22 @@ HRGN cwin::thread::object::get_rgn(HRGN blacklist, HRGN other_blacklist) const{
 	return nullptr;
 }
 
-HTHEME cwin::thread::object::get_theme() const{
+HTHEME cwin::thread::object::get_theme(const std::wstring &name) const{
 	if (!is_context())
 		throw exception::outside_context();
-	return theme_;
+
+	if (auto it = themes_.find(name); it != themes_.end())
+		return it->second;
+
+	auto theme = OpenThemeData(HWND_DESKTOP, name.data());
+	if (theme == nullptr)
+		return nullptr;
+
+	return (themes_[name] = theme);
+}
+
+HDC cwin::thread::object::get_device_context() const{
+	return device_context_;
 }
 
 const RECT &cwin::thread::object::get_client_margin() const{

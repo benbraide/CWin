@@ -5,16 +5,12 @@
 
 cwin::events::action::~action() = default;
 
-std::function<void(cwin::events::object &)> cwin::events::action::operator ()()const{
-	return get_event_handler();
-}
-
 unsigned __int64 cwin::events::action::get_talk_id() const{
 	return 0u;
 }
 
 void cwin::events::action::execute(events::object &e) const{
-	if (auto handler = get_event_handler(); handler != nullptr)
+	if (auto handler = get_handler(); handler != nullptr)
 		handler(e);
 	else
 		throw ui::exception::not_supported();
@@ -30,7 +26,7 @@ cwin::events::target &cwin::events::action::get_target() const{
 	throw ui::exception::not_supported();
 }
 
-std::function<void(cwin::events::object &)> cwin::events::action::get_event_handler() const{
+cwin::events::action::handler_type cwin::events::action::get_handler() const{
 	return nullptr;
 }
 
@@ -48,7 +44,7 @@ cwin::events::target &cwin::events::bound_action::get_target() const{
 }
 
 cwin::events::proxy_action::proxy_action(const action &target)
-	: talk_id_(target.get_talk_id()), handler_(target.get_event_handler()){
+	: talk_id_(target.get_talk_id()), handler_(target.get_handler()){
 	try{
 		target_ = &target.get_target();
 	}
@@ -69,7 +65,7 @@ cwin::events::target &cwin::events::proxy_action::get_target() const{
 	return *target_;
 }
 
-std::function<void(cwin::events::object &)> cwin::events::proxy_action::get_event_handler() const{
+cwin::events::action::handler_type cwin::events::proxy_action::get_handler() const{
 	return handler_;
 }
 

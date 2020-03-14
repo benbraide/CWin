@@ -21,6 +21,18 @@ cwin::hook::io::io(ui::visible_surface &parent){
 
 cwin::hook::io::~io() = default;
 
+cwin::hook::io::mouse_button_type cwin::hook::io::get_pressed_button() const{
+	return execute_task([&]{
+		return pressed_button_;
+	});
+}
+
+void cwin::hook::io::get_pressed_button(const std::function<void(mouse_button_type)> &callback) const{
+	post_or_execute_task([=]{
+		callback(pressed_button_);
+	});
+}
+
 cwin::hook::io::mouse_button_type cwin::hook::io::get_mouse_button(UINT msg){
 	switch (msg){
 	case WM_LBUTTONDOWN:
@@ -44,6 +56,18 @@ cwin::hook::io::mouse_button_type cwin::hook::io::get_mouse_button(UINT msg){
 	}
 
 	return mouse_button_type::nil;
+}
+
+bool cwin::hook::io::is_inside_client() const{
+	return execute_task([&]{
+		return is_inside_client_;
+	});
+}
+
+void cwin::hook::io::is_inside_client(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(is_inside_client_);
+	});
 }
 
 bool cwin::hook::io::changing_parent_(ui::tree *value){
