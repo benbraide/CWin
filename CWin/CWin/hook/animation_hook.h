@@ -34,7 +34,16 @@ namespace cwin::hook{
 			: animation(parent, utility::animation_timing::linear::ease, duration){}
 
 		animation(ui::tree &parent, const easing_type &easing, const duration_type &duration)
-			: object(parent), easing_(easing), duration_(duration){
+			: easing_(easing), duration_(duration){
+			parent.get_first_child([&](animation &child){
+				parent.remove_child(child);
+			});
+
+			if (&parent.get_thread() == &thread_)
+				set_parent_(parent);
+			else//Error
+				throw thread::exception::context_mismatch();
+
 			parent.get_events().bind([=](m_change_interrupt_type &e){
 				e.prevent_default();
 				set_value_(e.get_old_value(), e.get_value(), e.get_updater());

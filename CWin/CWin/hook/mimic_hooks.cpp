@@ -13,6 +13,11 @@ cwin::hook::mimic::with_text::with_text(ui::visible_surface &parent, const std::
 
 cwin::hook::mimic::with_text::with_text(ui::visible_surface &parent, const std::wstring &value, alignment_type alignment, const POINT &offset)
 	: label_overlay(parent, value, alignment, offset){
+	parent.get_first_child([&](with_text &child){
+		if (&child != this)
+			parent.remove_child(child);
+	});
+
 	update_size_();
 }
 

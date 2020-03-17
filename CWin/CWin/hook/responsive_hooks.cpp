@@ -324,7 +324,16 @@ cwin::hook::relative_placement::relative_placement(ui::surface &parent, ui::surf
 	: relative_placement(parent, source, alignment, source_alignment, POINT{}){}
 
 cwin::hook::relative_placement::relative_placement(ui::surface &parent, ui::surface &source, alignment_type alignment, alignment_type source_alignment, const POINT &offset)
-	: object(parent), source_(source), alignment_(alignment), source_alignment_(source_alignment), offset_(offset){
+	: source_(source), alignment_(alignment), source_alignment_(source_alignment), offset_(offset){
+	parent.get_first_child([&](relative_placement &child){
+		parent.remove_child(child);
+	});
+
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
+
 	parent.get_events().bind([this](events::after_size_update &e){
 		update_();
 	}, get_talk_id());
@@ -516,6 +525,11 @@ cwin::hook::fill::fill(ui::surface &parent)
 
 cwin::hook::fill::fill(ui::surface &parent, const SIZE &offset)
 	: parent_size(parent, nullptr), offset_(offset){
+	parent.get_first_child([&](fill &child){
+		if (&child != this)
+			parent.remove_child(child);
+	});
+
 	callback_ = [this](){
 		update_();
 	};
@@ -525,6 +539,11 @@ cwin::hook::fill::fill(ui::surface &parent, const SIZE &offset)
 
 cwin::hook::fill::fill(ui::surface &parent, const D2D1_SIZE_F &offset)
 	: parent_size(parent, nullptr), offset_(offset){
+	parent.get_first_child([&](fill &child){
+		if (&child != this)
+			parent.remove_child(child);
+	});
+
 	callback_ = [this](){
 		update_();
 	};
@@ -604,7 +623,16 @@ void cwin::hook::fill::update_(){
 }
 
 cwin::hook::mirror_size::mirror_size(ui::surface &parent, ui::surface &source, bool is_two_way)
-	: object(parent), source_(source), is_two_way_(is_two_way){
+	: source_(source), is_two_way_(is_two_way){
+	parent.get_first_child([&](mirror_size &child){
+		parent.remove_child(child);
+	});
+
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
+
 	parent.get_events().bind([this](events::after_size_update &e){
 		update_();
 	}, get_talk_id());
@@ -681,6 +709,11 @@ cwin::hook::contain::contain(ui::surface &parent)
 
 cwin::hook::contain::contain(ui::surface &parent, const SIZE &offset)
 	: children_dimension(parent, nullptr), offset_(offset){
+	parent.get_first_child([&](contain &child){
+		if (&child != this)
+			parent.remove_child(child);
+	});
+
 	callback_ = [this](){
 		update_();
 	};
@@ -690,6 +723,11 @@ cwin::hook::contain::contain(ui::surface &parent, const SIZE &offset)
 
 cwin::hook::contain::contain(ui::surface &parent, const D2D1_SIZE_F &offset)
 	: children_dimension(parent, nullptr), offset_(offset){
+	parent.get_first_child([&](contain &child){
+		if (&child != this)
+			parent.remove_child(child);
+	});
+
 	callback_ = [this](){
 		update_();
 	};

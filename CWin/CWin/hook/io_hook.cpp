@@ -5,18 +5,26 @@
 #include "io_hook.h"
 
 cwin::hook::io::io(ui::visible_surface &parent){
+	parent.get_first_child([&](io &child){
+		size_callback_ = child.size_callback_;
+		position_callback_ = child.position_callback_;
+		parent.remove_child(child);
+	});
+
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error
 		throw thread::exception::context_mismatch();
 
-	events::interrupt::size_changer_request size_e(parent);
-	parent.get_events().trigger(size_e);
-	size_callback_ = size_e.get_value();
+	if (size_callback_ == nullptr && position_callback_ == nullptr){
+		events::interrupt::size_changer_request size_e(parent);
+		parent.get_events().trigger(size_e);
+		size_callback_ = size_e.get_value();
 
-	events::interrupt::position_changer_request position_e(parent);
-	parent.get_events().trigger(position_e);
-	position_callback_ = position_e.get_value();
+		events::interrupt::position_changer_request position_e(parent);
+		parent.get_events().trigger(position_e);
+		position_callback_ = position_e.get_value();
+	}
 }
 
 cwin::hook::io::~io() = default;
@@ -488,6 +496,10 @@ void cwin::hook::client_drag::after_mouse_drag_(const SIZE &delta){
 }
 
 cwin::hook::hover::hover(ui::visible_surface &parent){
+	parent.get_first_child([&](hover &child){
+		parent.remove_child(child);
+	});
+
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error
@@ -559,6 +571,10 @@ void cwin::hook::hover::end_hover_(){
 }
 
 cwin::hook::hide_cursor::hide_cursor(ui::visible_surface &parent){
+	parent.get_first_child([&](hide_cursor &child){
+		parent.remove_child(child);
+	});
+
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error

@@ -7,8 +7,16 @@
 
 #include "background_hooks.h"
 
-cwin::hook::background::background(ui::visible_surface &parent)
-	: object(parent){
+cwin::hook::background::background(ui::visible_surface &parent){
+	parent.get_first_child([&](background &child){
+		parent.remove_child(child);
+	});
+
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
+
 	parent.get_events().bind([=](events::interrupt::draw_background &e){
 		draw_(e.get_render(), e.get_area());
 	}, get_talk_id());

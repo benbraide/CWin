@@ -3,8 +3,16 @@
 
 #include "non_window_handle_hooks.h"
 
-cwin::hook::non_window::handle::handle(ui::non_window_surface &parent)
-	: object(parent){
+cwin::hook::non_window::handle::handle(ui::non_window_surface &parent){
+	parent.get_first_child([&](handle &child){
+		parent.remove_child(child);
+	});
+
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
+
 	parent.get_events().bind([=](events::interrupt::resize_non_client_handle &e){
 		e.set_value(resize_value_(e.get_value(), e.get_size()));
 	}, get_talk_id());
@@ -16,8 +24,16 @@ void cwin::hook::non_window::handle::destroy_value_(HRGN value) const{
 	DeleteObject(value);
 }
 
-cwin::hook::non_window::client_handle::client_handle(ui::non_window_surface &parent)
-	: object(parent){
+cwin::hook::non_window::client_handle::client_handle(ui::non_window_surface &parent){
+	parent.get_first_child([&](client_handle &child){
+		parent.remove_child(child);
+	});
+
+	if (&parent.get_thread() == &thread_)
+		set_parent_(parent);
+	else//Error
+		throw thread::exception::context_mismatch();
+
 	parent.get_events().bind([=](events::interrupt::resize_client_handle &e){
 		e.set_value(resize_value_(e.get_value(), e.get_size()));
 	}, get_talk_id());
