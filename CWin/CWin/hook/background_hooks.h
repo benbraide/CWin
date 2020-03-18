@@ -44,13 +44,14 @@ namespace cwin::hook{
 
 		virtual void set_color_(const D2D1_COLOR_F &value, bool enable_interrupt);
 
-		virtual void set_color_(const D2D1_COLOR_F &value, bool enable_interrupt, const std::function<void(const D2D1_COLOR_F &, const D2D1_COLOR_F &)> &callback);
+		virtual void set_color_(const D2D1_COLOR_F &value, bool enable_interrupt, std::function<void(const D2D1_COLOR_F &, const D2D1_COLOR_F &)> callback);
 
 		virtual void color_update_(const D2D1_COLOR_F &old_value, const D2D1_COLOR_F &current_value);
 
 		virtual const D2D1_COLOR_F &get_color_() const;
 
 		D2D1_COLOR_F color_;
+		D2D1_COLOR_F current_color_;
 	};
 
 	class caption : public object{

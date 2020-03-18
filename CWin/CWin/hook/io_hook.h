@@ -90,9 +90,6 @@ namespace cwin::hook{
 		bool is_dragging_offspring_ = false;
 		bool is_dragging_non_client_ = false;
 		bool is_inside_client_ = false;
-
-		std::function<void(const SIZE &, bool)> size_callback_;
-		std::function<void(const POINT &, bool)> position_callback_;
 	};
 
 	class client_drag : public io{

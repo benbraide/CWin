@@ -4,6 +4,10 @@
 
 #include "ui_tree.h"
 
+namespace cwin::hook{
+	class io;
+}
+
 namespace cwin::ui{
 	class surface : public tree{
 	public:
@@ -98,11 +102,13 @@ namespace cwin::ui{
 		virtual void get_client_bound(const std::function<void(const handle_bound_info &)> &callback) const;
 
 	protected:
+		friend class hook::io;
+
 		virtual void set_size_(const SIZE &value);
 
 		virtual void set_size_(const SIZE &value, bool enable_interrupt);
 
-		virtual void set_size_(const SIZE &value, bool enable_interrupt, const std::function<void(const SIZE &, const SIZE &)> &callback);
+		virtual void set_size_(const SIZE &value, bool enable_interrupt, std::function<void(const SIZE &, const SIZE &)> callback);
 
 		virtual bool before_size_change_(const SIZE &old_value, const SIZE &current_value) const;
 
@@ -118,7 +124,7 @@ namespace cwin::ui{
 
 		virtual void set_position_(const POINT &value, bool enable_interrupt);
 
-		virtual void set_position_(const POINT &value, bool enable_interrupt, const std::function<void(const POINT &, const POINT &)> &callback);
+		virtual void set_position_(const POINT &value, bool enable_interrupt, std::function<void(const POINT &, const POINT &)> callback);
 
 		virtual bool before_position_change_(const POINT &old_value, const POINT &current_value) const;
 
@@ -190,6 +196,9 @@ namespace cwin::ui{
 		virtual const handle_bound_info &get_ancestor_client_bound_(POINT &offset) const;
 
 		SIZE size_{};
+		SIZE current_size_{};
+
 		POINT position_{};
+		POINT current_position_{};
 	};
 }

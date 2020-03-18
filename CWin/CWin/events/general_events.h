@@ -231,6 +231,18 @@ namespace cwin::events{
 	using after_background_color_change = change_proxy<D2D1_COLOR_F, 1>;
 	using after_background_color_update = change_proxy<D2D1_COLOR_F, 2>;
 
+	class disable_animation : public object{
+	public:
+		disable_animation(events::target &target, unsigned __int64 id);
+
+		virtual ~disable_animation();
+
+		virtual unsigned __int64 get_id() const;
+
+	protected:
+		unsigned __int64 id_;
+	};
+
 	class timer : public object{
 	public:
 		template <typename callback_type>

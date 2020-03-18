@@ -212,6 +212,7 @@ void cwin::ui::window_surface::after_set_enable_state_(){
 }
 
 void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &current_value){
+	current_size_ = current_value;
 	if (handle_ == nullptr)
 		return;
 
@@ -232,6 +233,7 @@ void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &c
 }
 
 void cwin::ui::window_surface::position_update_(const POINT &old_value, const POINT &current_value){
+	current_position_ = current_value;
 	if (handle_ == nullptr)
 		return;
 

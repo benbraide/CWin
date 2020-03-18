@@ -30,160 +30,22 @@ namespace cwin::events::interrupt{
 		}
 	};
 
-	template <class pair_type, bool is_init>
-	class pair_init_or_request : public object{
+	class animate : public object{
 	public:
-		using object::object;
+		using callback_type = std::function<void(float, bool)>;
 
-		virtual ~pair_init_or_request() = default;
+		animate(target &context, unsigned __int64 id, const callback_type &callback);
 
-		virtual void set_value(pair_type &value){
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			result_ = reinterpret_cast<LRESULT>(&value);
-		}
+		virtual ~animate();
 
-		virtual pair_type *get_value() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return reinterpret_cast<pair_type *>(result_);
-		}
+		virtual unsigned __int64 get_id() const;
+
+		virtual const callback_type &get_callback() const;
 
 	protected:
-		virtual bool handle_set_result_(const void *value, const std::type_info &type) override{
-			if (type == typeid(pair_type *))
-				result_ = reinterpret_cast<LRESULT>(*static_cast<pair_type *const *>(value));
-			else
-				throw exception::bad_value();
-
-			return true;
-		}
+		unsigned __int64 id_;
+		callback_type callback_;
 	};
-
-	using size_init = pair_init_or_request<SIZE, true>;
-	using position_init = pair_init_or_request<POINT, true>;
-	using color_init = pair_init_or_request<D2D1_COLOR_F, true>;
-
-	using size_request = pair_init_or_request<SIZE, false>;
-	using position_request = pair_init_or_request<POINT, false>;
-	using color_request = pair_init_or_request<D2D1_COLOR_F, false>;
-
-	template <class pair_type>
-	class pair_change : public object{
-	public:
-		using updater_callback_type = std::function<void(const pair_type &, const pair_type &)>;
-
-		pair_change(events::target &target, const pair_type &value, const updater_callback_type &updater)
-			: pair_change(target, value, value, updater){}
-
-		pair_change(events::target &target, const pair_type &old_value, const pair_type &value, const updater_callback_type &updater)
-			: object(target), old_value_(old_value), value_(value), updater_(updater){}
-
-		virtual ~pair_change() = default;
-
-		virtual const pair_type &get_old_value() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return old_value_;
-		}
-
-		virtual const pair_type &get_value() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return value_;
-		}
-
-		virtual const updater_callback_type &get_updater() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return updater_;
-		}
-
-	protected:
-		pair_type old_value_;
-		pair_type value_;
-		updater_callback_type updater_;
-	};
-
-	using size_change = pair_change<SIZE>;
-	using position_change = pair_change<POINT>;
-	using color_change = pair_change<D2D1_COLOR_F>;
-
-	template <class pair_type>
-	class pair_changer_request : public object{
-	public:
-		using callback_type = std::function<void(const pair_type &, bool)>;
-
-		using object::object;
-
-		virtual ~pair_changer_request() = default;
-
-		virtual void set_value(const callback_type &value){
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			value_ = value;
-		}
-
-		virtual const callback_type &get_value() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return value_;
-		}
-
-	protected:
-		virtual bool handle_set_result_(const void *value, const std::type_info &type) override{
-			if (type == typeid(callback_type))
-				value_ = *static_cast<const callback_type *>(value);
-			else
-				throw exception::bad_value();
-
-			return true;
-		}
-
-		callback_type value_;
-	};
-
-	using size_changer_request = pair_changer_request<SIZE>;
-	using position_changer_request = pair_changer_request<POINT>;
-	using color_changer_request = pair_changer_request<D2D1_COLOR_F>;
-
-	template <class pair_type>
-	class pair_updater_request : public object{
-	public:
-		using callback_type = std::function<void(const pair_type &, const pair_type &)>;
-
-		using object::object;
-
-		virtual ~pair_updater_request() = default;
-
-		virtual void set_value(const callback_type &value){
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			value_ = value;
-		}
-
-		virtual const callback_type &get_value() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return value_;
-		}
-
-	protected:
-		virtual bool handle_set_result_(const void *value, const std::type_info &type) override{
-			if (type == typeid(callback_type))
-				value_ = *static_cast<const callback_type *>(value);
-			else
-				throw exception::bad_value();
-
-			return true;
-		}
-
-		callback_type value_;
-	};
-
-	using size_updater_request = pair_updater_request<SIZE>;
-	using position_updater_request = pair_updater_request<POINT>;
-	using color_updater_request = pair_updater_request<D2D1_COLOR_F>;
 
 	class draw_background : public object{
 	public:

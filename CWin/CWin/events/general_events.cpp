@@ -66,6 +66,17 @@ std::size_t cwin::events::after_child_index_change::get_old_value() const{
 	return old_value_;
 }
 
+cwin::events::disable_animation::disable_animation(events::target &target, unsigned __int64 id)
+	: object(target), id_(id){}
+
+cwin::events::disable_animation::~disable_animation() = default;
+
+unsigned __int64 cwin::events::disable_animation::get_id() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return id_;
+}
+
 cwin::events::timer::~timer() = default;
 
 const std::chrono::milliseconds &cwin::events::timer::get_duration() const{

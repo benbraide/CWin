@@ -6,8 +6,6 @@
 
 cwin::hook::io::io(ui::visible_surface &parent){
 	parent.get_first_child([&](io &child){
-		size_callback_ = child.size_callback_;
-		position_callback_ = child.position_callback_;
 		parent.remove_child(child);
 	});
 
@@ -15,16 +13,6 @@ cwin::hook::io::io(ui::visible_surface &parent){
 		set_parent_(parent);
 	else//Error
 		throw thread::exception::context_mismatch();
-
-	if (size_callback_ == nullptr && position_callback_ == nullptr){
-		events::interrupt::size_changer_request size_e(parent);
-		parent.get_events().trigger(size_e);
-		size_callback_ = size_e.get_value();
-
-		events::interrupt::position_changer_request position_e(parent);
-		parent.get_events().trigger(position_e);
-		position_callback_ = position_e.get_value();
-	}
 }
 
 cwin::hook::io::~io() = default;
@@ -459,16 +447,16 @@ bool cwin::hook::io::check_drag_state_() const{
 void cwin::hook::io::after_mouse_drag_(const SIZE &delta){}
 
 void cwin::hook::io::offset_size_(const SIZE &delta) const{
-	if (auto surface_target = dynamic_cast<ui::surface *>(parent_); surface_target != nullptr && size_callback_ != nullptr){
+	if (auto surface_target = dynamic_cast<ui::surface *>(parent_); surface_target != nullptr){
 		auto &current_size = surface_target->get_size();
-		size_callback_(SIZE{ (current_size.cx + delta.cx), (current_size.cy + delta.cy) }, false);
+		surface_target->set_size_(SIZE{ (current_size.cx + delta.cx), (current_size.cy + delta.cy) }, false);
 	}
 }
 
 void cwin::hook::io::offset_position_(const SIZE &delta) const{
-	if (auto surface_target = dynamic_cast<ui::surface *>(parent_); surface_target != nullptr && position_callback_ != nullptr){
+	if (auto surface_target = dynamic_cast<ui::surface *>(parent_); surface_target != nullptr){
 		auto &current_position = surface_target->get_position();
-		position_callback_(POINT{ (current_position.x + delta.cx), (current_position.y + delta.cy) }, false);
+		surface_target->set_position_(POINT{ (current_position.x + delta.cx), (current_position.y + delta.cy) }, false);
 	}
 }
 

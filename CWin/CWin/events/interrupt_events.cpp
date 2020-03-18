@@ -18,6 +18,23 @@ NMHDR &cwin::events::interrupt::notify::get_info() const{
 	return *reinterpret_cast<NMHDR *>(message_info_.lParam);
 }
 
+cwin::events::interrupt::animate::animate(target &context, unsigned __int64 id, const callback_type &callback)
+	: object(context), id_(id), callback_(callback){}
+
+cwin::events::interrupt::animate::~animate() = default;
+
+unsigned __int64 cwin::events::interrupt::animate::get_id() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return id_;
+}
+
+const cwin::events::interrupt::animate::callback_type &cwin::events::interrupt::animate::get_callback() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return callback_;
+}
+
 cwin::events::interrupt::draw_background::draw_background(target &context, ID2D1RenderTarget &render, const D2D1_RECT_F &area)
 	: object(context), render_(render), area_(area){}
 

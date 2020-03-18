@@ -5,38 +5,8 @@
 #include "ui_visible_surface.h"
 
 cwin::ui::surface::surface(){
-	bind_default_([=](events::interrupt::size_init &e){
-		return &size_;
-	});
-
-	bind_default_([=](events::interrupt::position_init &e){
-		return &position_;
-	});
-
-	bind_default_([=](events::interrupt::size_changer_request &e){
-		e.set_value([=](const SIZE &value, bool enable_interrupt){
-			set_size_(value, enable_interrupt);
-		});
-	});
-	
-	bind_default_([=](events::interrupt::position_changer_request &e){
-		e.set_value([=](const POINT &value, bool enable_interrupt){
-			set_position_(value, enable_interrupt);
-		});
-	});
-	
-	bind_default_([=](events::interrupt::size_updater_request &e){
-		e.set_value([=](const SIZE &old_value, const SIZE &current_value){
-			size_update_(old_value, current_value);
-			events_.trigger<events::after_size_update>(old_value, current_value);
-		});
-	});
-	
-	bind_default_([=](events::interrupt::position_updater_request &e){
-		e.set_value([=](const POINT &old_value, const POINT &current_value){
-			position_update_(old_value, current_value);
-			events_.trigger<events::after_position_update>(old_value, current_value);
-		});
+	bind_default_([=](events::interrupt::animate &e){
+		(e.get_callback())(1.0f, false);
 	});
 }
 
@@ -293,7 +263,7 @@ void cwin::ui::surface::set_size_(const SIZE &value, bool enable_interrupt){
 	});
 }
 
-void cwin::ui::surface::set_size_(const SIZE &value, bool enable_interrupt, const std::function<void(const SIZE &, const SIZE &)> &callback){
+void cwin::ui::surface::set_size_(const SIZE &value, bool enable_interrupt, std::function<void(const SIZE &, const SIZE &)> callback){
 	if (value.cx == size_.cx && value.cy == size_.cy)
 		return;//No changes
 
@@ -303,16 +273,33 @@ void cwin::ui::surface::set_size_(const SIZE &value, bool enable_interrupt, cons
 
 	size_ = value;
 	events_.trigger<events::after_size_change>(old_value, value);
-
 	after_size_change_(old_value, value);
-	if (!enable_interrupt || !events_.trigger_then_report_prevented_default<events::interrupt::size_change>(old_value, value, callback)){
-		if (callback == nullptr){
+
+	if (callback == nullptr){
+		callback = [=](const SIZE &old_value, const SIZE &value){
 			size_update_(old_value, value);
 			events_.trigger<events::after_size_update>(old_value, value);
-		}
-		else//Use callback
-			callback(old_value, value);
+		};
 	}
+
+	if (!enable_interrupt){
+		callback(old_value, value);
+		return;
+	}
+
+	SIZE delta{
+		(value.cx - old_value.cx),
+		(value.cy - old_value.cy)
+	};
+
+	events_.trigger<events::interrupt::animate>(reinterpret_cast<unsigned __int64>(&typeid(events::after_size_change)), [=](float progress, bool has_more){
+		SIZE computed{
+			(old_value.cx + static_cast<int>(delta.cx * progress)),
+			(old_value.cy + static_cast<int>(delta.cy * progress))
+		};
+		
+		callback(get_size_(), computed);
+	});
 }
 
 bool cwin::ui::surface::before_size_change_(const SIZE &old_value, const SIZE &current_value) const{
@@ -324,8 +311,7 @@ void cwin::ui::surface::after_size_change_(const SIZE &old_value, const SIZE &cu
 void cwin::ui::surface::size_update_(const SIZE &old_value, const SIZE &current_value){}
 
 const SIZE &cwin::ui::surface::get_size_() const{
-	auto value = reinterpret_cast<SIZE *>(events_.trigger_then_report_result<events::interrupt::size_request>());
-	return ((value == nullptr) ? size_ : *value);
+	return current_size_;
 }
 
 SIZE cwin::ui::surface::get_true_size_() const{
@@ -343,7 +329,7 @@ void cwin::ui::surface::set_position_(const POINT &value, bool enable_interrupt)
 	});
 }
 
-void cwin::ui::surface::set_position_(const POINT &value, bool enable_interrupt, const std::function<void(const POINT &, const POINT &)> &callback){
+void cwin::ui::surface::set_position_(const POINT &value, bool enable_interrupt, std::function<void(const POINT &, const POINT &)> callback){
 	if (value.x == position_.x && value.y == position_.y)
 		return;//No changes
 
@@ -353,16 +339,33 @@ void cwin::ui::surface::set_position_(const POINT &value, bool enable_interrupt,
 
 	position_ = value;
 	events_.trigger<events::after_position_change>(old_value, value);
-
 	after_position_change_(old_value, value);
-	if (!enable_interrupt || !events_.trigger_then_report_prevented_default<events::interrupt::position_change>(old_value, value, callback)){
-		if (callback == nullptr){
+
+	if (callback == nullptr){
+		callback = [=](const POINT &old_value, const POINT &value){
 			position_update_(old_value, value);
 			events_.trigger<events::after_position_update>(old_value, value);
-		}
-		else//Use callback
-			callback(old_value, value);
+		};
 	}
+
+	if (!enable_interrupt){
+		callback(old_value, value);
+		return;
+	}
+
+	POINT delta{
+		(value.x - old_value.x),
+		(value.y - old_value.y)
+	};
+
+	events_.trigger<events::interrupt::animate>(reinterpret_cast<unsigned __int64>(&typeid(events::after_position_update)), [=](float progress, bool has_more){
+		POINT computed{
+			(old_value.x + static_cast<int>(delta.x * progress)),
+			(old_value.y + static_cast<int>(delta.y * progress))
+		};
+		
+		callback(get_position_(), computed);
+	});
 }
 
 bool cwin::ui::surface::before_position_change_(const POINT &old_value, const POINT &current_value) const{
@@ -390,8 +393,7 @@ void cwin::ui::surface::update_window_relative_position_(){
 }
 
 const POINT &cwin::ui::surface::get_position_() const{
-	auto value = reinterpret_cast<POINT *>(events_.trigger_then_report_result<events::interrupt::size_request>());
-	return ((value == nullptr) ? position_ : *value);
+	return current_position_;
 }
 
 POINT cwin::ui::surface::compute_absolute_position_() const{

@@ -108,6 +108,7 @@ bool cwin::ui::non_window_surface::is_created_() const{
 }
 
 void cwin::ui::non_window_surface::size_update_(const SIZE &old_value, const SIZE &current_value){
+	current_size_ = current_value;
 	if (handle_ == nullptr)
 		return;
 
@@ -158,6 +159,7 @@ void cwin::ui::non_window_surface::size_update_(const SIZE &old_value, const SIZ
 }
 
 void cwin::ui::non_window_surface::position_update_(const POINT &old_value, const POINT &current_value){
+	current_position_ = current_value;
 	if (handle_ != nullptr && is_visible_()){
 		redraw_at_(nullptr, old_value);
 		update_bounds_();
