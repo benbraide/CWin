@@ -247,7 +247,7 @@ namespace cwin::events{
 	public:
 		template <typename callback_type>
 		timer(events::target &target, const std::chrono::milliseconds &duration, const callback_type &callback, unsigned __int64 talk_id)
-			: object(target), duration_(duration){
+			: object(target), duration_(duration), talk_id_(talk_id){
 			using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
 			set_callback<return_type>::template set(*this, utility::object_to_function_traits::get(callback));
 		}

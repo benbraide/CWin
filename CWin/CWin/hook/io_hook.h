@@ -2,6 +2,7 @@
 
 #include "../events/io_events.h"
 #include "../events/interrupt_events.h"
+#include "../utility/options.h"
 
 #include "hook_object.h"
 
@@ -19,6 +20,15 @@ namespace cwin::hook{
 	public:
 		using mouse_button_type = events::io::mouse_button::button_type;
 
+		enum class option_type{
+			is_dragging,
+			drag_is_past_threshold,
+			is_dragging_offspring,
+			is_dragging_non_client,
+			is_inside,
+			is_inside_client,
+		};
+
 		explicit io(ui::visible_surface &parent);
 
 		virtual ~io();
@@ -26,6 +36,10 @@ namespace cwin::hook{
 		virtual mouse_button_type get_pressed_button() const;
 
 		virtual void get_pressed_button(const std::function<void(mouse_button_type)> &callback) const;
+
+		virtual bool is_inside() const;
+
+		virtual void is_inside(const std::function<void(bool)> &callback) const;
 
 		virtual bool is_inside_client() const;
 
@@ -50,6 +64,8 @@ namespace cwin::hook{
 		virtual void mouse_client_leave_();
 
 		virtual void mouse_enter_();
+
+		virtual void mouse_client_enter_();
 
 		virtual void mouse_move_(io **top);
 
@@ -82,14 +98,10 @@ namespace cwin::hook{
 
 		ui::visible_surface *non_client_mouse_press_ = nullptr;
 		UINT non_client_target_ = HTNOWHERE;
+
 		mouse_button_type pressed_button_ = mouse_button_type::nil;
-
-		bool is_dragging_ = false;
-		bool drag_is_past_threshold_ = false;
-
-		bool is_dragging_offspring_ = false;
-		bool is_dragging_non_client_ = false;
-		bool is_inside_client_ = false;
+		utility::small_options options_;
+		unsigned __int64 check_point_ = 0u;
 	};
 
 	class client_drag : public io{

@@ -2,10 +2,6 @@
 
 #include "ui_surface.h"
 
-namespace cwin::hook{
-	class io;
-}
-
 namespace cwin::menu{
 	class manager;
 }

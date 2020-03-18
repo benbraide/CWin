@@ -54,15 +54,27 @@ cwin::hook::io::mouse_button_type cwin::hook::io::get_mouse_button(UINT msg){
 	return mouse_button_type::nil;
 }
 
+bool cwin::hook::io::is_inside() const{
+	return execute_task([&]{
+		return options_.is_set(option_type::is_inside);
+	});
+}
+
+void cwin::hook::io::is_inside(const std::function<void(bool)> &callback) const{
+	post_or_execute_task([=]{
+		callback(options_.is_set(option_type::is_inside));
+	});
+}
+
 bool cwin::hook::io::is_inside_client() const{
 	return execute_task([&]{
-		return is_inside_client_;
+		return options_.is_set(option_type::is_inside_client);
 	});
 }
 
 void cwin::hook::io::is_inside_client(const std::function<void(bool)> &callback) const{
 	post_or_execute_task([=]{
-		callback(is_inside_client_);
+		callback(options_.is_set(option_type::is_inside_client));
 	});
 }
 
@@ -101,9 +113,9 @@ bool cwin::hook::io::mouse_cursor_(UINT hit_target){
 	auto pos = GetMessagePos();
 	POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
 
-	auto is_dragging_non_client = (is_dragging_non_client_ && non_client_target_ != HTNOWHERE);
+	auto is_dragging_non_client = (options_.is_set(option_type::is_dragging_non_client) && non_client_target_ != HTNOWHERE);
 	if (!is_dragging_non_client && mouse_over_ != nullptr && mouse_over_->io_hook_ != nullptr && hit_target == HTCLIENT){
-		if (mouse_over_->io_hook_->mouse_cursor_(mouse_over_->hit_test(position)))
+		if (mouse_over_->io_hook_->mouse_cursor_(mouse_over_->hit_test_(position)))
 			return true;
 	}
 
@@ -147,6 +159,9 @@ bool cwin::hook::io::mouse_cursor_(UINT hit_target){
 }
 
 void cwin::hook::io::mouse_leave_(){
+	if (parent_ == nullptr)
+		return;
+
 	if (mouse_over_ != nullptr){
 		if (mouse_over_->io_hook_ != nullptr)
 			mouse_over_->io_hook_->mouse_leave_();
@@ -154,29 +169,67 @@ void cwin::hook::io::mouse_leave_(){
 	}
 
 	mouse_up_(pressed_button_, nullptr);
+	mouse_client_leave_();
+
 	pressed_button_ = events::io::mouse_button::button_type::nil;
 	mouse_press_ = nullptr;
 
-	is_dragging_ = false;
-	drag_is_past_threshold_ = false;
+	if (options_.is_set(option_type::is_inside))
+		parent_->get_events().trigger<events::io::mouse_leave>();
 
-	is_dragging_offspring_ = false;
-	is_dragging_non_client_ = false;
-
-	mouse_client_leave_();
-	parent_->get_events().trigger<events::io::mouse_leave>();
+	options_.clear_all();
+	++check_point_;
 }
 
 void cwin::hook::io::mouse_client_leave_(){
-	if (is_inside_client_){
+	if (parent_ != nullptr && options_.is_set(option_type::is_inside_client)){
 		parent_->get_events().trigger<events::io::mouse_client_leave>();
-		is_inside_client_ = false;
+		options_.clear(option_type::is_inside_client);
 	}
 }
 
 void cwin::hook::io::mouse_enter_(){
+	if (parent_ == nullptr || options_.is_set(option_type::is_inside))
+		return;
+
+	parent_->get_ancestor(0u, [&](ui::visible_surface &ancestor){
+		if (ancestor.io_hook_ != nullptr && !ancestor.io_hook_->options_.all_is_set(option_type::is_inside_client, option_type::is_inside))
+			ancestor.io_hook_->mouse_client_enter_();
+	});
+
 	auto pos = GetMessagePos();
 	parent_->get_events().trigger<events::io::mouse_enter>(POINT{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) });
+	options_.set(option_type::is_inside);
+
+	auto check_point = ++check_point_;
+	parent_->get_events().trigger<events::timer>(std::chrono::milliseconds(1), [=](){
+		if (check_point_ != check_point)
+			return false;
+
+		auto visible_target = dynamic_cast<ui::visible_surface *>(parent_);
+		if (visible_target == nullptr)
+			return false;
+
+		switch (auto pos = GetMessagePos(); visible_target->hit_test_(POINT{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) })){
+		case HTNOWHERE:
+		case HTERROR:
+			mouse_leave_();
+			break;
+		default:
+			break;
+		}
+
+		return true;
+	}, get_talk_id());
+}
+
+void cwin::hook::io::mouse_client_enter_(){
+	mouse_enter_();
+	if (parent_ != nullptr && !options_.is_set(option_type::is_inside_client)){
+		auto pos = GetMessagePos();
+		parent_->get_events().trigger<events::io::mouse_client_enter>(POINT{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) });
+		options_.set(option_type::is_inside_client);
+	}
 }
 
 void cwin::hook::io::mouse_move_(io **top){
@@ -190,17 +243,13 @@ void cwin::hook::io::mouse_move_(io **top){
 	UINT hit_target = HTNOWHERE;
 	ui::visible_surface *mouse_over = nullptr;
 
-	if (!is_inside_client_){
-		parent_->get_events().trigger<events::io::mouse_client_enter>(position);
-		is_inside_client_ = true;
-	}
-
+	mouse_client_enter_();
 	if (mouse_press_ == nullptr){
 		visible_target->reverse_traverse_children([&](ui::visible_surface &child){//Find child under mouse
 			if (!child.is_created() || !child.is_visible() || dynamic_cast<ui::window_surface *>(&child) != nullptr)
 				return true;//Exclude window and hidden surfaces
 
-			if ((hit_target = child.hit_test(position)) != HTNOWHERE){//Mouse is over child
+			if ((hit_target = child.hit_test_(position)) != HTNOWHERE){//Mouse is over child
 				mouse_over = &child;
 				return false;
 			}
@@ -219,10 +268,10 @@ void cwin::hook::io::mouse_move_(io **top){
 				mouse_over_->get_events().trigger<events::io::mouse_enter>(position);
 		}
 		else if (mouse_over_ != nullptr)
-			hit_target = mouse_over_->hit_test(position);
+			hit_target = mouse_over_->hit_test_(position);
 	}
 	else if (mouse_over_ != nullptr)
-		hit_target = mouse_over_->hit_test(position);
+		hit_target = mouse_over_->hit_test_(position);
 	
 	auto self = this;
 	if (top != nullptr)
@@ -248,8 +297,8 @@ void cwin::hook::io::mouse_move_(io **top){
 	if (pressed_button_ != mouse_button_type::nil && dynamic_cast<ui::window_surface *>(parent_) != nullptr){
 		auto &mouse_info = thread_.get_window_manager().get_mouse_info();
 		if (!check_drag_state_()){//Check for drag
-			if (!drag_is_past_threshold_ && check_drag_threshold_(position)){
-				drag_is_past_threshold_ = true;
+			if (!options_.is_set(option_type::drag_is_past_threshold) && check_drag_threshold_(position)){
+				options_.set(option_type::drag_is_past_threshold);
 				if (mouse_drag_begin_(top))
 					mouse_drag_(SIZE{ (position.x - mouse_info.pressed_position.x), (position.y - mouse_info.pressed_position.y) });
 			}
@@ -266,25 +315,28 @@ bool cwin::hook::io::mouse_drag_begin_(io **top){
 	if (top != nullptr)
 		*top = self;
 
-	is_dragging_ = false;
+	options_.clear(option_type::is_dragging);
 	if (non_client_mouse_press_ != nullptr){
-		is_dragging_non_client_ = true;
+		options_.set(option_type::is_dragging_non_client);
 		return true;
 	}
 
 	if (mouse_press_ != nullptr && mouse_press_->io_hook_ != nullptr && mouse_press_->io_hook_->mouse_drag_begin_((top == nullptr) ? &self : top)){
-		is_dragging_offspring_ = true;
+		options_.set(option_type::is_dragging_offspring);
 		return true;
 	}
 
 	auto pos = GetMessagePos();
 	POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
 
-	is_dragging_offspring_ = false;
-	if ((is_dragging_ = (parent_->get_events().trigger_then_report_result<events::io::mouse_drag_begin>(*((top == nullptr) ? self : *top)->parent_, position, pressed_button_) != FALSE)))
-		return true;
+	options_.clear(option_type::is_dragging_offspring);
+	if (parent_->get_events().trigger_then_report_result<events::io::mouse_drag_begin>(*((top == nullptr) ? self : *top)->parent_, position, pressed_button_) == FALSE){
+		options_.clear(option_type::is_dragging);
+		return false;
+	}
 
-	return false;
+	options_.set(option_type::is_dragging);
+	return true;
 }
 
 void cwin::hook::io::mouse_drag_(const SIZE &delta){
@@ -293,7 +345,7 @@ void cwin::hook::io::mouse_drag_(const SIZE &delta){
 	else if (mouse_press_ != nullptr && mouse_press_->io_hook_ != nullptr)
 		mouse_press_->io_hook_->mouse_drag_(delta);
 
-	if (is_dragging_ && pressed_button_ != mouse_button_type::nil){
+	if (options_.is_set(option_type::is_dragging) && pressed_button_ != mouse_button_type::nil){
 		auto pos = GetMessagePos();
 		POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
 
@@ -301,7 +353,7 @@ void cwin::hook::io::mouse_drag_(const SIZE &delta){
 		after_mouse_drag_(delta);
 	}
 	else
-		is_dragging_ = false;
+		options_.clear(option_type::is_dragging);
 }
 
 void cwin::hook::io::mouse_drag_non_client_(const SIZE &delta, UINT hit_target){
@@ -353,7 +405,7 @@ void cwin::hook::io::mouse_down_(mouse_button_type button, io **top){
 
 	mouse_up_(pressed_button_, nullptr);
 	if (mouse_over_ != nullptr){
-		if (auto hit_target = mouse_over_->hit_test(position); hit_target == HTCLIENT){//Client
+		if (auto hit_target = mouse_over_->hit_test_(position); hit_target == HTCLIENT){//Client
 			if ((mouse_press_ = mouse_over_)->io_hook_ != nullptr)
 				mouse_press_->io_hook_->mouse_down_(button, ((top == nullptr) ? &self : top));
 		}
@@ -377,26 +429,26 @@ void cwin::hook::io::mouse_up_(mouse_button_type button, io **top){
 	if (top != nullptr)
 		*top = self;
 
-	auto was_dragging = (drag_is_past_threshold_ || check_drag_state_());
+	auto was_dragging = (options_.is_set(option_type::drag_is_past_threshold) || check_drag_state_());
 	if (mouse_press_ != nullptr){
 		if (mouse_press_->io_hook_ != nullptr)
 			mouse_press_->io_hook_->mouse_up_(button, ((top == nullptr) ? &self : top));
 		mouse_press_ = nullptr;
 	}
 
-	if (is_dragging_){
+	if (options_.is_set(option_type::is_dragging)){
 		auto pos = GetMessagePos();
 		POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
 
-		is_dragging_ = false;
+		options_.clear(option_type::is_dragging);
 		parent_->get_events().trigger<events::io::mouse_drag_end>(position, pressed_button_);
 	}
 
 	non_client_mouse_press_ = nullptr;
-	drag_is_past_threshold_ = false;
+	options_.clear(option_type::drag_is_past_threshold);
 
-	is_dragging_offspring_ = false;
-	is_dragging_non_client_ = false;
+	options_.clear(option_type::is_dragging_offspring);
+	options_.clear(option_type::is_dragging_non_client);
 
 	parent_->get_events().trigger<events::io::mouse_up>(*((top == nullptr) ? self : *top)->parent_, position, pressed_button_);
 	if (!was_dragging){//Click
@@ -441,7 +493,7 @@ void cwin::hook::io::mouse_wheel_(const SIZE &delta, io **top){
 }
 
 bool cwin::hook::io::check_drag_state_() const{
-	return (is_dragging_ || is_dragging_offspring_ || is_dragging_non_client_);
+	return options_.any_is_set(option_type::is_dragging, option_type::is_dragging_offspring, option_type::is_dragging_non_client);
 }
 
 void cwin::hook::io::after_mouse_drag_(const SIZE &delta){}
