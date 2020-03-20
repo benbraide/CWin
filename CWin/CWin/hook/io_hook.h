@@ -27,6 +27,8 @@ namespace cwin::hook{
 			is_dragging_non_client,
 			is_inside,
 			is_inside_client,
+			is_moving_non_client,
+			is_sizing_non_client,
 		};
 
 		explicit io(ui::visible_surface &parent);
@@ -73,7 +75,7 @@ namespace cwin::hook{
 
 		virtual void mouse_drag_(const SIZE &delta);
 
-		virtual void mouse_drag_non_client_(const SIZE &delta, UINT hit_target);
+		virtual void mouse_drag_non_client_(SIZE delta, UINT hit_target);
 
 		virtual void mouse_down_(mouse_button_type button, io **top);
 

@@ -234,4 +234,60 @@ namespace cwin::events::io{
 
 		virtual ~dbl_click() = default;
 	};
+
+	class non_client_move_begin : public object{
+	public:
+		using object::object;
+
+		virtual ~non_client_move_begin();
+	};
+
+	class non_client_move : public mouse_button{
+	public:
+		non_client_move(events::target &target, const POINT &position, SIZE &delta);
+
+		non_client_move(events::target &context, events::target &target, const POINT &position, SIZE &delta);
+
+		virtual ~non_client_move();
+
+		virtual SIZE &get_delta() const;
+
+	protected:
+		SIZE &delta_;
+	};
+
+	class non_client_move_end : public object{
+	public:
+		using object::object;
+
+		virtual ~non_client_move_end() = default;
+	};
+
+	class non_client_size_begin : public object{
+	public:
+		using object::object;
+
+		virtual ~non_client_size_begin();
+	};
+
+	class non_client_size : public mouse_button{
+	public:
+		non_client_size(events::target &target, const POINT &position, SIZE &delta);
+
+		non_client_size(events::target &context, events::target &target, const POINT &position, SIZE &delta);
+
+		virtual ~non_client_size();
+
+		virtual SIZE &get_delta() const;
+
+	protected:
+		SIZE &delta_;
+	};
+
+	class non_client_size_end : public object{
+	public:
+		using object::object;
+
+		virtual ~non_client_size_end() = default;
+	};
 }

@@ -30,19 +30,102 @@ namespace cwin::ui{
 	public:
 		simple_action(object_type &target, void (object_type:: *callback)())
 			: bound_action(target){
-			handler_ = [=](events::object &){
-				(dynamic_cast<object_type &>(target_).*callback)();
+			handler_ = [=, &target](events::object &){
+				(dynamic_cast<object_type &>(target).*callback)();
 			};
 		}
 
 		simple_action(object_type &target, void (object_type:: *callback)() const)
 			: bound_action(target){
-			handler_ = [=](events::object &){
-				(dynamic_cast<object_type &>(target_).*callback)();
+			handler_ = [=, &target](events::object &){
+				(dynamic_cast<object_type &>(target).*callback)();
 			};
 		}
 
 		virtual ~simple_action() = default;
+
+		virtual handler_type get_handler() const override{
+			return handler_;
+		}
+
+	protected:
+		handler_type handler_;
+	};
+
+	template <class object_type, class value_type>
+	class set_action : public events::bound_action{
+	public:
+		set_action(object_type &target, void (object_type:: *callback)(const value_type &), const value_type &value)
+			: bound_action(target){
+			handler_ = [=, &target](events::object &){
+				(dynamic_cast<object_type &>(target).*callback)(value);
+			};
+		}
+
+		set_action(object_type &target, void (object_type:: *callback)(value_type), const value_type &value)
+			: bound_action(target){
+			handler_ = [=, &target](events::object &){
+				(dynamic_cast<object_type &>(target).*callback)(value);
+			};
+		}
+
+		set_action(object_type &target, void (object_type:: *callback)(value_type &), value_type &value)
+			: bound_action(target){
+			handler_ = [=, &target, &value](events::object &){
+				(dynamic_cast<object_type &>(target).*callback)(value);
+			};
+		}
+
+		virtual ~set_action() = default;
+
+		virtual handler_type get_handler() const override{
+			return handler_;
+		}
+
+	protected:
+		handler_type handler_;
+	};
+
+	template <class object_type, class value_type>
+	class toggle_action : public events::bound_action{
+	public:
+		toggle_action(object_type &target, void (object_type:: *callback)(const value_type &), const std::vector<value_type> &values)
+			: bound_action(target){
+			handler_ = [=, &target, index = static_cast<std::size_t>(0)](events::object &) mutable{
+				(dynamic_cast<object_type &>(target).*callback)(values[index]);
+				if (values.size() <= ++index)
+					index = 0u;
+			};
+		}
+
+		toggle_action(object_type &target, void (object_type:: *callback)(value_type), const std::vector<value_type> &values)
+			: bound_action(target){
+			handler_ = [=, &target, index = static_cast<std::size_t>(0)](events::object &) mutable{
+				(dynamic_cast<object_type &>(target).*callback)(values[index]);
+				if (values.size() <= ++index)
+					index = 0u;
+			};
+		}
+
+		toggle_action(object_type &target, void (object_type:: *callback)(value_type &), const std::vector<value_type *> &values)
+			: bound_action(target){
+			handler_ = [=, &target, index = static_cast<std::size_t>(0)](events::object &) mutable{
+				(dynamic_cast<object_type &>(target).*callback)(*values[index]);
+				if (values.size() <= ++index)
+					index = 0u;
+			};
+		}
+
+		toggle_action(object_type &target, void (object_type:: *callback)(const value_type &), const value_type &first, const value_type &second)
+			: toggle_action(target, callback, std::vector<value_type>{ first, second }){}
+
+		toggle_action(object_type &target, void (object_type:: *callback)(value_type), const value_type &first, const value_type &second)
+			: toggle_action(target, callback, std::vector<value_type>{ first, second }){}
+
+		toggle_action(object_type &target, void (object_type:: *callback)(value_type &), value_type &first, value_type &second)
+			: toggle_action(target, callback, std::vector<value_type>{ &first, &second }){}
+
+		virtual ~toggle_action() = default;
 
 		virtual handler_type get_handler() const override{
 			return handler_;
@@ -264,6 +347,9 @@ namespace cwin::ui{
 
 		simple_action<object> create_action{ *this, &object::create };
 		simple_action<object> destroy_action{ *this, &object::destroy };
+
+		simple_action<object> enable_action{ *this, &object::enable };
+		simple_action<object> disable_action{ *this, &object::disable };
 
 	protected:
 		friend class tree;

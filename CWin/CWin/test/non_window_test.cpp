@@ -1,7 +1,5 @@
 #include "non_window_test.h"
 
-#include "../hook/animation_hook.h"
-
 cwin::test::non_window::non_window(control::tab &parent)
 	: non_window(parent, static_cast<std::size_t>(-1)){}
 

@@ -124,3 +124,35 @@ const SIZE &cwin::events::io::mouse_drag::get_delta() const{
 		throw thread::exception::outside_context();
 	return delta_;
 }
+
+cwin::events::io::non_client_move_begin::~non_client_move_begin() = default;
+
+cwin::events::io::non_client_move::non_client_move(events::target &target, const POINT &position, SIZE &delta)
+	: non_client_move(target, target, position, delta){}
+
+cwin::events::io::non_client_move::non_client_move(events::target &context, events::target &target, const POINT &position, SIZE &delta)
+	: mouse_button(context, target, position, button_type::left), delta_(delta){}
+
+cwin::events::io::non_client_move::~non_client_move() = default;
+
+SIZE &cwin::events::io::non_client_move::get_delta() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return delta_;
+}
+
+cwin::events::io::non_client_size_begin::~non_client_size_begin() = default;
+
+cwin::events::io::non_client_size::non_client_size(events::target &target, const POINT &position, SIZE &delta)
+	: non_client_size(target, target, position, delta){}
+
+cwin::events::io::non_client_size::non_client_size(events::target &context, events::target &target, const POINT &position, SIZE &delta)
+	: mouse_button(context, target, position, button_type::left), delta_(delta){}
+
+cwin::events::io::non_client_size::~non_client_size() = default;
+
+SIZE &cwin::events::io::non_client_size::get_delta() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return delta_;
+}

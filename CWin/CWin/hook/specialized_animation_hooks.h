@@ -16,16 +16,20 @@ namespace cwin::hook{
 		explicit specialized_animation(ui::tree &parent)
 			: animation(parent, reinterpret_cast<unsigned __int64>(&typeid(event_type))){}
 
-		specialized_animation(ui::tree &parent, const easing_type &easing)
-			: animation(parent, reinterpret_cast<unsigned __int64>(&typeid(event_type)), easing){}
+		specialized_animation(ui::tree &parent, const timing_type &timing)
+			: animation(parent, reinterpret_cast<unsigned __int64>(&typeid(event_type)), timing){}
 
 		specialized_animation(ui::tree &parent, const duration_type &duration)
 			: animation(parent, reinterpret_cast<unsigned __int64>(&typeid(event_type)), duration){}
 
-		specialized_animation(ui::tree &parent, const easing_type &easing, const duration_type &duration)
-			: animation(parent, reinterpret_cast<unsigned __int64>(&typeid(event_type)), easing, duration){}
+		specialized_animation(ui::tree &parent, const timing_type &timing, const duration_type &duration)
+			: animation(parent, reinterpret_cast<unsigned __int64>(&typeid(event_type)), timing, duration){}
 
 		virtual ~specialized_animation() = default;
+
+		static unsigned __int64 get_static_id(){
+			return reinterpret_cast<unsigned __int64>(&typeid(event_type));
+		}
 	};
 
 	using animated_size = specialized_animation<events::after_size_update>;

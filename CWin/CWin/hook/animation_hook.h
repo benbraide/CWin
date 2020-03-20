@@ -10,26 +10,30 @@
 namespace cwin::hook{
 	class animation : public object{
 	public:
-		using easing_type = std::function<float(float)>;
+		using timing_type = std::function<float(float)>;
 		using duration_type = std::chrono::nanoseconds;
 
 		explicit animation(ui::tree &parent);
 
 		animation(ui::tree &parent, unsigned __int64 id);
 
-		animation(ui::tree &parent, unsigned __int64 id, const easing_type &easing);
+		animation(ui::tree &parent, unsigned __int64 id, const timing_type &timing);
 
 		animation(ui::tree &parent, unsigned __int64 id, const duration_type &duration);
 
-		animation(ui::tree &parent, unsigned __int64 id, const easing_type &easing, const duration_type &duration);
+		animation(ui::tree &parent, unsigned __int64 id, const timing_type &timing, const duration_type &duration);
 
 		virtual ~animation();
-		
-		virtual void set_easing(const easing_type &value);
 
-		virtual const easing_type &get_easing() const;
+		virtual unsigned __int64 get_id() const;
 
-		virtual void get_easing(const std::function<void(const easing_type &)> &callback) const;
+		virtual void get_id(const std::function<void(unsigned __int64)> &callback) const;
+
+		virtual void set_timing(const timing_type &value);
+
+		virtual const timing_type &get_timing() const;
+
+		virtual void get_timing(const std::function<void(const timing_type &)> &callback) const;
 
 		virtual void set_duration(const duration_type &value);
 
@@ -47,13 +51,17 @@ namespace cwin::hook{
 
 		virtual void cancel(unsigned __int64 id = 0u);
 
+		virtual void stop(unsigned __int64 id = 0u);
+
 	protected:
 		virtual void cancel_(unsigned __int64 id);
+
+		virtual void stop_(unsigned __int64 id);
 
 		unsigned __int64 id_;
 		bool is_enabled_ = true;
 
-		easing_type easing_;
+		timing_type timing_;
 		duration_type duration_;
 
 		std::unordered_map<unsigned __int64, std::size_t> id_check_points_;

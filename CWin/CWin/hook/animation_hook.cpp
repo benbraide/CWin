@@ -4,21 +4,21 @@
 #include "animation_hook.h"
 
 cwin::hook::animation::animation(ui::tree &parent)
-	: animation(parent, 0u, utility::animation_timing::linear::ease, std::chrono::milliseconds(500)){}
+	: animation(parent, 0u, utility::animation_timing::linear::ease_in, std::chrono::milliseconds(500)){}
 
 cwin::hook::animation::animation(ui::tree &parent, unsigned __int64 id)
-	: animation(parent, id, utility::animation_timing::linear::ease, std::chrono::milliseconds(500)){}
+	: animation(parent, id, utility::animation_timing::linear::ease_in, std::chrono::milliseconds(500)){}
 
-cwin::hook::animation::animation(ui::tree &parent, unsigned __int64 id, const easing_type &easing)
-	: animation(parent, id, easing, std::chrono::milliseconds(500)){}
+cwin::hook::animation::animation(ui::tree &parent, unsigned __int64 id, const timing_type &timing)
+	: animation(parent, id, timing, std::chrono::milliseconds(500)){}
 
 cwin::hook::animation::animation(ui::tree &parent, unsigned __int64 id, const duration_type &duration)
-	: animation(parent, id, utility::animation_timing::linear::ease, duration){}
+	: animation(parent, id, utility::animation_timing::linear::ease_in, duration){}
 
-cwin::hook::animation::animation(ui::tree &parent, unsigned __int64 id, const easing_type &easing, const duration_type &duration)
-	: id_(id), easing_(easing), duration_(duration){
+cwin::hook::animation::animation(ui::tree &parent, unsigned __int64 id, const timing_type &timing, const duration_type &duration)
+	: id_(id), timing_(timing), duration_(duration){
 	parent.get_first_child([&](animation &child){
-		if (id_ == child.id_ || id_ == 0u || child.id_ == 0u)
+		if (id_ == child.id_)
 			parent.remove_child(child);
 	});
 
@@ -43,7 +43,7 @@ cwin::hook::animation::animation(ui::tree &parent, unsigned __int64 id, const ea
 		else//Exists
 			check_point = ++it->second;
 
-		thread_.animate(easing_, duration_, [=, callback = e.get_callback()](float progress, bool has_more){
+		thread_.animate(timing_, duration_, [=, callback = e.get_callback()](float progress, bool has_more){
 			if (auto it = id_check_points_.find(id); it == id_check_points_.end() || it->second != check_point){
 				if (auto cit = active_callbacks_.find(id); cit != active_callbacks_.end() && cit->second == &callback)
 					cit->second = nullptr;
@@ -63,21 +63,35 @@ cwin::hook::animation::animation(ui::tree &parent, unsigned __int64 id, const ea
 	}, get_talk_id());
 }
 
-void cwin::hook::animation::set_easing(const easing_type &value){
-	post_or_execute_task([=]{
-		easing_ = value;
+cwin::hook::animation::~animation() = default;
+
+unsigned __int64 cwin::hook::animation::get_id() const{
+	return execute_task([&]{
+		return id_;
 	});
 }
 
-const cwin::hook::animation::easing_type &cwin::hook::animation::get_easing() const{
+void cwin::hook::animation::get_id(const std::function<void(unsigned __int64)> &callback) const{
+	post_or_execute_task([=]{
+		callback(id_);
+	});
+}
+
+void cwin::hook::animation::set_timing(const timing_type &value){
+	post_or_execute_task([=]{
+		timing_ = value;
+	});
+}
+
+const cwin::hook::animation::timing_type &cwin::hook::animation::get_timing() const{
 	return *execute_task([&]{
-		return &easing_;
+		return &timing_;
 	});
 }
 
-void cwin::hook::animation::get_easing(const std::function<void(const easing_type &)> &callback) const{
+void cwin::hook::animation::get_timing(const std::function<void(const timing_type &)> &callback) const{
 	post_or_execute_task([=]{
-		callback(easing_);
+		callback(timing_);
 	});
 }
 
@@ -130,6 +144,12 @@ void cwin::hook::animation::cancel(unsigned __int64 id){
 	});
 }
 
+void cwin::hook::animation::stop(unsigned __int64 id){
+	post_or_execute_task([=]{
+		stop_(id);
+	});
+}
+
 void cwin::hook::animation::cancel_(unsigned __int64 id){
 	if (!is_enabled_)
 		return;
@@ -155,4 +175,14 @@ void cwin::hook::animation::cancel_(unsigned __int64 id){
 	}
 }
 
-cwin::hook::animation::~animation() = default;
+void cwin::hook::animation::stop_(unsigned __int64 id){
+	if (!is_enabled_)
+		return;
+
+	if (id == 0u){
+		for (auto &checkpoint : id_check_points_)
+			++checkpoint.second;
+	}
+	else if (auto it = id_check_points_.find(id); it != id_check_points_.end())
+		++it->second;
+}

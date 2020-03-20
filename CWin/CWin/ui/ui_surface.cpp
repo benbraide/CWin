@@ -292,13 +292,14 @@ void cwin::ui::surface::set_size_(const SIZE &value, bool enable_interrupt, std:
 		(value.cy - old_value.cy)
 	};
 
-	events_.trigger<events::interrupt::animate>(reinterpret_cast<unsigned __int64>(&typeid(events::after_size_change)), [=](float progress, bool has_more){
+	events_.trigger<events::interrupt::animate>(reinterpret_cast<unsigned __int64>(&typeid(events::after_size_update)), [=](float progress, bool has_more){
 		SIZE computed{
 			(old_value.cx + static_cast<int>(delta.cx * progress)),
 			(old_value.cy + static_cast<int>(delta.cy * progress))
 		};
 		
-		callback(get_size_(), computed);
+		auto size = get_size_();
+		callback(size, computed);
 	});
 }
 
@@ -308,7 +309,9 @@ bool cwin::ui::surface::before_size_change_(const SIZE &old_value, const SIZE &c
 
 void cwin::ui::surface::after_size_change_(const SIZE &old_value, const SIZE &current_value){}
 
-void cwin::ui::surface::size_update_(const SIZE &old_value, const SIZE &current_value){}
+void cwin::ui::surface::size_update_(const SIZE &old_value, const SIZE &current_value){
+	current_size_ = current_value;
+}
 
 const SIZE &cwin::ui::surface::get_size_() const{
 	return current_size_;
@@ -364,7 +367,8 @@ void cwin::ui::surface::set_position_(const POINT &value, bool enable_interrupt,
 			(old_value.y + static_cast<int>(delta.y * progress))
 		};
 		
-		callback(get_position_(), computed);
+		auto position = get_position_();
+		callback(position, computed);
 	});
 }
 
@@ -375,6 +379,7 @@ bool cwin::ui::surface::before_position_change_(const POINT &old_value, const PO
 void cwin::ui::surface::after_position_change_(const POINT &old_value, const POINT &current_value){}
 
 void cwin::ui::surface::position_update_(const POINT &old_value, const POINT &current_value){
+	current_position_ = current_value;
 	traverse_children_<surface>([&](surface &child){
 		try{
 			child.update_window_relative_position_();

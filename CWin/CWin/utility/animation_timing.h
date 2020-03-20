@@ -23,8 +23,16 @@ namespace cwin::utility::animation_timing{
 	};
 
 	struct linear{
-		static float ease(float time_fraction){
+		static float ease_in(float time_fraction){
 			return time_fraction;
+		}
+
+		static float ease_out(float time_fraction){
+			return ease_in(time_fraction);
+		}
+
+		static float ease_in_out(float time_fraction){
+			return ease_in(time_fraction);
 		}
 	};
 
@@ -72,7 +80,7 @@ namespace cwin::utility::animation_timing{
 
 	struct circle{
 		static float ease_in(float time_fraction){
-			return (-std::sqrt(1.0f - (time_fraction * time_fraction)) - 1.0f);
+			return (1.0f - std::sqrt(1.0f - (time_fraction * time_fraction)));
 		}
 
 		static float ease_out(float time_fraction){

@@ -162,18 +162,17 @@ void cwin::hook::io::mouse_leave_(){
 	if (parent_ == nullptr)
 		return;
 
+	mouse_up_(pressed_button_, nullptr);
 	if (mouse_over_ != nullptr){
 		if (mouse_over_->io_hook_ != nullptr)
 			mouse_over_->io_hook_->mouse_leave_();
 		mouse_over_ = nullptr;
 	}
 
-	mouse_up_(pressed_button_, nullptr);
 	mouse_client_leave_();
-
 	pressed_button_ = events::io::mouse_button::button_type::nil;
-	mouse_press_ = nullptr;
 
+	mouse_press_ = nullptr;
 	if (options_.is_set(option_type::is_inside))
 		parent_->get_events().trigger<events::io::mouse_leave>();
 
@@ -356,37 +355,78 @@ void cwin::hook::io::mouse_drag_(const SIZE &delta){
 		options_.clear(option_type::is_dragging);
 }
 
-void cwin::hook::io::mouse_drag_non_client_(const SIZE &delta, UINT hit_target){
+void cwin::hook::io::mouse_drag_non_client_(SIZE delta, UINT hit_target){
+	if (parent_ == nullptr)
+		return;
+
+	if (!options_.any_is_set(option_type::is_moving_non_client, option_type::is_sizing_non_client)){
+		switch (hit_target){
+		case HTCAPTION:
+			if (parent_->get_events().trigger_then_report_prevented_default<events::io::non_client_move_begin>())
+				return;
+
+			options_.set(option_type::is_moving_non_client);
+			break;
+		case HTLEFT:
+		case HTTOPLEFT:
+		case HTTOP:
+		case HTTOPRIGHT:
+		case HTRIGHT:
+		case HTBOTTOMRIGHT:
+		case HTBOTTOM:
+		case HTBOTTOMLEFT:
+			if (parent_->get_events().trigger_then_report_prevented_default<events::io::non_client_size_begin>())
+				return;
+
+			options_.set(option_type::is_sizing_non_client);
+			break;
+		default:
+			break;
+		}
+	}
+
+	auto pos = GetMessagePos();
+	POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
+
 	switch (hit_target){
 	case HTCAPTION:
+		parent_->get_events().trigger<events::io::non_client_move>(position, delta);
 		offset_position_(delta);
 		break;
 	case HTLEFT:
+		parent_->get_events().trigger<events::io::non_client_size>(position, delta);
 		offset_size_(SIZE{ -delta.cx, 0 });
 		offset_position_(SIZE{ delta.cx, 0 });
 		break;
 	case HTTOPLEFT:
+		parent_->get_events().trigger<events::io::non_client_size>(position, delta);
 		offset_size_(SIZE{ -delta.cx, -delta.cy });
 		offset_position_(delta);
 		break;
 	case HTTOP:
+		parent_->get_events().trigger<events::io::non_client_size>(position, delta);
 		offset_size_(SIZE{ 0, -delta.cy });
 		offset_position_(SIZE{ 0, delta.cy });
 		break;
 	case HTTOPRIGHT:
+		parent_->get_events().trigger<events::io::non_client_size>(position, delta);
 		offset_size_(SIZE{ delta.cx, -delta.cy });
 		offset_position_(SIZE{ 0, delta.cy });
 		break;
 	case HTRIGHT:
+		parent_->get_events().trigger<events::io::non_client_size>(position, delta);
 		offset_size_(SIZE{ delta.cx, 0 });
 		break;
 	case HTBOTTOMRIGHT:
+		parent_->get_events().trigger<events::io::non_client_size>(position, delta);
 		offset_size_(delta);
 		break;
 	case HTBOTTOM:
+		parent_->get_events().trigger<events::io::non_client_size>(position, delta);
 		offset_size_(SIZE{ 0, delta.cy });
 		break;
 	case HTBOTTOMLEFT:
+		parent_->get_events().trigger<events::io::non_client_size>(position, delta);
 		offset_size_(SIZE{ -delta.cx, delta.cy });
 		offset_position_(SIZE{ delta.cx, 0 });
 		break;
@@ -436,6 +476,32 @@ void cwin::hook::io::mouse_up_(mouse_button_type button, io **top){
 		mouse_press_ = nullptr;
 	}
 
+	if (non_client_mouse_press_ != nullptr){
+		if (non_client_mouse_press_->io_hook_ != nullptr && non_client_mouse_press_->io_hook_->parent_ != nullptr){
+			if (non_client_mouse_press_->io_hook_->options_.is_set(option_type::is_moving_non_client)){
+				non_client_mouse_press_->io_hook_->parent_->get_events().trigger<events::io::non_client_move_end>();
+				non_client_mouse_press_->io_hook_->options_.clear(option_type::is_moving_non_client);
+			}
+
+			if (non_client_mouse_press_->io_hook_->options_.is_set(option_type::is_sizing_non_client)){
+				non_client_mouse_press_->io_hook_->parent_->get_events().trigger<events::io::non_client_size_end>();
+				non_client_mouse_press_->io_hook_->options_.clear(option_type::is_sizing_non_client);
+			}
+		}
+
+		non_client_mouse_press_ = nullptr;
+	}
+
+	if (options_.is_set(option_type::is_moving_non_client)){
+		parent_->get_events().trigger<events::io::non_client_move_end>();
+		options_.clear(option_type::is_moving_non_client);
+	}
+
+	if (options_.is_set(option_type::is_sizing_non_client)){
+		parent_->get_events().trigger<events::io::non_client_size_end>();
+		options_.clear(option_type::is_sizing_non_client);
+	}
+
 	if (options_.is_set(option_type::is_dragging)){
 		auto pos = GetMessagePos();
 		POINT position{ GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
@@ -444,9 +510,7 @@ void cwin::hook::io::mouse_up_(mouse_button_type button, io **top){
 		parent_->get_events().trigger<events::io::mouse_drag_end>(position, pressed_button_);
 	}
 
-	non_client_mouse_press_ = nullptr;
 	options_.clear(option_type::drag_is_past_threshold);
-
 	options_.clear(option_type::is_dragging_offspring);
 	options_.clear(option_type::is_dragging_non_client);
 

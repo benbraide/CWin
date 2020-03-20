@@ -46,7 +46,7 @@ void cwin::hook::color_background::set_color(COLORREF value, float alpha){
 		(GetRValue(value) / 255.0f),	//Red
 		(GetGValue(value) / 255.0f),	//Green
 		(GetBValue(value) / 255.0f),	//Blue
-		1.0f							//Alpha
+		alpha							//Alpha
 	));
 }
 
