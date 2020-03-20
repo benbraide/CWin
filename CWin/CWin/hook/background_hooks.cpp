@@ -28,7 +28,7 @@ cwin::hook::color_background::color_background(ui::visible_surface &parent)
 	: color_background(parent, D2D1::ColorF(D2D1::ColorF::White)){}
 
 cwin::hook::color_background::color_background(ui::visible_surface &parent, const D2D1_COLOR_F &value)
-	: background(parent), color_(value), current_color_(value){}
+	: background(parent), color_(value), current_color_(value), animation_id_(get_static_animation_id()){}
 
 cwin::hook::color_background::color_background(ui::visible_surface &parent, COLORREF value, float alpha)
 	: color_background(parent, D2D1::ColorF((GetRValue(value) / 255.0f), (GetGValue(value) / 255.0f), (GetBValue(value) / 255.0f), alpha)){}
@@ -60,6 +60,30 @@ void cwin::hook::color_background::get_color(const std::function<void(const D2D1
 	post_or_execute_task([=]{
 		callback(get_color_());
 	});
+}
+
+void cwin::hook::color_background::set_animation_id(unsigned __int64 value){
+	post_or_execute_task([=]{
+		if (value == 0u)
+			throw ui::exception::not_supported();
+		animation_id_ = value;
+	});
+}
+
+unsigned __int64 cwin::hook::color_background::get_animation_id() const{
+	return execute_task([&]{
+		return animation_id_;
+	});
+}
+
+void cwin::hook::color_background::get_animation_id(const std::function<void(unsigned __int64)> &callback) const{
+	post_or_execute_task([=]{
+		callback(animation_id_);
+	});
+}
+
+unsigned __int64 cwin::hook::color_background::get_static_animation_id(){
+	return reinterpret_cast<unsigned __int64>(&typeid(events::after_background_color_update));
 }
 
 void cwin::hook::color_background::draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const{
@@ -107,7 +131,7 @@ void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value, bool en
 		(value.a - old_value.a)
 	};
 
-	parent_->get_events().trigger<events::interrupt::animate>(reinterpret_cast<unsigned __int64>(&typeid(events::after_background_color_update)), [=](float progress, bool has_more){
+	parent_->get_events().trigger<events::interrupt::animate>(animation_id_, [=](float progress, bool has_more){
 		D2D1_COLOR_F computed{
 			(old_value.r + (delta.r * progress)),
 			(old_value.g + (delta.g * progress)),

@@ -9,21 +9,21 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 	part_meta_info_list.reserve(4);
 
 	part_meta_info_list.push_back(part_meta_info{
-		hook::animated_position::get_static_id(),
+		ui::surface::get_static_position_animation_id(),
 		L"Position",
-		part_action(*this, &animation::set_active_part, hook::animated_position::get_static_id()).get_handler()
+		part_action(*this, &animation::set_active_part, ui::surface::get_static_position_animation_id()).get_handler()
 	});
 
 	part_meta_info_list.push_back(part_meta_info{
-		hook::animated_size::get_static_id(),
+		ui::surface::get_static_size_animation_id(),
 		L"Size",
-		part_action(*this, &animation::set_active_part, hook::animated_size::get_static_id()).get_handler()
+		part_action(*this, &animation::set_active_part, ui::surface::get_static_size_animation_id()).get_handler()
 	});
 
 	part_meta_info_list.push_back(part_meta_info{
-		hook::animated_background_color::get_static_id(),
+		cwin::hook::color_background::get_static_animation_id(),
 		L"Background Color",
-		part_action(*this, &animation::set_active_part, hook::animated_background_color::get_static_id()).get_handler()
+		part_action(*this, &animation::set_active_part, cwin::hook::color_background::get_static_animation_id()).get_handler()
 	});
 
 	std::vector<timing_info> timing_info_list;
@@ -68,7 +68,7 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 	duration_info_list.push_back(duration_info{ duration_type::ms2000, L"2s", duration_action(*this, &animation::set_duration, duration_type::ms2000).get_handler() });
 
 	set_caption(L"Animation");
-	get_first_child([](hook::color_background &bg){
+	get_first_child([](cwin::hook::color_background &bg){
 		bg.set_color(GetSysColor(COLOR_BTNFACE));
 	});
 
@@ -95,7 +95,6 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 					timing_type::linear,
 					duration_type::ms2000,
 					part_meta_info_list[index].name,
-					nullptr,
 					&item
 				};
 			});
@@ -189,7 +188,7 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 		item.set_size(SIZE{ 207, 63 });
 		item.set_position(POINT{ 30, 30 });
 		
-		item.get_first_child([](hook::color_background &bg){
+		item.get_first_child([](cwin::hook::color_background &bg){
 			bg.set_color(D2D1::ColorF(D2D1::ColorF::Red));
 		});
 
@@ -198,7 +197,7 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 		});
 		
 		item.get_events().bind([&](events::io::non_client_move_begin &){
-			parts_.find(active_part_)->second.object->stop(hook::animated_position::get_static_id());
+			animation_->stop(ui::surface::get_static_position_animation_id());
 		});
 
 		item.get_events().bind([](events::io::non_client_move &e){
@@ -210,7 +209,7 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 		});
 		
 		item.get_events().bind([&](events::io::non_client_size_begin &){
-			parts_.find(active_part_)->second.object->stop(hook::animated_size::get_static_id());
+			animation_->stop(ui::surface::get_static_size_animation_id());
 		});
 
 		item.get_events().bind([](events::io::non_client_size &e){
@@ -221,24 +220,14 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 			item.set_size(SIZE{ 207, 63 });
 		});
 
-		item.insert_object<hook::non_window::rectangle_handle<hook::non_window::client_handle>>();
-		item.insert_object<hook::io>();
+		item.insert_object<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::client_handle>>();
+		item.insert_object<cwin::hook::io>();
 
-		item.insert_object([&](hook::animated_position &hk){
+		item.insert_object([&](cwin::hook::animation &hk){
+			animation_ = &hk;
 			hk.set_duration(std::chrono::seconds(2));
-			parts_.find(hook::animated_position::get_static_id())->second.object = &hk;
 		});
 		
-		item.insert_object([&](hook::animated_size &hk){
-			hk.set_duration(std::chrono::seconds(2));
-			parts_.find(hook::animated_size::get_static_id())->second.object = &hk;
-		});
-		
-		item.insert_object([&](hook::animated_background_color &hk){
-			hk.set_duration(std::chrono::seconds(2));
-			parts_.find(hook::animated_background_color::get_static_id())->second.object = &hk;
-		});
-
 		item.insert_object([&](cwin::menu::popup &popup){
 			popup.insert_object([&](cwin::menu::radio_group &group){
 				group.insert_object([&](cwin::menu::check_item &chk){
@@ -285,7 +274,7 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 		});
 	});
 
-	set_active_part(hook::animated_position::get_static_id());
+	set_active_part(ui::surface::get_static_position_animation_id());
 }
 
 cwin::test::animation::~animation(){
@@ -348,39 +337,39 @@ cwin::test::animation::easing_type cwin::test::animation::get_easing() const{
 }
 
 void cwin::test::animation::set_duration(duration_type value){
-	switch (auto it = parts_.find(active_part_); it->second.duration = value){
+	switch (parts_.find(active_part_)->second.duration = value){
 	case duration_type::ms50:
-		it->second.object->set_duration(std::chrono::milliseconds(50));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(50));
 		break;
 	case duration_type::ms100:
-		it->second.object->set_duration(std::chrono::milliseconds(100));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(100));
 		break;
 	case duration_type::ms200:
-		it->second.object->set_duration(std::chrono::milliseconds(200));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(200));
 		break;
 	case duration_type::ms250:
-		it->second.object->set_duration(std::chrono::milliseconds(250));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(250));
 		break;
 	case duration_type::ms500:
-		it->second.object->set_duration(std::chrono::milliseconds(500));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(500));
 		break;
 	case duration_type::ms750:
-		it->second.object->set_duration(std::chrono::milliseconds(750));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(750));
 		break;
 	case duration_type::ms1000:
-		it->second.object->set_duration(std::chrono::milliseconds(1000));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(1000));
 		break;
 	case duration_type::ms1250:
-		it->second.object->set_duration(std::chrono::milliseconds(1250));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(1250));
 		break;
 	case duration_type::ms1500:
-		it->second.object->set_duration(std::chrono::milliseconds(1500));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(1500));
 		break;
 	case duration_type::ms1750:
-		it->second.object->set_duration(std::chrono::milliseconds(1750));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(1750));
 		break;
 	case duration_type::ms2000:
-		it->second.object->set_duration(std::chrono::milliseconds(2000));
+		animation_->set_duration(active_part_, std::chrono::milliseconds(2000));
 		break;
 	default:
 		break;
@@ -396,143 +385,143 @@ void cwin::test::animation::update_timing_(){
 	case timing_type::back:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::back::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::back::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::back::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::back::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::back::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::back::ease_in_out);
 			break;
 		}
 		break;
 	case timing_type::bounce:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::bounce::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::bounce::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::bounce::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::bounce::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::bounce::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::bounce::ease_in_out);
 			break;
 		}
 		break;
 	case timing_type::circle:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::circle::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::circle::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::circle::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::circle::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::circle::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::circle::ease_in_out);
 			break;
 		}
 		break;
 	case timing_type::cubic:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::cubic::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::cubic::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::cubic::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::cubic::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::cubic::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::cubic::ease_in_out);
 			break;
 		}
 		break;
 	case timing_type::elastic:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::elastic::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::elastic::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::elastic::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::elastic::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::elastic::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::elastic::ease_in_out);
 			break;
 		}
 		break;
 	case timing_type::exponential:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::exponential::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::exponential::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::exponential::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::exponential::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::exponential::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::exponential::ease_in_out);
 			break;
 		}
 		break;
 	case timing_type::quadratic:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::quadratic::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::quadratic::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::quadratic::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::quadratic::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::quadratic::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::quadratic::ease_in_out);
 			break;
 		}
 		break;
 	case timing_type::quart:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::quart::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::quart::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::quart::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::quart::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::quart::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::quart::ease_in_out);
 			break;
 		}
 		break;
 	case timing_type::quint:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::quint::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::quint::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::quint::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::quint::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::quint::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::quint::ease_in_out);
 			break;
 		}
 		break;
 	case timing_type::sine:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::sine::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::sine::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::sine::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::sine::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::sine::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::sine::ease_in_out);
 			break;
 		}
 		break;
 	default:
 		switch (it->second.easing){
 		case easing_type::in:
-			it->second.object->set_timing(utility::animation_timing::linear::ease_in);
+			animation_->set_timing(active_part_, utility::animation_timing::linear::ease_in);
 			break;
 		case easing_type::out:
-			it->second.object->set_timing(utility::animation_timing::linear::ease_out);
+			animation_->set_timing(active_part_, utility::animation_timing::linear::ease_out);
 			break;
 		default:
-			it->second.object->set_timing(utility::animation_timing::linear::ease_in_out);
+			animation_->set_timing(active_part_, utility::animation_timing::linear::ease_in_out);
 			break;
 		}
 		break;

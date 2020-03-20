@@ -4,7 +4,8 @@
 
 #include "ui_visible_surface.h"
 
-cwin::ui::surface::surface(){
+cwin::ui::surface::surface()
+	: size_animation_id_(get_static_size_animation_id()), position_animation_id_(get_static_position_animation_id()){
 	bind_default_([=](events::interrupt::animate &e){
 		(e.get_callback())(1.0f, false);
 	});
@@ -252,6 +253,54 @@ void cwin::ui::surface::get_client_bound(const std::function<void(const handle_b
 	});
 }
 
+void cwin::ui::surface::set_size_animation_id(unsigned __int64 value){
+	post_or_execute_task([=]{
+		if (value == 0u)
+			throw exception::not_supported();
+		size_animation_id_ = value;
+	});
+}
+
+unsigned __int64 cwin::ui::surface::get_size_animation_id() const{
+	return execute_task([&]{
+		return size_animation_id_;
+	});
+}
+
+void cwin::ui::surface::get_size_animation_id(const std::function<void(unsigned __int64)> &callback) const{
+	post_or_execute_task([=]{
+		callback(size_animation_id_);
+	});
+}
+
+void cwin::ui::surface::set_position_animation_id(unsigned __int64 value){
+	post_or_execute_task([=]{
+		if (value == 0u)
+			throw exception::not_supported();
+		position_animation_id_ = value;
+	});
+}
+
+unsigned __int64 cwin::ui::surface::get_position_animation_id() const{
+	return execute_task([&]{
+		return position_animation_id_;
+	});
+}
+
+void cwin::ui::surface::get_position_animation_id(const std::function<void(unsigned __int64)> &callback) const{
+	post_or_execute_task([=]{
+		callback(position_animation_id_);
+	});
+}
+
+unsigned __int64 cwin::ui::surface::get_static_size_animation_id(){
+	return reinterpret_cast<unsigned __int64>(&typeid(events::after_size_update));
+}
+
+unsigned __int64 cwin::ui::surface::get_static_position_animation_id(){
+	return reinterpret_cast<unsigned __int64>(&typeid(events::after_position_update));
+}
+
 void cwin::ui::surface::set_size_(const SIZE &value){
 	set_size_(value, true);
 }
@@ -292,7 +341,7 @@ void cwin::ui::surface::set_size_(const SIZE &value, bool enable_interrupt, std:
 		(value.cy - old_value.cy)
 	};
 
-	events_.trigger<events::interrupt::animate>(reinterpret_cast<unsigned __int64>(&typeid(events::after_size_update)), [=](float progress, bool has_more){
+	events_.trigger<events::interrupt::animate>(size_animation_id_, [=](float progress, bool){
 		SIZE computed{
 			(old_value.cx + static_cast<int>(delta.cx * progress)),
 			(old_value.cy + static_cast<int>(delta.cy * progress))
@@ -361,7 +410,7 @@ void cwin::ui::surface::set_position_(const POINT &value, bool enable_interrupt,
 		(value.y - old_value.y)
 	};
 
-	events_.trigger<events::interrupt::animate>(reinterpret_cast<unsigned __int64>(&typeid(events::after_position_update)), [=](float progress, bool has_more){
+	events_.trigger<events::interrupt::animate>(position_animation_id_, [=](float progress, bool){
 		POINT computed{
 			(old_value.x + static_cast<int>(delta.x * progress)),
 			(old_value.y + static_cast<int>(delta.y * progress))

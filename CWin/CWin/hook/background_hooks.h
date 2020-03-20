@@ -37,6 +37,14 @@ namespace cwin::hook{
 
 		virtual void get_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const;
 
+		virtual void set_animation_id(unsigned __int64 value);
+
+		virtual unsigned __int64 get_animation_id() const;
+
+		virtual void get_animation_id(const std::function<void(unsigned __int64)> &callback) const;
+
+		static unsigned __int64 get_static_animation_id();
+
 	protected:
 		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const override;
 
@@ -52,6 +60,7 @@ namespace cwin::hook{
 
 		D2D1_COLOR_F color_;
 		D2D1_COLOR_F current_color_;
+		unsigned __int64 animation_id_;
 	};
 
 	class caption : public object{

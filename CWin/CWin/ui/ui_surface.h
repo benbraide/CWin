@@ -101,6 +101,22 @@ namespace cwin::ui{
 
 		virtual void get_client_bound(const std::function<void(const handle_bound_info &)> &callback) const;
 
+		virtual void set_size_animation_id(unsigned __int64 value);
+
+		virtual unsigned __int64 get_size_animation_id() const;
+
+		virtual void get_size_animation_id(const std::function<void(unsigned __int64)> &callback) const;
+
+		virtual void set_position_animation_id(unsigned __int64 value);
+
+		virtual unsigned __int64 get_position_animation_id() const;
+
+		virtual void get_position_animation_id(const std::function<void(unsigned __int64)> &callback) const;
+
+		static unsigned __int64 get_static_size_animation_id();
+
+		static unsigned __int64 get_static_position_animation_id();
+
 	protected:
 		friend class hook::io;
 
@@ -200,5 +216,8 @@ namespace cwin::ui{
 
 		POINT position_{};
 		POINT current_position_{};
+
+		unsigned __int64 size_animation_id_;
+		unsigned __int64 position_animation_id_;
 	};
 }

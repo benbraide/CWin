@@ -10,7 +10,7 @@
 #include "../hook/background_hooks.h"
 #include "../hook/text_overlay_hook.h"
 #include "../hook/responsive_hooks.h"
-#include "../hook/specialized_animation_hooks.h"
+#include "../hook/animation_hook.h"
 
 #include "../control/tab_control.h"
 #include "../control/radio_check_button_control_group.h"
@@ -76,7 +76,6 @@ namespace cwin::test{
 			duration_type duration;
 
 			std::wstring name;
-			cwin::hook::animation *object;
 			cwin::control::check_button *check_button;
 		};
 
@@ -137,9 +136,11 @@ namespace cwin::test{
 		std::unordered_map<unsigned __int64, part_info> parts_;
 
 		cwin::non_window::rectangle *rectangle_ = nullptr;
-		cwin::control::radio_group *parts_group_ = nullptr;
+		cwin::hook::animation *animation_ = nullptr;
 
+		cwin::control::radio_group *parts_group_ = nullptr;
 		cwin::control::radio_group *timings_group_ = nullptr;
+
 		cwin::control::radio_group *easings_group_ = nullptr;
 		cwin::control::radio_group *durations_group_ = nullptr;
 	};
