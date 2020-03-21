@@ -223,13 +223,21 @@ namespace cwin::events{
 		void trigger(args_types &&... args) const{
 			trigger_then<object_type>(nullptr, std::forward<args_types>(args)...);
 		}
-
+		
 		template <typename object_type, typename... args_types>
-		void trigger_then(const std::function<void(utility::small_options &, LRESULT)> &callback, args_types &&... args) const{
+		void trigger_then(const std::function<void(object_type &)> &callback, args_types &&... args) const{
 			execute_task([&]{
 				object_type e(target_, std::forward<args_types>(args)...);
 				trigger_(e, true);
 
+				if (callback != nullptr)
+					callback(e);
+			});
+		}
+
+		template <typename object_type, typename... args_types>
+		void trigger_then(const std::function<void(utility::small_options &, LRESULT)> &callback, args_types &&... args) const{
+			trigger_then<object_type>([&](object_type &e){
 				if (callback != nullptr){
 					utility::small_options options;
 					if (e.prevented_default())
@@ -243,40 +251,40 @@ namespace cwin::events{
 
 					callback(options, e.get_result());
 				}
-			});
+			}, std::forward<args_types>(args)...);
 		}
 
 		template <typename object_type, typename... args_types>
 		void trigger_then(const std::function<void(LRESULT)> &callback, args_types &&... args) const{
-			trigger_then<object_type>([&](utility::small_options &, LRESULT result){
-				callback(result);
+			trigger_then<object_type>([&](object_type &e){
+				callback(e.get_result());
 			}, std::forward<args_types>(args)...);
 		}
 		
 		template <typename object_type, typename... args_types>
 		void trigger_then(const std::function<void(bool)> &callback, args_types &&... args) const{
-			trigger_then<object_type>([&](utility::small_options &opts, LRESULT){
-				callback(opts.is_set(object::option_type::prevented_default));
+			trigger_then<object_type>([&](object_type &e){
+				callback(e.prevented_default());
 			}, std::forward<args_types>(args)...);
 		}
 		
 		template <typename object_type, typename... args_types>
 		void trigger_then(const std::function<void()> &callback, args_types &&... args) const{
-			trigger_then<object_type>([&](utility::small_options &, LRESULT){
+			trigger_then<object_type>([&](object_type &){
 				callback();
 			}, std::forward<args_types>(args)...);
 		}
 		
 		template <typename object_type, typename... args_types>
 		void trigger_then(std::nullptr_t, args_types &&... args) const{
-			trigger_then<object_type>([&](utility::small_options &, LRESULT){}, std::forward<args_types>(args)...);
+			trigger_then<object_type>([&](object_type &){}, std::forward<args_types>(args)...);
 		}
 		
 		template <typename object_type, typename... args_types>
 		LRESULT trigger_then_report_result(args_types &&... args) const{
 			LRESULT value = 0;
-			trigger_then<object_type>([&](utility::small_options &, LRESULT result){
-				value = result;
+			trigger_then<object_type>([&](object_type &e){
+				value = e.get_result();
 			}, std::forward<args_types>(args)...);
 
 			return value;
@@ -295,8 +303,8 @@ namespace cwin::events{
 		template <typename object_type, typename... args_types>
 		bool trigger_then_report_prevented_default(args_types &&... args) const{
 			auto value = false;
-			trigger_then<object_type>([&](utility::small_options &opts, LRESULT){
-				value = opts.is_set(object::option_type::prevented_default);
+			trigger_then<object_type>([&](object_type &e){
+				value = e.prevented_default();
 			}, std::forward<args_types>(args)...);
 
 			return value;

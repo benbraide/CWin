@@ -62,6 +62,13 @@ namespace cwin::events::interrupt{
 		D2D1_RECT_F area_;
 	};
 
+	class is_opaque_background : public object{
+	public:
+		using object::object;
+
+		virtual ~is_opaque_background() = default;
+	};
+
 	template <bool is_client>
 	class resize_handle : public object{
 	public:

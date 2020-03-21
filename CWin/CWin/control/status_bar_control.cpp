@@ -19,7 +19,7 @@ cwin::control::status_bar::object::object(ui::tree &parent, std::size_t index)
 
 	set_size_({
 		size_.cx,
-		(measure_text_(L"", reinterpret_cast<HFONT>(SendMessageW(handle_, WM_GETFONT, 0, 0)), 0u).cy + 10)
+		(ui::text_content_helper::measure_text(L"", reinterpret_cast<HFONT>(SendMessageW(handle_, WM_GETFONT, 0, 0)), 0u).cy + 10)
 	});
 
 	bind_default_([=](events::show &e){

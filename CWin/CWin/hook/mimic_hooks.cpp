@@ -5,6 +5,7 @@
 #include "io_hook.h"
 #include "mimic_hooks.h"
 
+/*
 cwin::hook::mimic::with_text::with_text(ui::visible_surface &parent, const std::wstring &value)
 	: with_text(parent, value, alignment_type::center, POINT{}){}
 
@@ -124,4 +125,4 @@ void cwin::hook::mimic::push_button::do_paint_(const PAINTSTRUCT &info, RECT &re
 		DrawThemeText(theme_, info.hdc, BP_PUSHBUTTON, (is_inside_client ? PBS_HOT : PBS_NORMAL), value_.data(), static_cast<int>(value_.size()), 0, 0, &region);
 }
 
-void cwin::hook::mimic::push_button::prepare_paint_color_(const PAINTSTRUCT &info) const{}
+void cwin::hook::mimic::push_button::prepare_paint_color_(const PAINTSTRUCT &info) const{}*/

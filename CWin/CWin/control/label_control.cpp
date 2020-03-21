@@ -6,7 +6,7 @@ cwin::control::label::label(tree &parent)
 	: label(parent, static_cast<std::size_t>(-1)){}
 
 cwin::control::label::label(tree &parent, std::size_t index)
-	: with_text(parent, index, WC_STATIC, ICC_STANDARD_CLASSES){
+	: m_base_type(parent, index, WC_STATIC, ICC_STANDARD_CLASSES){
 	padding_ = SIZE{ -2, -2 };
 	update_size_();
 
@@ -25,7 +25,7 @@ UINT cwin::control::label::hit_test_(const POINT &value) const{
 }
 
 DWORD cwin::control::label::get_persistent_styles_() const{
-	return (with_text::get_persistent_styles_() | SS_SIMPLE);
+	return (m_base_type::get_persistent_styles_() | SS_SIMPLE);
 }
 
 const wchar_t *cwin::control::label::get_theme_name_() const{

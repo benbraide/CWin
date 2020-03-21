@@ -4,7 +4,7 @@
 #include "background_hooks.h"
 
 namespace cwin::hook::mimic{
-	class with_text : public label_overlay{
+	/*class with_text : public label_overlay{
 	public:
 		with_text(ui::visible_surface &parent, const std::wstring &value);
 
@@ -43,12 +43,12 @@ namespace cwin::hook::mimic{
 		virtual void prepare_paint_color_(const PAINTSTRUCT &info) const override;
 
 		HTHEME theme_ = nullptr;
-	};
+	};*/
 }
 
 namespace cwin::ui{
-	template <>
+	/*template <>
 	struct parent_type<hook::mimic::push_button>{
 		using value = visible_surface;
-	};
+	};*/
 }

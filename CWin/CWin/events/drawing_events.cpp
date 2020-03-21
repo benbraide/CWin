@@ -138,12 +138,6 @@ void cwin::events::non_client_paint::do_default_(){
 
 cwin::events::get_caption::~get_caption() = default;
 
-void cwin::events::get_caption::set_value(const std::wstring &value){
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	value_ = value;
-}
-
 void cwin::events::get_caption::set_value(const std::wstring_view &value){
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
@@ -156,21 +150,13 @@ void cwin::events::get_caption::set_value(const wchar_t *value){
 	value_ = value;
 }
 
-const std::wstring &cwin::events::get_caption::get_value() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return value_;
-}
-
 bool cwin::events::get_caption::handle_set_result_(const void *value, const std::type_info &type){
-	if (type == typeid(std::wstring))
-		value_ = *static_cast<const std::wstring *>(value);
-	else if (type == typeid(std::wstring_view))
+	if (type == typeid(std::wstring_view))
 		value_ = *static_cast<const std::wstring_view *>(value);
 	else if (type == typeid(const wchar_t *) || type == typeid(wchar_t *))
 		value_ = *static_cast<wchar_t* const*>(value);
 	else
-		throw exception::bad_value();
+		return base_type::handle_set_result_(value, type);
 
 	return true;
 }

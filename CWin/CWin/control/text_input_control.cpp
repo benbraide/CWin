@@ -28,28 +28,28 @@ cwin::control::text_input::~text_input(){
 void cwin::control::text_input::set_size(const SIZE &value){
 	post_or_execute_task([=]{
 		min_width_ = max_width_ = value.cx;
-		with_text::set_size(value);
+		edit::set_size_(value);
 	});
 }
 
 void cwin::control::text_input::set_width(int value){
 	post_or_execute_task([=]{
 		min_width_ = max_width_ = value;
-		with_text::set_width(value);
+		edit::set_width(value);
 	});
 }
 
 void cwin::control::text_input::offset_size(const SIZE &value){
 	post_or_execute_task([=]{
 		min_width_ = max_width_ = (size_.cx + value.cx);
-		with_text::offset_size(value);
+		edit::offset_size(value);
 	});
 }
 
 void cwin::control::text_input::offset_width(int value){
 	post_or_execute_task([=]{
 		min_width_ = max_width_ = (size_.cx + value);
-		with_text::offset_width(value);
+		edit::offset_width(value);
 	});
 }
 
@@ -148,11 +148,6 @@ DWORD cwin::control::text_input::get_persistent_styles_() const{
 	return (edit::get_persistent_styles_() & ~ES_AUTOVSCROLL);
 }
 
-SIZE cwin::control::text_input::compute_size_() const{
-	auto value = with_text::compute_size_();
-	return SIZE{ (value.cx + 7), value.cy };
-}
-
 SIZE cwin::control::text_input::compute_additional_size_(const SIZE &computed_size) const{
 	if (0 < max_width_ && max_width_ < computed_size.cx)
 		return SIZE{ (max_width_ - computed_size.cx), 0 };
@@ -161,6 +156,11 @@ SIZE cwin::control::text_input::compute_additional_size_(const SIZE &computed_si
 		return SIZE{ (min_width_ - computed_size.cx), 0 };
 
 	return SIZE{};
+}
+
+SIZE cwin::control::text_input::get_computed_size_() const{
+	auto value = m_base_type::get_computed_size_();
+	return SIZE{ (value.cx + 7), value.cy };
 }
 
 bool cwin::control::text_input::can_copy_() const{

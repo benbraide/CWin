@@ -1,3 +1,4 @@
+#include "../ui/ui_text_content.h"
 #include "../events/drawing_events.h"
 #include "../control/control_object.h"
 
@@ -51,7 +52,7 @@ void cwin::menu::item_with_text::set_text_(const std::wstring &value){
 }
 
 SIZE cwin::menu::item_with_text::measure_(const SIZE &current_value) const{
-	auto value = control::object::measure_text(text_, font_, 0u);
+	auto value = ui::text_content_helper::measure_text(text_, font_, 0u);
 	return SIZE{ value.cx, (value.cy + 3) };
 }
 

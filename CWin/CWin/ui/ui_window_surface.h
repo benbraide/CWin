@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui_visible_surface.h"
+#include "ui_text_content.h"
 
 namespace cwin::ui{
 	class window_surface : public visible_surface{
@@ -139,6 +139,12 @@ namespace cwin::ui{
 
 		virtual const wchar_t *get_caption_() const;
 
+		virtual const wchar_t *get_theme_name_() const;
+
+		virtual int get_theme_part_id_() const;
+
+		virtual int get_theme_state_id_() const;
+
 		virtual void focus_() const;
 
 		virtual void blur_() const;
@@ -150,5 +156,31 @@ namespace cwin::ui{
 		DWORD styles_ = (WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		DWORD extended_styles_ = 0u;
 		std::size_t updating_count_ = 0u;
+	};
+
+	template <class base_type>
+	class window_text_content : public themed_text_content<base_type>{
+	public:
+		using m_base_type = themed_text_content<base_type>;
+		using m_base_type::m_base_type;
+
+		virtual ~window_text_content() = default;
+
+	protected:
+		virtual const wchar_t *get_caption_() const override{
+			return m_base_type::text_.data();
+		}
+
+		virtual void set_text_(const std::wstring &value) override{
+			m_base_type::set_text_(value);
+			if (m_base_type::handle_ != nullptr)
+				SendMessageW(m_base_type::handle_, WM_SETTEXT, 0, reinterpret_cast<LPARAM>(m_base_type::text_.data()));
+		}
+
+		virtual void set_font_(HFONT value) override{
+			m_base_type::set_font_(value);
+			if (m_base_type::handle_ != nullptr)
+				SendMessageW(m_base_type::handle_, WM_SETFONT, reinterpret_cast<LPARAM>(value), TRUE);
+		}
 	};
 }

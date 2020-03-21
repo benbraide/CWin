@@ -529,6 +529,18 @@ const wchar_t *cwin::ui::window_surface::get_caption_() const{
 	return L"";
 }
 
+const wchar_t *cwin::ui::window_surface::get_theme_name_() const{
+	return L"WINDOW";
+}
+
+int cwin::ui::window_surface::get_theme_part_id_() const{
+	return 0;
+}
+
+int cwin::ui::window_surface::get_theme_state_id_() const{
+	return 0;
+}
+
 void cwin::ui::window_surface::focus_() const{
 	if (handle_ != nullptr)
 		SetFocus(handle_);

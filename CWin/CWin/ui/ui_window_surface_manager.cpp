@@ -376,9 +376,6 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 			return true;
 		});
 
-		//render->SetTransform(D2D1::IdentityMatrix());
-		//render->BindDC(paint_info_.hdc, &paint_info_.rcPaint);
-
 		target.get_events().trigger<events::erase_background>(
 			MSG{ window_target->handle_, message, wparam, lparam },
 			thread_.get_class_entry(window_target->get_class_name_()),
@@ -408,13 +405,20 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		return true;
 	});
 
-	if (auto non_window_target = dynamic_cast<non_window_surface *>(&target); non_window_target != nullptr && non_window_target->handle_ != nullptr){
+	if (auto window_target = dynamic_cast<window_surface *>(&target); window_target != nullptr){
+		SaveDC(paint_info_.hdc);
+		target.get_events().trigger<events::paint>(MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
+		RestoreDC(paint_info_.hdc, -1);
+	}
+	else if (auto visible_target = dynamic_cast<visible_surface *>(&target); visible_target != nullptr && visible_target->is_created_()){
+		auto &bound = visible_target->get_bound_();
+		auto &client_bound = visible_target->get_client_bound_();
+
 		auto paint_info = paint_info_;
-		if (non_window_target->client_handle_ != nullptr){//Paint non-client area
+		if (&bound != &client_bound){//Paint non-client area
 			auto non_client_offset = offset;
 			target.offset_point_from_window_(non_client_offset);
 
-			auto &bound = non_window_target->get_bound_();
 			utility::rgn::move(bound.handle, POINT{ (non_client_offset.x + bound.offset.x), (non_client_offset.y + bound.offset.y) });
 
 			SaveDC(paint_info_.hdc);
@@ -427,17 +431,13 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 			SetViewportOrgEx(paint_info_.hdc, non_client_offset.x, non_client_offset.y, nullptr);
 			OffsetRect(&paint_info.rcPaint, -non_client_offset.x, -non_client_offset.y);
 
-			//render->SetTransform(D2D1::IdentityMatrix());
-			//render->BindDC(paint_info_.hdc, &paint_info.rcPaint);
-			
 			target.get_events().trigger<events::non_client_paint>(paint_info);
 			RestoreDC(paint_info_.hdc, -1);
 		}
 
-		auto &client_bound = non_window_target->get_client_bound_();
 		utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
-
 		SaveDC(paint_info_.hdc);
+
 		if (ExtSelectClipRgn(paint_info_.hdc, client_bound.handle, RGN_AND) == NULLREGION){//Client is outside update region
 			RestoreDC(paint_info_.hdc, -1);
 			return;
@@ -447,9 +447,6 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
 		OffsetRect(&paint_info.rcPaint, -offset.x, -offset.y);
 
-		//render->SetTransform(D2D1::IdentityMatrix());
-		//render->BindDC(paint_info_.hdc, &paint_info.rcPaint);
-
 		target.get_events().trigger<events::erase_background>(paint_info);
 		RestoreDC(paint_info_.hdc, -1);
 
@@ -457,13 +454,6 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
 
 		target.get_events().trigger<events::paint>(paint_info);
-		RestoreDC(paint_info_.hdc, -1);
-	}
-	else if (auto window_target = dynamic_cast<window_surface *>(&target); window_target != nullptr){
-		//render->SetTransform(D2D1::IdentityMatrix());
-		//render->BindDC(paint_info_.hdc, &paint_info_.rcPaint);
-		SaveDC(paint_info_.hdc);
-		target.get_events().trigger<events::paint>(MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
 		RestoreDC(paint_info_.hdc, -1);
 	}
 }
@@ -476,7 +466,7 @@ void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &targ
 	offset.x += position.x;
 	offset.y += position.y;
 
-	if (auto non_window_target = dynamic_cast<non_window_surface *>(&target); non_window_target == nullptr || non_window_target->handle_ == nullptr){
+	if (target.events_.trigger_then_report_result<events::interrupt::is_opaque_background>() == FALSE){
 		target.offset_point_to_window_(offset);
 		target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){//Exclude children
 			exclude_from_paint_(child, offset);

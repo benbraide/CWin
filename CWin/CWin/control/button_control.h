@@ -1,10 +1,12 @@
 #pragma once
 
-#include "control_with_text.h"
+#include "control_object.h"
 
 namespace cwin::control{
-	class button : public with_text{
+	class button : public ui::window_text_content<object>{
 	public:
+		using m_base_type = ui::window_text_content<object>;
+
 		button();
 
 		explicit button(tree &parent);

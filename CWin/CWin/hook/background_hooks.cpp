@@ -31,7 +31,11 @@ cwin::hook::color_background::color_background(ui::visible_surface &parent, cons
 	: background(parent), color_(value), current_color_(value), animation_id_(get_static_animation_id()){}
 
 cwin::hook::color_background::color_background(ui::visible_surface &parent, COLORREF value, float alpha)
-	: color_background(parent, D2D1::ColorF((GetRValue(value) / 255.0f), (GetGValue(value) / 255.0f), (GetBValue(value) / 255.0f), alpha)){}
+	: color_background(parent, D2D1::ColorF((GetRValue(value) / 255.0f), (GetGValue(value) / 255.0f), (GetBValue(value) / 255.0f), alpha)){
+	bind_(parent, [=](events::interrupt::is_opaque_background &){
+		return (get_color_().a != 0.0f);
+	});
+}
 
 cwin::hook::color_background::~color_background() = default;
 
@@ -87,7 +91,8 @@ unsigned __int64 cwin::hook::color_background::get_static_animation_id(){
 }
 
 void cwin::hook::color_background::draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const{
-	render.Clear(get_color_());
+	if (auto &color = get_color_(); color.a != 0.0f)
+		render.Clear(color);//Draw non-transparent background
 }
 
 void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value){

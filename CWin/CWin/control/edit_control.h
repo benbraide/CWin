@@ -1,10 +1,12 @@
 #pragma once
 
-#include "control_with_text.h"
+#include "control_object.h"
 
 namespace cwin::control{
-	class edit : public with_text{
+	class edit : public ui::window_text_content<object>{
 	public:
+		using m_base_type = ui::window_text_content<object>;
+
 		explicit edit(tree &parent);
 
 		edit(tree &parent, std::size_t index);
@@ -94,7 +96,7 @@ namespace cwin::control{
 
 		virtual const std::wstring &get_text_() const override;
 
-		virtual SIZE compute_size_() const override;
+		virtual SIZE get_computed_size_() const override;
 
 		virtual void set_limit_(long value);
 

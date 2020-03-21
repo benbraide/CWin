@@ -1,10 +1,12 @@
 #pragma once
 
-#include "control_with_text.h"
+#include "control_object.h"
 
 namespace cwin::control{
-	class label : public with_text{
+	class label : public ui::window_text_content<object>{
 	public:
+		using m_base_type = ui::window_text_content<object>;
+
 		explicit label(tree &parent);
 
 		label(tree &parent, std::size_t index);

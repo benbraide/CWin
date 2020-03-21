@@ -116,4 +116,37 @@ namespace cwin::events{
 
 		virtual ~default_object() = default;
 	};
+
+	template <class value_type>
+	class retrieve_value : public object{
+	public:
+		using m_value_type = value_type;
+		using object::object;
+
+		virtual ~retrieve_value() = default;
+
+		virtual void set_value(const value_type &value){
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			value_ = value;
+		}
+
+		virtual const value_type &get_value() const{
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			return value_;
+		}
+
+	protected:
+		virtual bool handle_set_result_(const void *value, const std::type_info &type) override{
+			if (type == typeid(value_type))
+				value_ = *static_cast<const value_type *>(value);
+			else
+				throw exception::bad_value();
+
+			return true;
+		}
+
+		value_type value_;
+	};
 }

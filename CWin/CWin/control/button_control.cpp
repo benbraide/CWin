@@ -4,7 +4,7 @@
 #include "button_control.h"
 
 cwin::control::button::button()
-	: with_text(WC_BUTTONW, ICC_STANDARD_CLASSES){
+	: m_base_type(WC_BUTTONW, ICC_STANDARD_CLASSES){
 	bind_default_([=](events::interrupt::command &e){
 		switch (e.get_code()){
 		case BN_CLICKED:
@@ -56,7 +56,7 @@ bool cwin::control::button::prevent_mouse_click_translation_() const{
 }
 
 DWORD cwin::control::button::get_persistent_styles_() const{
-	return (with_text::get_persistent_styles_() | BS_NOTIFY);
+	return (m_base_type::get_persistent_styles_() | BS_NOTIFY);
 }
 
 const wchar_t *cwin::control::button::get_theme_name_() const{

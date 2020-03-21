@@ -47,24 +47,20 @@ namespace cwin::events{
 		virtual void do_default_() override;
 	};
 
-	class get_caption : public object{
+	class get_caption : public retrieve_value<std::wstring>{
 	public:
-		using object::object;
+		using base_type = retrieve_value<std::wstring>;
+		using base_type::base_type;
+		using base_type::set_value;
 
 		virtual ~get_caption();
-
-		virtual void set_value(const std::wstring &value);
 
 		virtual void set_value(const std::wstring_view &value);
 
 		virtual void set_value(const wchar_t *value);
 
-		virtual const std::wstring &get_value() const;
-
 	protected:
 		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
-
-		std::wstring value_;
 	};
 
 	class measure_item : public object{

@@ -1,4 +1,4 @@
-#include "../ui/ui_visible_surface.h"
+#include "../ui/ui_text_content.h"
 #include "../control/control_object.h"
 
 #include "text_overlay_hook.h"
@@ -126,7 +126,7 @@ void cwin::hook::label_overlay::set_offset_(const POINT &value){
 }
 
 POINT cwin::hook::label_overlay::compute_offset_(const SIZE &parent_size) const{
-	return compute_offset(parent_size, control::object::measure_text(value_, font_, 0u), alignment_);
+	return compute_offset(parent_size, ui::text_content_helper::measure_text(value_, font_, 0u), alignment_);
 }
 
 void cwin::hook::label_overlay::paint_(events::paint &e) const{

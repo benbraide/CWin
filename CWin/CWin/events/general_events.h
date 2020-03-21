@@ -231,6 +231,14 @@ namespace cwin::events{
 	using after_background_color_change = change_proxy<D2D1_COLOR_F, 1>;
 	using after_background_color_update = change_proxy<D2D1_COLOR_F, 2>;
 
+	class get_min_size : public retrieve_value<SIZE>{
+	public:
+		using base_type = retrieve_value<SIZE>;
+		using base_type::base_type;
+
+		virtual ~get_min_size() = default;
+	};
+
 	class disable_animation : public object{
 	public:
 		disable_animation(events::target &target, unsigned __int64 id);

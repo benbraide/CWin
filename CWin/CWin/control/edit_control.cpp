@@ -16,7 +16,7 @@ cwin::control::edit::edit(tree &parent)
 	: edit(parent, static_cast<std::size_t>(-1)){}
 
 cwin::control::edit::edit(tree &parent, std::size_t index)
-	: with_text(parent, index, MSFTEDIT_CLASS, ICC_STANDARD_CLASSES){
+	: m_base_type(parent, index, MSFTEDIT_CLASS, ICC_STANDARD_CLASSES){
 	insert_object_<menu::library_popup>([&](menu::library_popup &popup){
 		bind_(popup, [&](events::after_create &){
 			popup.find_item(772u, [&](menu::library_action_item &item){//Undo
@@ -323,7 +323,7 @@ void cwin::control::edit::get_change_poll_interval(const std::function<void(cons
 }
 
 void cwin::control::edit::after_create_(){
-	with_text::after_create_();
+	m_base_type::after_create_();
 	SendMessageW(handle_, EM_SETEVENTMASK, 0, ENM_REQUESTRESIZE);
 
 	if (is_read_only_)
@@ -358,11 +358,11 @@ void cwin::control::edit::after_destroy_(){
 		font_ = nullptr;
 	}
 
-	with_text::after_destroy_();
+	m_base_type::after_destroy_();
 }
 
 DWORD cwin::control::edit::get_persistent_styles_() const{
-	return (with_text::get_persistent_styles_() | WS_BORDER | ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_NOHIDESEL);
+	return (m_base_type::get_persistent_styles_() | WS_BORDER | ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_NOHIDESEL);
 }
 
 const wchar_t *cwin::control::edit::get_caption_() const{
@@ -383,7 +383,7 @@ int cwin::control::edit::get_theme_state_id_() const{
 
 const std::wstring &cwin::control::edit::get_text_() const{
 	if (handle_ == nullptr || !is_dirty_)
-		return with_text::get_text_();
+		return m_base_type::get_text_();
 
 	GETTEXTLENGTHEX info{ GTL_NUMCHARS };
 	text_.resize(SendMessageW(handle_, EM_GETTEXTLENGTHEX, reinterpret_cast<WPARAM>(&info), 0));
@@ -397,7 +397,7 @@ const std::wstring &cwin::control::edit::get_text_() const{
 	return text_;
 }
 
-SIZE cwin::control::edit::compute_size_() const{
+SIZE cwin::control::edit::get_computed_size_() const{
 	return get_size_();
 }
 
