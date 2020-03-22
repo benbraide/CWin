@@ -3,7 +3,7 @@
 #include "grid_row.h"
 
 namespace cwin::grid{
-	class object : public ui::non_window_surface{
+	class object : public ui::visible_surface{
 	public:
 		struct row_info{
 			row *target;

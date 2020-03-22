@@ -1,4 +1,5 @@
 #include "../events/general_events.h"
+#include "../events/interrupt_events.h"
 
 #include "ui_tree.h"
 
@@ -28,13 +29,18 @@ cwin::ui::safe_action::safe_action(const events::action &target)
 
 cwin::ui::safe_action::~safe_action() = default;
 
-cwin::ui::object::object() = default;
+cwin::ui::object::object(){
+	bind_default_([=](events::interrupt::is_created &){
+		return (parent_ != nullptr && parent_->is_created_());
+	});
+}
 
 cwin::ui::object::object(tree &parent)
 	: object(parent, static_cast<std::size_t>(-1)){}
 
 cwin::ui::object::object(tree &parent, std::size_t index)
-	: index_(index){
+	: object(){
+	index_ = index;
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error
@@ -233,7 +239,7 @@ std::size_t cwin::ui::object::get_index_() const{
 }
 
 void cwin::ui::object::create_(){
-	throw exception::not_supported();
+	events_.trigger<events::interrupt::create>();
 }
 
 bool cwin::ui::object::before_create_(){
@@ -252,7 +258,7 @@ void cwin::ui::object::force_destroy_(){
 }
 
 void cwin::ui::object::destroy_(){
-	throw exception::not_supported();
+	events_.trigger<events::interrupt::destroy>();
 }
 
 bool cwin::ui::object::before_destroy_(){
@@ -266,7 +272,7 @@ bool cwin::ui::object::should_call_after_destroy_() const{
 void cwin::ui::object::after_destroy_(){}
 
 bool cwin::ui::object::is_created_() const{
-	return (parent_ != nullptr && parent_->is_created_());
+	return events_.trigger_then_report_result_as<events::interrupt::is_created, bool>();
 }
 
 void cwin::ui::object::set_enable_state_(bool is_enabled){

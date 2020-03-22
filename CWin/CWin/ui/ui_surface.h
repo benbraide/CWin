@@ -11,12 +11,6 @@ namespace cwin::hook{
 namespace cwin::ui{
 	class surface : public tree{
 	public:
-		struct handle_bound_info{
-			HRGN rect_handle;
-			HRGN handle;
-			POINT offset;
-		};
-
 		surface();
 
 		explicit surface(tree &parent);
@@ -61,10 +55,6 @@ namespace cwin::ui{
 
 		virtual void compute_absolute_position(const std::function<void(const POINT &)> &callback) const;
 
-		virtual SIZE compute_client_size() const;
-
-		virtual void compute_client_size(const std::function<void(const SIZE &)> &callback) const;
-
 		virtual RECT compute_dimension() const;
 
 		virtual void compute_dimension(const std::function<void(const RECT &)> &callback) const;
@@ -89,17 +79,9 @@ namespace cwin::ui{
 
 		virtual void hit_test(const POINT &value, const std::function<void(UINT)> &callback) const;
 
-		virtual void update_window_relative_position();
+		virtual HRGN get_bound() const;
 
-		virtual void update_bounds();
-
-		virtual const handle_bound_info &get_bound() const;
-
-		virtual void get_bound(const std::function<void(const handle_bound_info &)> &callback) const;
-
-		virtual const handle_bound_info &get_client_bound() const;
-
-		virtual void get_client_bound(const std::function<void(const handle_bound_info &)> &callback) const;
+		virtual void get_bound(const std::function<void(HRGN)> &callback) const;
 
 		virtual void set_size_animation_id(unsigned __int64 value);
 
@@ -148,7 +130,7 @@ namespace cwin::ui{
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value);
 
-		virtual void update_window_relative_position_();
+		virtual void update_window_position_();
 
 		virtual const POINT &get_position_() const;
 
@@ -157,8 +139,6 @@ namespace cwin::ui{
 		virtual RECT compute_dimension_() const;
 
 		virtual RECT compute_absolute_dimension_() const;
-
-		virtual SIZE compute_client_size_() const;
 
 		virtual void compute_relative_to_absolute_(POINT &value) const;
 
@@ -201,15 +181,7 @@ namespace cwin::ui{
 			return value;
 		}
 
-		virtual void update_region_bound_(HRGN &target, const SIZE &size) const;
-
-		virtual void update_bounds_();
-
-		virtual const handle_bound_info &get_bound_() const;
-
-		virtual const handle_bound_info &get_client_bound_() const;
-
-		virtual const handle_bound_info &get_ancestor_client_bound_(POINT &offset) const;
+		virtual HRGN get_bound_() const;
 
 		SIZE size_{};
 		SIZE current_size_{};

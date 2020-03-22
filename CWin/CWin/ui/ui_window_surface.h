@@ -75,11 +75,7 @@ namespace cwin::ui{
 
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) override;
 
-		virtual void position_update_(const POINT &old_value, const POINT &current_value) override;
-
-		virtual void update_window_relative_position_() override;
-
-		virtual SIZE compute_client_size_() const override;
+		virtual void update_window_position_() override;
 
 		virtual void compute_relative_to_absolute_(POINT &value) const override;
 
@@ -91,12 +87,6 @@ namespace cwin::ui{
 
 		virtual UINT hit_test_(const POINT &value) const override;
 
-		virtual void update_bounds_() override;
-
-		virtual const handle_bound_info &get_bound_() const override;
-
-		virtual const handle_bound_info &get_client_bound_() const override;
-
 		virtual void redraw_(HRGN region) override;
 
 		virtual void redraw_(const RECT &region) override;
@@ -106,6 +96,8 @@ namespace cwin::ui{
 		virtual void hide_() override;
 
 		virtual void set_windows_visibility_(bool is_visible) override;
+
+		virtual SIZE compute_client_size_() const;
 
 		virtual bool is_dialog_message_(MSG &msg) const;
 
@@ -131,8 +123,6 @@ namespace cwin::ui{
 
 		virtual DWORD get_persistent_extended_styles_() const;
 
-		virtual void update_client_bound_();
-
 		virtual HINSTANCE get_instance_() const;
 
 		virtual const wchar_t *get_class_name_() const;
@@ -150,9 +140,6 @@ namespace cwin::ui{
 		virtual void blur_() const;
 
 		HWND handle_ = nullptr;
-		handle_bound_info handle_bound_{};
-		handle_bound_info client_handle_bound_{};
-
 		DWORD styles_ = (WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		DWORD extended_styles_ = 0u;
 		std::size_t updating_count_ = 0u;

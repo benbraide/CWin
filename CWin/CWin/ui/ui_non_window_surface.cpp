@@ -6,6 +6,7 @@
 #include "ui_window_surface.h"
 #include "ui_non_window_surface.h"
 
+/*
 cwin::ui::non_window_surface::~non_window_surface(){
 	force_destroy_();
 }
@@ -373,4 +374,4 @@ UINT cwin::ui::non_window_surface::non_client_hit_test_(const POINT &value) cons
 
 const RECT &cwin::ui::non_window_surface::get_client_margin_() const{
 	return ((events_.trigger_then_report_result<events::interrupt::is_big_border_handle>() == FALSE) ? thread_.get_client_margin() : thread_.get_big_client_margin());
-}
+}*/

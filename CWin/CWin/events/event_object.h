@@ -116,6 +116,68 @@ namespace cwin::events{
 
 		virtual ~default_object() = default;
 	};
+	
+	template <class value_type>
+	class retrieve_scalar_value : public object{
+	public:
+		using m_value_type = value_type;
+		using object::object;
+
+		virtual ~retrieve_scalar_value() = default;
+
+		virtual void set_value(value_type value){
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			result_ = (LRESULT)value;
+		}
+
+		virtual value_type get_value() const{
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			return (value_type)result_;
+		}
+
+	protected:
+		virtual bool handle_set_result_(const void *value, const std::type_info &type) override{
+			if (type == typeid(value_type))
+				result_ = (LRESULT)(*static_cast<const value_type *>(value));
+			else
+				return false;
+
+			return true;
+		}
+	};
+	
+	template <>
+	class retrieve_scalar_value<bool> : public object{
+	public:
+		using m_value_type = bool;
+		using object::object;
+
+		virtual ~retrieve_scalar_value() = default;
+
+		virtual void set_value(bool value){
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			result_ = (value ? TRUE : FALSE);
+		}
+
+		virtual bool get_value() const{
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			return (result_ != FALSE);
+		}
+
+	protected:
+		virtual bool handle_set_result_(const void *value, const std::type_info &type) override{
+			if (type == typeid(bool))
+				result_ = (*static_cast<const bool *>(value) ? TRUE : FALSE);
+			else
+				return false;
+
+			return true;
+		}
+	};
 
 	template <class value_type>
 	class retrieve_value : public object{
@@ -148,5 +210,33 @@ namespace cwin::events{
 		}
 
 		value_type value_;
+	};
+
+	template <class value_type>
+	class retrieve_value<value_type &> : public object{
+	public:
+		using m_value_type = value_type;
+		using object::object;
+
+		virtual ~retrieve_value() = default;
+
+		virtual void set_value(value_type &value){
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			value_ = value;
+		}
+
+		virtual value_type &get_value() const{
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+
+			if (value_ == nullptr)
+				throw ui::exception::not_supported();
+
+			return *value_;
+		}
+
+	protected:
+		value_type *value_ = nullptr;
 	};
 }

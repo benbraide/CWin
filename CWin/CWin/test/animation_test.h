@@ -8,7 +8,6 @@
 
 #include "../hook/io_hook.h"
 #include "../hook/background_hooks.h"
-#include "../hook/text_overlay_hook.h"
 #include "../hook/responsive_hooks.h"
 #include "../hook/animation_hook.h"
 

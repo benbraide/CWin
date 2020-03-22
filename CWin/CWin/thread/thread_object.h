@@ -98,7 +98,7 @@ namespace cwin::thread{
 
 		const RECT &get_big_client_margin() const;
 
-		ui::surface::handle_bound_info &get_handle_bound();
+		HRGN get_handle_bound();
 
 		float convert_pixel_to_dip_x(int value) const;
 
@@ -227,6 +227,7 @@ namespace cwin::thread{
 
 		RECT client_margin_{};
 		RECT big_client_margin_{};
-		ui::surface::handle_bound_info handle_bound_{};
+
+		HRGN handle_bound_ = nullptr;
 	};
 }

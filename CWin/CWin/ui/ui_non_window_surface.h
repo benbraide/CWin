@@ -8,7 +8,7 @@ namespace cwin::hook::non_window{
 }
 
 namespace cwin::ui{
-	class non_window_surface : public visible_surface{
+	/*class non_window_surface : public visible_surface{
 	public:
 		using visible_surface::visible_surface;
 
@@ -62,5 +62,5 @@ namespace cwin::ui{
 
 		handle_bound_info handle_bound_{};
 		handle_bound_info client_handle_bound_{};
-	};
+	};*/
 }

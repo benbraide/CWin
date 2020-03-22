@@ -301,24 +301,24 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_surface &target, UINT
 }
 
 void cwin::ui::window_surface_manager::position_changed_(window_surface &target, WINDOWPOS &info){
-	try{
-		++target.updating_count_;
-		if ((info.flags & SWP_NOMOVE) == 0u){
-			POINT offset{};
-			if (auto window_ancestor = target.find_surface_ancestor_<window_surface>(&offset); window_ancestor != nullptr)
-				window_ancestor->offset_point_to_window_(offset);
+	if ((info.flags & SWP_NOMOVE) == 0u){
+		POINT offset{};
+		if (auto window_ancestor = target.find_surface_ancestor_<window_surface>(&offset); window_ancestor != nullptr)
+			window_ancestor->offset_point_to_window_(offset);
 
-			target.set_position_(POINT{ (info.x - offset.x), (info.y - offset.y) }, false);
-		}
+		auto old_value = target.current_position_;
+		POINT current_value{ (info.x - offset.x), (info.y - offset.y) };
 
-		if ((info.flags & SWP_NOSIZE) == 0u)
-			target.set_size_(SIZE{ info.cx, info.cy }, false);
-
-		--target.updating_count_;
+		target.current_position_ = target.position_ = current_value;
+		target.events_.trigger<events::after_position_update>(old_value, current_value);
 	}
-	catch (...){
-		--target.updating_count_;
-		throw;
+
+	if ((info.flags & SWP_NOSIZE) == 0u){
+		auto old_value = target.current_size_;
+		SIZE current_value{ info.cx, info.cy };
+
+		target.current_size_ = target.size_ = current_value;
+		target.events_.trigger<events::after_size_update>(old_value, current_value);
 	}
 }
 
@@ -395,11 +395,11 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		POINT window_position{ (child_position.x + offset.x), (child_position.y + offset.y) };
 
 		paint_(child, message, 0, 0, window_position);
-		auto &child_bound = child.get_bound();
+		auto child_bound = child.get_bound();
 
-		if (dynamic_cast<non_window_surface *>(&child) != nullptr){
-			utility::rgn::move(child_bound.handle, POINT{ (window_position.x + child_bound.offset.x), (window_position.y + child_bound.offset.y) });
-			ExtSelectClipRgn(paint_info_.hdc, child_bound.handle, RGN_DIFF);//Exclude clip
+		if (dynamic_cast<visible_surface *>(&child) != nullptr){
+			utility::rgn::move(child_bound, window_position);
+			ExtSelectClipRgn(paint_info_.hdc, child_bound, RGN_DIFF);//Exclude clip
 		}
 
 		return true;
@@ -411,18 +411,18 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		RestoreDC(paint_info_.hdc, -1);
 	}
 	else if (auto visible_target = dynamic_cast<visible_surface *>(&target); visible_target != nullptr && visible_target->is_created_()){
-		auto &bound = visible_target->get_bound_();
-		auto &client_bound = visible_target->get_client_bound_();
+		auto bound = visible_target->get_bound_();
+		auto client_bound = visible_target->get_events().trigger_then_report_result_as<events::interrupt::get_client_bound, HRGN>();
 
 		auto paint_info = paint_info_;
-		if (&bound != &client_bound){//Paint non-client area
+		if (bound != client_bound){//Paint non-client area
 			auto non_client_offset = offset;
 			target.offset_point_from_window_(non_client_offset);
 
-			utility::rgn::move(bound.handle, POINT{ (non_client_offset.x + bound.offset.x), (non_client_offset.y + bound.offset.y) });
+			utility::rgn::move(bound, non_client_offset);
 
 			SaveDC(paint_info_.hdc);
-			if (ExtSelectClipRgn(paint_info_.hdc, bound.handle, RGN_AND) == NULLREGION){//Target is outside update region
+			if (ExtSelectClipRgn(paint_info_.hdc, bound, RGN_AND) == NULLREGION){//Target is outside update region
 				RestoreDC(paint_info_.hdc, -1);
 				return;
 			}
@@ -435,10 +435,10 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 			RestoreDC(paint_info_.hdc, -1);
 		}
 
-		utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
+		utility::rgn::move(client_bound, offset);
 		SaveDC(paint_info_.hdc);
 
-		if (ExtSelectClipRgn(paint_info_.hdc, client_bound.handle, RGN_AND) == NULLREGION){//Client is outside update region
+		if (ExtSelectClipRgn(paint_info_.hdc, client_bound, RGN_AND) == NULLREGION){//Client is outside update region
 			RestoreDC(paint_info_.hdc, -1);
 			return;
 		}
@@ -474,9 +474,9 @@ void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &targ
 		});
 	}
 	else{//Exclude
-		auto &bound = target.get_bound();
-		utility::rgn::move(bound.handle, POINT{ (offset.x + bound.offset.x), (offset.y + bound.offset.y) });
-		ExtSelectClipRgn(paint_info_.hdc, bound.handle, RGN_DIFF);//Exclude clip
+		auto bound = target.get_bound();
+		utility::rgn::move(bound, offset);
+		ExtSelectClipRgn(paint_info_.hdc, bound, RGN_DIFF);//Exclude clip
 	}
 }
 

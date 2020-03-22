@@ -3,6 +3,7 @@
 
 #include "../thread/thread_object.h"
 #include "../events/general_events.h"
+#include "../events/interrupt_events.h"
 
 #include "ui_visible_surface.h"
 
@@ -80,20 +81,20 @@ void cwin::ui::visible_surface::redraw_at_(HRGN region, POINT position){
 
 	auto destination_region = thread_.get_rgn(region);
 	if (region != nullptr){//Use client region
-		auto &client_bound = get_client_bound_();
+		auto client_bound = events_.trigger_then_report_result_as<events::interrupt::get_client_bound, HRGN>();
 
 		POINT offset{};
 		offset_point_to_window_(offset);
 
 		utility::rgn::offset(region, offset);
-		utility::rgn::move(client_bound.handle, POINT{ (offset.x + client_bound.offset.x), (offset.y + client_bound.offset.y) });
+		utility::rgn::move(client_bound, offset);
 
-		utility::rgn::intersect(destination_region, client_bound.handle, region);
+		utility::rgn::intersect(destination_region, client_bound, region);
 		utility::rgn::offset(destination_region, position);
 	}
 	else{//Use entire region
-		auto &non_client_bound = get_bound_();
-		utility::rgn::move((destination_region = non_client_bound.handle), POINT{ (position.x + non_client_bound.offset.x), (position.y + non_client_bound.offset.y) });
+		auto non_client_bound = get_bound_();
+		utility::rgn::move((destination_region = non_client_bound), position);
 	}
 
 	visible_ancestor->redraw(destination_region);

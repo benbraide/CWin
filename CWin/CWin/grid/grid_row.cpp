@@ -1,19 +1,10 @@
 #include "../hook/background_hooks.h"
-#include "../hook/non_window_handle_hooks.h"
+#include "../events/interrupt_events.h"
 
 #include "grid_object.h"
 
 cwin::grid::row::row(){
-	auto window_color = GetSysColor(COLOR_WINDOW);
-	insert_object<hook::color_background>(
-		nullptr, D2D1::ColorF(
-		(GetRValue(window_color) / 255.0f),	//Red
-		(GetGValue(window_color) / 255.0f),	//Green
-		(GetBValue(window_color) / 255.0f),	//Blue
-		1.0f								//Alpha
-	));
-
-	insert_object<hook::non_window::rectangle_handle<hook::non_window::handle>>(nullptr);
+	insert_object<hook::color_background>(nullptr, GetSysColor(COLOR_WINDOW));
 	refresh_();
 }
 
@@ -52,15 +43,15 @@ void cwin::grid::row::is_fixed(const std::function<void(bool)> &callback) const{
 }
 
 bool cwin::grid::row::changing_parent_(tree *value){
-	return (dynamic_cast<grid::object *>(value) != nullptr && non_window_surface::changing_parent_(value));
+	return (dynamic_cast<grid::object *>(value) != nullptr && visible_surface::changing_parent_(value));
 }
 
 bool cwin::grid::row::inserting_child_(object &child){
-	return (dynamic_cast<column *>(&child) != nullptr && non_window_surface::inserting_child_(child));
+	return (dynamic_cast<column *>(&child) != nullptr && visible_surface::inserting_child_(child));
 }
 
 bool cwin::grid::row::before_position_change_(const POINT &old_value, const POINT &current_value) const{
-	return (is_updating_ && non_window_surface::before_position_change_(old_value, current_value));
+	return (is_updating_ && visible_surface::before_position_change_(old_value, current_value));
 }
 
 void cwin::grid::row::refresh_(){
@@ -90,9 +81,12 @@ void cwin::grid::row::update_dimension_(const SIZE &size, const POINT &position)
 	std::vector<column_info> columns;
 	columns.reserve(children_.size());
 
-	auto client_size = compute_client_size_();
-	auto fixed_width = 0, shared_count = 0;
+	SIZE client_size{};
+	events_.trigger_then<events::interrupt::get_client_size>([&](events::interrupt::get_client_size &e){
+		client_size = e.get_value();
+	});
 
+	auto fixed_width = 0, shared_count = 0;
 	traverse_children_<column>([&](column &child){
 		if (child.is_fixed_()){
 			columns.push_back(column_info{

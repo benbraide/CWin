@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../ui/ui_text_content.h"
+
 #include "../non_window/rectangle_non_window.h"
 #include "../non_window/round_rectangle_non_window.h"
 #include "../non_window/ellipsis_non_window.h"
@@ -9,7 +11,7 @@
 
 #include "../hook/io_hook.h"
 #include "../hook/background_hooks.h"
-#include "../hook/text_overlay_hook.h"
+#include "../hook/responsive_hooks.h"
 #include "../hook/mimic_hooks.h"
 
 #include "../control/tab_control.h"

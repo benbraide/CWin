@@ -77,7 +77,7 @@ void cwin::events::non_client_paint::do_default_(){
 	if (options_.any_is_set(option_type::prevented_default, option_type::called_handler))
 		return;
 
-	auto non_window_context = dynamic_cast<ui::non_window_surface *>(&context_);
+	/*auto non_window_context = dynamic_cast<ui::non_window_surface *>(&context_);
 	if (non_window_context == nullptr || !non_window_context->is_created() || non_window_context->is_occluded())
 		return;
 
@@ -133,7 +133,7 @@ void cwin::events::non_client_paint::do_default_(){
 
 	DrawThemeText(theme, info_.hdc, WP_CAPTION, CS_INACTIVE, caption.data(), static_cast<int>(caption.size()), (DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS), 0u, &area);
 	SelectObject(info_.hdc, old_font);
-	DeleteObject(font);
+	DeleteObject(font);*/
 }
 
 cwin::events::get_caption::~get_caption() = default;

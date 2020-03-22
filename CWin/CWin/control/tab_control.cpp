@@ -127,12 +127,8 @@ void cwin::control::tab::update_client_margin_(){
 	client_margin_.right = (dimension.right - adjusted_dimension.right);
 	client_margin_.bottom = (dimension.bottom - adjusted_dimension.bottom);
 
-	traverse_children_<surface>([&](surface &child){
-		try{
-			child.update_window_relative_position();
-		}
-		catch (const ui::exception::not_supported &){}
-
+	traverse_children_<surface>([](surface &child){
+		child.get_events().trigger<events::interrupt::update_window_position>();
 		return true;
 	});
 

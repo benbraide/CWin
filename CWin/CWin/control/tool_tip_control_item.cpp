@@ -38,10 +38,10 @@ cwin::control::tool_tip_item::tool_tip_item(tool_tip &parent, std::size_t index,
 
 	if (IsRectEmpty(&dimension_) != FALSE){//Use entire surface
 		bind_(target_, [=](events::after_bounds_change &){
-			auto &client_bound = target_.get_client_bound();
-			utility::rgn::move(client_bound.handle, client_bound.offset);
+			auto client_bound = target_.get_bound();
+			utility::rgn::move(client_bound, POINT{});
 
-			dimension_ = utility::rgn::get_dimension(client_bound.handle);
+			dimension_ = utility::rgn::get_dimension(client_bound);
 			update_dimension_();
 		});
 	}
@@ -229,9 +229,9 @@ void cwin::control::tool_tip_item::create_(){
 	else//Window target
 		window_handle = window_target->get_handle();
 
-	auto &client_bound = target_.get_client_bound();
-	utility::rgn::move(client_bound.handle, client_bound.offset);
-	auto bound_dimension = utility::rgn::get_dimension(client_bound.handle);
+	auto client_bound = target_.get_bound();
+	utility::rgn::move(client_bound, POINT{});
+	auto bound_dimension = utility::rgn::get_dimension(client_bound);
 
 	RECT dimension{};
 	IntersectRect(&dimension, &dimension_, &bound_dimension);
@@ -344,9 +344,9 @@ void cwin::control::tool_tip_item::update_dimension_(){
 	else//Window target
 		window_handle = window_target->get_handle();
 
-	auto &client_bound = target_.get_client_bound();
-	utility::rgn::move(client_bound.handle, client_bound.offset);
-	auto bound_dimension = utility::rgn::get_dimension(client_bound.handle);
+	auto client_bound = target_.get_bound();
+	utility::rgn::move(client_bound, POINT{});
+	auto bound_dimension = utility::rgn::get_dimension(client_bound);
 
 	RECT dimension{};
 	IntersectRect(&dimension, &dimension_, &bound_dimension);

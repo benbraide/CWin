@@ -158,6 +158,7 @@ const D2D1_COLOR_F &cwin::hook::color_background::get_color_() const{
 	return current_color_;
 }
 
+/*
 cwin::hook::caption::caption(ui::non_window_surface &target)
 	: caption(target, L""){}
 
@@ -192,4 +193,4 @@ void cwin::hook::caption::set_value_(const std::wstring &value){
 	value_ = value;
 	if (auto non_window_parent = dynamic_cast<ui::non_window_surface *>(parent_); non_window_parent != nullptr)
 		non_window_parent->redraw();
-}
+}*/

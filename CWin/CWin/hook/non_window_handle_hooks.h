@@ -5,13 +5,13 @@
 #include "hook_object.h"
 
 namespace cwin::ui{
-	class non_window_surface;
+	class visible_surface;
 }
 
 namespace cwin::hook::non_window{
 	class handle : public object{
 	public:
-		explicit handle(ui::non_window_surface &parent);
+		explicit handle(ui::visible_surface &parent);
 
 		virtual ~handle();
 
@@ -25,7 +25,7 @@ namespace cwin::hook::non_window{
 
 	class client_handle : public object{
 	public:
-		explicit client_handle(ui::non_window_surface &parent);
+		explicit client_handle(ui::visible_surface &parent);
 
 		virtual ~client_handle();
 
@@ -63,13 +63,13 @@ namespace cwin::hook::non_window{
 			bottom_right,
 		};
 
-		explicit triangle_handle(ui::non_window_surface &parent)
+		explicit triangle_handle(ui::visible_surface &parent)
 			: triangle_handle(parent, pivot_type::top_left, SIZE{}){}
 
-		triangle_handle(ui::non_window_surface &parent, pivot_type pivot)
+		triangle_handle(ui::visible_surface &parent, pivot_type pivot)
 			: triangle_handle(parent, pivot, SIZE{}){}
 
-		triangle_handle(ui::non_window_surface &parent, pivot_type pivot, const SIZE &pivot_offset)
+		triangle_handle(ui::visible_surface &parent, pivot_type pivot, const SIZE &pivot_offset)
 			: handle_type(parent), pivot_(pivot), pivot_offset_(pivot_offset){}
 
 		virtual ~triangle_handle() = default;
@@ -127,10 +127,10 @@ namespace cwin::hook::non_window{
 	template <class handle_type>
 	class round_rectangle_handle : public handle_type{
 	public:
-		explicit round_rectangle_handle(ui::non_window_surface &parent)
+		explicit round_rectangle_handle(ui::visible_surface &parent)
 			: round_rectangle_handle(parent, SIZE{}){}
 
-		round_rectangle_handle(ui::non_window_surface &parent, const SIZE &border_curve_size)
+		round_rectangle_handle(ui::visible_surface &parent, const SIZE &border_curve_size)
 			: handle_type(parent), border_curve_size_(border_curve_size){}
 
 		virtual ~round_rectangle_handle() = default;
@@ -184,61 +184,61 @@ namespace cwin::hook::non_window{
 namespace cwin::ui{
 	template <>
 	struct parent_type<hook::non_window::triangle_handle<hook::non_window::handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::triangle_handle<hook::non_window::client_handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::triangle_handle<hook::non_window::big_border_client_handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::rectangle_handle<hook::non_window::handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::rectangle_handle<hook::non_window::client_handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::rectangle_handle<hook::non_window::big_border_client_handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::round_rectangle_handle<hook::non_window::handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::round_rectangle_handle<hook::non_window::client_handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::round_rectangle_handle<hook::non_window::big_border_client_handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::ellipsis_handle<hook::non_window::handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::ellipsis_handle<hook::non_window::client_handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 
 	template <>
 	struct parent_type<hook::non_window::ellipsis_handle<hook::non_window::big_border_client_handle>>{
-		using value = non_window_surface;
+		using value = visible_surface;
 	};
 }

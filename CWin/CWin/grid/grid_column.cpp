@@ -1,19 +1,9 @@
 #include "../hook/background_hooks.h"
-#include "../hook/non_window_handle_hooks.h"
 
 #include "grid_row.h"
 
 cwin::grid::column::column(){
-	auto window_color = GetSysColor(COLOR_WINDOW);
-	insert_object<hook::color_background>(
-		nullptr, D2D1::ColorF(
-		(GetRValue(window_color) / 255.0f),	//Red
-		(GetGValue(window_color) / 255.0f),	//Green
-		(GetBValue(window_color) / 255.0f),	//Blue
-		1.0f								//Alpha
-	));
-
-	insert_object<hook::non_window::rectangle_handle<hook::non_window::handle>>(nullptr);
+	insert_object<hook::color_background>(nullptr, GetSysColor(COLOR_WINDOW));
 	refresh_();
 }
 
@@ -52,11 +42,11 @@ void cwin::grid::column::is_fixed(const std::function<void(bool)> &callback) con
 }
 
 bool cwin::grid::column::changing_parent_(tree *value){
-	return (dynamic_cast<row *>(value) != nullptr && non_window_surface::changing_parent_(value));
+	return (dynamic_cast<row *>(value) != nullptr && visible_surface::changing_parent_(value));
 }
 
 bool cwin::grid::column::before_position_change_(const POINT &old_value, const POINT &current_value) const{
-	return (is_updating_ && non_window_surface::before_position_change_(old_value, current_value));
+	return (is_updating_ && visible_surface::before_position_change_(old_value, current_value));
 }
 
 void cwin::grid::column::refresh_(){

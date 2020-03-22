@@ -4,7 +4,7 @@
 #include "../hook/non_window_handle_hooks.h"
 
 namespace cwin::non_window{
-	class object : public ui::non_window_surface{
+	class object : public ui::visible_surface{
 	public:
 		object();
 

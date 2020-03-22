@@ -1,6 +1,6 @@
 #pragma once
 
-#include "text_overlay_hook.h"
+//#include "text_overlay_hook.h"
 #include "background_hooks.h"
 
 namespace cwin::hook::mimic{

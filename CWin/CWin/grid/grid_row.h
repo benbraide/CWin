@@ -5,7 +5,7 @@
 namespace cwin::grid{
 	class object;
 
-	class row : public ui::non_window_surface{
+	class row : public ui::visible_surface{
 	public:
 		struct column_info{
 			column *target;

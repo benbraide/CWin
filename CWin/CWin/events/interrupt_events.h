@@ -69,6 +69,34 @@ namespace cwin::events::interrupt{
 		virtual ~is_opaque_background() = default;
 	};
 
+	class create : public object{
+	public:
+		using object::object;
+
+		virtual ~create() = default;
+	};
+
+	class destroy : public object{
+	public:
+		using object::object;
+
+		virtual ~destroy() = default;
+	};
+
+	class is_created : public object{
+	public:
+		using object::object;
+
+		virtual ~is_created() = default;
+	};
+
+	class update_window_position : public object{
+	public:
+		using object::object;
+
+		virtual ~update_window_position() = default;
+	};
+
 	template <bool is_client>
 	class resize_handle : public object{
 	public:
@@ -138,6 +166,22 @@ namespace cwin::events::interrupt{
 		using object::object;
 
 		virtual ~is_big_border_handle() = default;
+	};
+
+	class get_client_size : public retrieve_value<SIZE>{
+	public:
+		using base_type = retrieve_value<SIZE>;
+		using base_type::base_type;
+
+		virtual ~get_client_size() = default;
+	};
+
+	class get_client_bound : public retrieve_scalar_value<HRGN>{
+	public:
+		using base_type = retrieve_scalar_value<HRGN>;
+		using base_type::base_type;
+
+		virtual ~get_client_bound() = default;
 	};
 
 	class set_text : public object{

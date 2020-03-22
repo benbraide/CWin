@@ -290,6 +290,16 @@ namespace cwin::events{
 			return value;
 		}
 		
+		template <typename object_type, typename result_type, typename... args_types>
+		result_type trigger_then_report_result_as(args_types &&... args) const{
+			auto value = result_type();
+			trigger_then<object_type>([&](object_type &e){
+				value = e.get_result_as<result_type>();
+			}, std::forward<args_types>(args)...);
+
+			return value;
+		}
+		
 		template <typename object_type, typename... args_types>
 		utility::small_options trigger_then_report_options(args_types &&... args) const{
 			utility::small_options value;

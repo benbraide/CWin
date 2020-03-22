@@ -113,16 +113,11 @@ namespace cwin::ui{
 			});
 		}
 
-		virtual void update_size(){
-			base_type::post_or_execute_task([=]{
-				update_size_();
-			});
-		}
-
 	protected:
 		virtual void set_text_(const std::wstring &value){
 			text_ = value;
-			update_size_();
+			if (!base_type::events_.trigger_then_report_result_as<events::disable_auto_size, bool>())
+				update_size_();
 		}
 
 		virtual const std::wstring &get_text_() const{
@@ -131,17 +126,20 @@ namespace cwin::ui{
 
 		virtual void set_font_(HFONT value){
 			font_ = value;
-			update_size_();
+			if (!base_type::events_.trigger_then_report_result_as<events::disable_auto_size, bool>())
+				update_size_();
 		}
 
 		virtual void set_scale_(const D2D1_SIZE_F &value){
 			scale_ = value;
-			update_size_();
+			if (!base_type::events_.trigger_then_report_result_as<events::disable_auto_size, bool>())
+				update_size_();
 		}
 
 		virtual void set_padding_(const SIZE &value){
 			padding_ = value;
-			update_size_();
+			if (!base_type::events_.trigger_then_report_result_as<events::disable_auto_size, bool>())
+				update_size_();
 		}
 
 		virtual void update_size_(){
@@ -189,14 +187,24 @@ namespace cwin::ui{
 				size.cy += (additional_size.cy + padding_.cy);
 			}
 
+			SIZE min_size{}, max_size{};
 			base_type::events_.trigger_then<events::get_min_size>([&](events::get_min_size &e){
-				auto &value = e.get_value();
-				if (size.cx < value.cx)
-					size.cx = value.cx;
-
-				if (size.cy < value.cy)
-					size.cy = value.cy;
+				min_size = e.get_value();
 			});
+
+			base_type::events_.trigger_then<events::get_max_size>([&](events::get_max_size &e){
+				max_size = e.get_value();
+			});
+
+			if (size.cx < min_size.cx)
+				size.cx = min_size.cx;
+			else if (max_size.cx != 0 && max_size.cx < size.cx)
+				size.cx = max_size.cx;
+
+			if (size.cy < min_size.cy)
+				size.cy = min_size.cy;
+			else if (max_size.cy != 0 && max_size.cy < size.cy)
+				size.cy = max_size.cy;
 
 			return size;
 		}
@@ -362,7 +370,7 @@ namespace cwin::ui{
 
 		virtual void update_size_(bool enable_interrupt, const std::function<void(const SIZE &, const SIZE &)> &callback) override{
 			m_base_type::update_size_(enable_interrupt, callback);
-			computed_text_offset_ = compute_offset(m_base_type::get_size_(), m_base_type::text_size_, text_alignment_);
+			computed_text_offset_ = compute_text_offset(m_base_type::get_size_(), m_base_type::text_size_, text_alignment_);
 		}
 
 		virtual void set_text_color_(const D2D1_COLOR_F &value){
@@ -377,7 +385,7 @@ namespace cwin::ui{
 
 		virtual void set_text_alignment_(alignment_type value){
 			text_alignment_ = value;
-			computed_text_offset_ = compute_offset(m_base_type::get_size_(), m_base_type::text_size_, text_alignment_);
+			computed_text_offset_ = compute_text_offset(m_base_type::get_size_(), m_base_type::text_size_, text_alignment_);
 			m_base_type::redraw_(nullptr);
 		}
 

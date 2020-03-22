@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../ui/ui_non_window_surface.h"
+#include "../ui/ui_visible_surface.h"
 
 namespace cwin::grid{
 	class row;
 
-	class column : public ui::non_window_surface{
+	class column : public ui::visible_surface{
 	public:
 		column();
 

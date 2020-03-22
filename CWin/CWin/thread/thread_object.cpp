@@ -5,12 +5,7 @@ cwin::thread::object::object()
 	: queue_(*this), window_manager_(*this), menu_manager_(*this), id_(GetCurrentThreadId()), device_context_(GetDC(HWND_DESKTOP)){
 	CoInitializeEx(nullptr, COINIT::COINIT_APARTMENTTHREADED);
 
-	handle_bound_.handle = CreateRectRgn(0, 0, 0, 0);
-	handle_bound_.rect_handle = handle_bound_.handle;
-
-	handle_bound_.offset.x = 0;
-	handle_bound_.offset.y = 0;
-
+	handle_bound_ = CreateRectRgn(0, 0, 0, 0);
 	rgns_[0] = CreateRectRgn(0, 0, 0, 0);
 	rgns_[1] = CreateRectRgn(0, 0, 0, 0);
 	rgns_[2] = CreateRectRgn(0, 0, 0, 0);
@@ -95,9 +90,9 @@ cwin::thread::object::~object(){
 		rgns_[2] = nullptr;
 	}
 
-	if (handle_bound_.handle != nullptr){
-		DeleteObject(handle_bound_.handle);
-		handle_bound_.handle = handle_bound_.rect_handle = nullptr;
+	if (handle_bound_ != nullptr){
+		DeleteObject(handle_bound_);
+		handle_bound_ = nullptr;
 	}
 
 	std::lock_guard<std::mutex> guard(app::object::lock_);
@@ -295,7 +290,7 @@ const RECT &cwin::thread::object::get_big_client_margin() const{
 	return big_client_margin_;
 }
 
-cwin::ui::surface::handle_bound_info &cwin::thread::object::get_handle_bound(){
+HRGN cwin::thread::object::get_handle_bound(){
 	if (!is_context())
 		throw exception::outside_context();
 	return handle_bound_;

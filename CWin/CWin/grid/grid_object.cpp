@@ -1,20 +1,11 @@
 #include "../hook/responsive_hooks.h"
 #include "../hook/background_hooks.h"
-#include "../hook/non_window_handle_hooks.h"
+#include "../events/interrupt_events.h"
 
 #include "grid_object.h"
 
 cwin::grid::object::object(){
-	auto window_color = GetSysColor(COLOR_WINDOW);
-	insert_object<hook::color_background>(
-		nullptr, D2D1::ColorF(
-		(GetRValue(window_color) / 255.0f),	//Red
-		(GetGValue(window_color) / 255.0f),	//Green
-		(GetBValue(window_color) / 255.0f),	//Blue
-		1.0f								//Alpha
-	));
-
-	insert_object<hook::non_window::rectangle_handle<hook::non_window::handle>>(nullptr);
+	insert_object<hook::color_background>(nullptr, GetSysColor(COLOR_WINDOW));
 	refresh_();
 }
 
@@ -41,11 +32,11 @@ void cwin::grid::object::refresh(){
 }
 
 bool cwin::grid::object::inserting_child_(ui::object &child){
-	return (dynamic_cast<row *>(&child) != nullptr && non_window_surface::inserting_child_(child));
+	return (dynamic_cast<row *>(&child) != nullptr && visible_surface::inserting_child_(child));
 }
 
 void cwin::grid::object::size_update_(const SIZE &old_value, const SIZE &current_value){
-	non_window_surface::size_update_(old_value, current_value);
+	visible_surface::size_update_(old_value, current_value);
 	refresh_();
 }
 
@@ -53,9 +44,12 @@ void cwin::grid::object::refresh_(){
 	std::vector<row_info> rows;
 	rows.reserve(children_.size());
 
-	auto client_size = compute_client_size_();
-	auto fixed_height = 0, shared_count = 0;
+	SIZE client_size{};
+	events_.trigger_then<events::interrupt::get_client_size>([&](events::interrupt::get_client_size &e){
+		client_size = e.get_value();
+	});
 
+	auto fixed_height = 0, shared_count = 0;
 	traverse_children_<row>([&](row &child){
 		if (child.is_fixed_()){
 			rows.push_back(row_info{

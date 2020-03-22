@@ -1,5 +1,6 @@
 #include "../ui/ui_surface.h"
 #include "../events/general_events.h"
+#include "../events/interrupt_events.h"
 
 #include "responsive_hooks.h"
 
@@ -274,8 +275,11 @@ void cwin::hook::placement::update_(){
 		GetClientRect(GetDesktopWindow(), &dimension);
 		parent_client_size = SIZE{ (dimension.right - dimension.left), (dimension.bottom - dimension.top) };
 	}
-	else//Use parent client
-		parent_client_size = surface_parent->compute_client_size();
+	else{//Use parent client
+		surface_parent->get_events().trigger_then<events::interrupt::get_client_size>([&](events::interrupt::get_client_size &e){
+			parent_client_size = e.get_value();
+		});
+	}
 
 	auto computed_offset = offset_;
 	switch (alignment_){
@@ -604,8 +608,11 @@ void cwin::hook::fill::update_(){
 		GetClientRect(GetDesktopWindow(), &dimension);
 		parent_client_size = SIZE{ (dimension.right - dimension.left), (dimension.bottom - dimension.top) };
 	}
-	else//Use parent client
-		parent_client_size = surface_parent->compute_client_size();
+	else{//Use parent client
+		surface_parent->get_events().trigger_then<events::interrupt::get_client_size>([&](events::interrupt::get_client_size &e){
+			parent_client_size = e.get_value();
+		});
+	}
 
 	SIZE offset{};
 	if (std::holds_alternative<D2D1_SIZE_F>(offset_)){//Proportional offset
@@ -782,10 +789,14 @@ void cwin::hook::contain::update_(){
 		UnionRect(&union_rect, &child_dimension, &union_rect);
 	});
 
-	auto &target_size = surface_target->get_size();
-	auto target_client_size = surface_target->compute_client_size();
+	SIZE target_client_size{};
+	surface_target->get_events().trigger_then<events::interrupt::get_client_size>([&](events::interrupt::get_client_size &e){
+		target_client_size = e.get_value();
+	});
 
+	auto &target_size = surface_target->get_size();
 	SIZE target_client_size_delta{ (target_size.cx - target_client_size.cx), (target_size.cy - target_client_size.cy) };
+
 	SIZE content_size{
 		((union_rect.right - union_rect.left) + target_client_size_delta.cx),
 		((union_rect.bottom - union_rect.top) + target_client_size_delta.cy)

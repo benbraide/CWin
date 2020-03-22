@@ -1,9 +1,9 @@
-#include "../ui/ui_non_window_surface.h"
+#include "../ui/ui_visible_surface.h"
 #include "../events/interrupt_events.h"
 
 #include "non_window_handle_hooks.h"
 
-cwin::hook::non_window::handle::handle(ui::non_window_surface &parent){
+cwin::hook::non_window::handle::handle(ui::visible_surface &parent){
 	parent.get_first_child([&](handle &child){
 		parent.remove_child(child);
 	});
@@ -24,7 +24,7 @@ void cwin::hook::non_window::handle::destroy_value_(HRGN value) const{
 	DeleteObject(value);
 }
 
-cwin::hook::non_window::client_handle::client_handle(ui::non_window_surface &parent){
+cwin::hook::non_window::client_handle::client_handle(ui::visible_surface &parent){
 	parent.get_first_child([&](client_handle &child){
 		parent.remove_child(child);
 	});

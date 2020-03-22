@@ -63,7 +63,7 @@ namespace cwin::hook{
 		unsigned __int64 animation_id_;
 	};
 
-	class caption : public object{
+	/*class caption : public object{
 	public:
 		explicit caption(ui::non_window_surface &parent);
 
@@ -81,7 +81,7 @@ namespace cwin::hook{
 		virtual void set_value_(const std::wstring &value);
 
 		std::wstring value_;
-	};
+	};*/
 }
 
 namespace cwin::ui{
@@ -90,8 +90,8 @@ namespace cwin::ui{
 		using value = visible_surface;
 	};
 
-	template <>
+	/*template <>
 	struct parent_type<hook::caption>{
 		using value = non_window_surface;
-	};
+	};*/
 }

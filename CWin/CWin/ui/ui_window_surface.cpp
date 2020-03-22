@@ -3,6 +3,7 @@
 #include "../hook/background_hooks.h"
 #include "../thread/thread_object.h"
 #include "../events/general_events.h"
+#include "../events/interrupt_events.h"
 
 #include "ui_non_window_surface.h"
 #include "ui_window_surface.h"
@@ -10,6 +11,10 @@
 cwin::ui::window_surface::window_surface(){
 	insert_object<hook::io>(nullptr);
 	insert_object<hook::color_background>(nullptr, GetSysColor(COLOR_WINDOW));
+
+	bind_default_([=](events::interrupt::get_client_size &e){
+		e.set_value(compute_client_size_());
+	});
 }
 
 cwin::ui::window_surface::window_surface(tree &parent)
@@ -163,10 +168,6 @@ void cwin::ui::window_surface::create_(){
 
 	if (handle_ == nullptr)
 		throw ui::exception::action_failed();
-
-	handle_bound_.handle = CreateRectRgn(0, 0, 0, 0);
-	update_region_bound_(handle_bound_.rect_handle, get_size_());
-	update_bounds_();
 }
 
 void cwin::ui::window_surface::destroy_(){
@@ -174,14 +175,7 @@ void cwin::ui::window_surface::destroy_(){
 		if (DestroyWindow(handle_) == FALSE)
 			throw exception::action_failed();
 
-		DeleteObject(handle_bound_.rect_handle);
-		DeleteObject(handle_bound_.handle);
-		DeleteObject(client_handle_bound_.handle);
-
 		handle_ = nullptr;
-		handle_bound_.handle = nullptr;
-		handle_bound_.rect_handle = nullptr;
-		client_handle_bound_.handle = nullptr;
 	}
 }
 
@@ -227,77 +221,23 @@ void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &c
 			throw;
 		}
 	}
-
-	update_region_bound_(handle_bound_.rect_handle, get_size_());
-	update_bounds_();
 }
 
-void cwin::ui::window_surface::position_update_(const POINT &old_value, const POINT &current_value){
-	current_position_ = current_value;
-	if (handle_ == nullptr)
-		return;
-
-	if (updating_count_ == 0u){
-		POINT window_relative_offset{};
-		if (auto window_ancestor = find_surface_ancestor_<window_surface>(&window_relative_offset); window_ancestor != nullptr)
-			window_ancestor->offset_point_to_window(window_relative_offset);
-
-		try{
-			++updating_count_;
-			SetWindowPos(handle_, nullptr, (current_value.x + window_relative_offset.x), (current_value.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
-			--updating_count_;
-		}
-		catch (...){
-			--updating_count_;
-			throw;
-		}
-	}
-	
-	update_bounds_();
-}
-
-void cwin::ui::window_surface::update_window_relative_position_(){
-	auto position = get_position_();
-	traverse_ancestors_<surface>([&](surface &ancestor){
-		ancestor.offset_point_to_window(position);
-		if (auto window_ancestor = dynamic_cast<window_surface *>(&ancestor); window_ancestor != nullptr)
-			return false;
-
-		auto &current_position = ancestor.get_position();
-		position.x += current_position.x;
-		position.y += current_position.y;
-
-		return true;
-	});
+void cwin::ui::window_surface::update_window_position_(){
+	POINT window_relative_offset{};
+	if (auto window_ancestor = find_surface_ancestor_<window_surface>(&window_relative_offset); window_ancestor != nullptr)
+		window_ancestor->offset_point_to_window(window_relative_offset);
 
 	try{
 		++updating_count_;
-		SetWindowPos(handle_, nullptr, position.x, position.y, 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
+		if (handle_ != nullptr)
+			SetWindowPos(handle_, nullptr, (current_position_.x + window_relative_offset.x), (current_position_.y + window_relative_offset.y), 0, 0, (SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE));
 		--updating_count_;
 	}
 	catch (...){
 		--updating_count_;
 		throw;
 	}
-
-	update_bounds_();
-}
-
-SIZE cwin::ui::window_surface::compute_client_size_() const{
-	if (handle_ != nullptr){
-		RECT client_rect{};
-		GetClientRect(handle_, &client_rect);
-		return SIZE{ (client_rect.right - client_rect.left), (client_rect.bottom - client_rect.top) };
-	}
-
-	auto &current_size = get_size_();
-	RECT rect{ 0, 0, current_size.cx, current_size.cy };
-	AdjustWindowRectEx(&rect, get_computed_styles_(), FALSE, get_computed_extended_styles_());
-
-	SIZE size{ (rect.right - rect.left), (rect.bottom - rect.top) };
-	SIZE size_delta{ (size.cx - current_size.cx), (size.cy - current_size.cy) };
-
-	return SIZE{ (current_size.cx - (size_delta.cx + size_delta.cx)), (current_size.cy - (size_delta.cy + size_delta.cy)) };
 }
 
 void cwin::ui::window_surface::compute_relative_to_absolute_(POINT &value) const{
@@ -339,54 +279,6 @@ UINT cwin::ui::window_surface::hit_test_(const POINT &value) const{
 		return HTNOWHERE;
 
 	return static_cast<UINT>(SendMessageW(handle_, WM_NCHITTEST, 0, MAKELONG(value.x, value.y)));
-}
-
-void cwin::ui::window_surface::update_bounds_(){
-	if (handle_ == nullptr)
-		return;
-
-	POINT offset{};
-	utility::rgn::move(handle_bound_.rect_handle, offset);
-
-	try{
-		auto &client_bound = get_ancestor_client_bound_(offset);
-		auto &current_position = get_position_();
-
-		offset.x += current_position.x;
-		offset.y += current_position.y;
-
-		utility::rgn::offset(handle_bound_.rect_handle, offset);
-		utility::rgn::intersect(handle_bound_.handle, client_bound.handle, handle_bound_.rect_handle);
-	}
-	catch (const exception::not_supported &){//Remove bound, if any
-		SetWindowRgn(handle_, nullptr, TRUE);
-		update_client_bound_();
-		return;
-	}
-
-	auto handle_bound_copy = CreateRectRgn(0, 0, 0, 0);
-	utility::rgn::copy(handle_bound_copy, handle_bound_.handle);
-
-	utility::rgn::offset(handle_bound_copy, POINT{ -offset.x, -offset.y });
-	utility::rgn::offset(handle_bound_.rect_handle, POINT{ -offset.x, -offset.y });
-
-	if (utility::rgn::is_equal(handle_bound_copy, handle_bound_.rect_handle)){//Remove bound, if any
-		SetWindowRgn(handle_, nullptr, TRUE);
-		DeleteObject(handle_bound_copy);
-	}
-	else
-		SetWindowRgn(handle_, handle_bound_copy, TRUE);
-
-	update_client_bound_();
-	events_.trigger<events::after_bounds_change>();
-}
-
-const cwin::ui::surface::handle_bound_info &cwin::ui::window_surface::get_bound_() const{
-	return handle_bound_;
-}
-
-const cwin::ui::surface::handle_bound_info &cwin::ui::window_surface::get_client_bound_() const{
-	return client_handle_bound_;
 }
 
 void cwin::ui::window_surface::redraw_(HRGN region){
@@ -441,6 +333,23 @@ void cwin::ui::window_surface::set_windows_visibility_(bool is_visible){
 		show_();
 	else//Hide
 		hide_();
+}
+
+SIZE cwin::ui::window_surface::compute_client_size_() const{
+	if (handle_ != nullptr){
+		RECT client_rect{};
+		GetClientRect(handle_, &client_rect);
+		return SIZE{ (client_rect.right - client_rect.left), (client_rect.bottom - client_rect.top) };
+	}
+
+	auto &current_size = get_size_();
+	RECT rect{ 0, 0, current_size.cx, current_size.cy };
+	AdjustWindowRectEx(&rect, get_computed_styles_(), FALSE, get_computed_extended_styles_());
+
+	SIZE size{ (rect.right - rect.left), (rect.bottom - rect.top) };
+	SIZE size_delta{ (size.cx - current_size.cx), (size.cy - current_size.cy) };
+
+	return SIZE{ (current_size.cx - (size_delta.cx + size_delta.cx)), (current_size.cy - (size_delta.cy + size_delta.cy)) };
 }
 
 bool cwin::ui::window_surface::is_dialog_message_(MSG &msg) const{
@@ -505,16 +414,6 @@ DWORD cwin::ui::window_surface::get_blacklisted_extended_styles_() const{
 
 DWORD cwin::ui::window_surface::get_persistent_extended_styles_() const{
 	return 0u;
-}
-
-void cwin::ui::window_surface::update_client_bound_(){
-	RECT client_dimension{};
-	GetClientRect(handle_, &client_dimension);
-
-	POINT offset{};
-	offset_point_to_window_(offset);
-
-	update_region_bound_(client_handle_bound_.handle, SIZE{ (client_dimension.right - (client_dimension.left + offset.x)), (client_dimension.bottom - (client_dimension.top + offset.y)) });
 }
 
 HINSTANCE cwin::ui::window_surface::get_instance_() const{
