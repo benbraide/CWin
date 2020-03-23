@@ -10,8 +10,25 @@ cwin::ui::surface::surface()
 		update_window_position_();
 	});
 
+	bind_default_([=](events::interrupt::get_client_size &e){
+		e.set_value(get_size_());
+	});
+	
+	bind_default_([=](events::interrupt::get_bound &){
+		auto handle_bound = thread_.get_handle_bound();
+		auto &size = get_size_();
+
+		utility::rgn::set_dimension(handle_bound, RECT{ 0, 0, size.cx, size.cy });
+		return handle_bound;
+	});
+	
 	bind_default_([=](events::interrupt::get_client_bound &){
 		return get_bound_();
+	});
+	
+	bind_default_([=](events::interrupt::hit_test &e){
+		auto dimension = compute_absolute_dimension_();
+		return ((PtInRect(&dimension, e.get_position()) == FALSE) ? HTNOWHERE : HTCLIENT);
 	});
 
 	bind_default_([=](events::interrupt::animate &e){
@@ -330,6 +347,7 @@ void cwin::ui::surface::after_size_change_(const SIZE &old_value, const SIZE &cu
 
 void cwin::ui::surface::size_update_(const SIZE &old_value, const SIZE &current_value){
 	current_size_ = current_value;
+	events_.trigger<events::interrupt::resize>(current_value);
 	events_.trigger<events::after_size_update>(old_value, current_value);
 }
 
@@ -478,19 +496,18 @@ void cwin::ui::surface::compute_absolute_to_relative_(RECT &value) const{
 	OffsetRect(&value, -(position.x + offset.x), -(position.y + offset.y));
 }
 
-void cwin::ui::surface::offset_point_to_window_(POINT &value) const{}
+void cwin::ui::surface::offset_point_to_window_(POINT &value) const{
+	events_.trigger<events::interrupt::offset_point_to_window>(value);
+}
 
-void cwin::ui::surface::offset_point_from_window_(POINT &value) const{}
+void cwin::ui::surface::offset_point_from_window_(POINT &value) const{
+	events_.trigger<events::interrupt::offset_point_from_window>(value);
+}
 
 UINT cwin::ui::surface::hit_test_(const POINT &value) const{
-	auto dimension = compute_absolute_dimension_();
-	return ((PtInRect(&dimension, value) == FALSE) ? HTNOWHERE : HTCLIENT);
+	return events_.trigger_then_report_result_as<events::interrupt::hit_test, UINT>(value);
 }
 
 HRGN cwin::ui::surface::get_bound_() const{
-	auto handle_bound = thread_.get_handle_bound();
-	auto &size = get_size_();
-
-	utility::rgn::set_dimension(handle_bound, RECT{ 0, 0, size.cx, size.cy });
-	return handle_bound;
+	return events_.trigger_then_report_result_as<events::interrupt::get_bound, HRGN>();
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../ui/ui_non_window_surface.h"
+#include "../ui/ui_visible_surface.h"
 #include "../hook/non_window_handle_hooks.h"
 
 namespace cwin::non_window{

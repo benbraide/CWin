@@ -5,7 +5,6 @@
 #include "../events/general_events.h"
 #include "../events/interrupt_events.h"
 
-#include "ui_non_window_surface.h"
 #include "ui_window_surface.h"
 
 cwin::ui::window_surface::window_surface(){
@@ -221,6 +220,8 @@ void cwin::ui::window_surface::size_update_(const SIZE &old_value, const SIZE &c
 			throw;
 		}
 	}
+
+	events_.trigger<events::after_size_update>(old_value, current_value);
 }
 
 void cwin::ui::window_surface::update_window_position_(){

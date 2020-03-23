@@ -1,5 +1,4 @@
 #include "../ui/ui_window_surface.h"
-#include "../ui/ui_non_window_surface.h"
 
 #include "../events/general_events.h"
 #include "../events/control_events.h"

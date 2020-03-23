@@ -18,7 +18,7 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 		item.set_size(SIZE{ 270, 135 });
 		item.set_position(POINT{ 10, 10 });
 		
-		item.insert_object<hook::non_window::rectangle_handle<hook::non_window::client_handle>>();
+		item.insert_object<hook::non_window::rectangle_handle<hook::non_window::non_client_handle>>(nullptr, L"Small Border");
 		item.insert_object<hook::client_drag>();
 
 		item.get_first_child([](hook::color_background &bg){
@@ -34,12 +34,8 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 		item.set_size(SIZE{ 540, 360 });
 		item.set_position(POINT{ 300, 10 });
 		
-		item.insert_object<hook::non_window::rectangle_handle<hook::non_window::client_handle>>();
+		item.insert_object<hook::non_window::rectangle_handle<hook::non_window::big_border_non_client_handle>>(nullptr, L"Big Border");
 		item.insert_object<hook::io>();
-
-		item.get_events().bind([](events::interrupt::is_big_border_handle &){
-			return true;
-		});
 
 		item.insert_object([](cwin::non_window::rectangle &inner_item){
 			inner_item.set_size(SIZE{ 153, 90 });

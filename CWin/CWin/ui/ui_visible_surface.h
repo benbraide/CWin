@@ -42,6 +42,10 @@ namespace cwin::ui{
 		friend class menu::manager;
 		friend class hook::io;
 
+		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) override;
+
+		virtual void position_update_(const POINT &old_value, const POINT &current_value) override;
+
 		virtual void redraw_(HRGN region);
 
 		virtual void redraw_(const RECT &region);

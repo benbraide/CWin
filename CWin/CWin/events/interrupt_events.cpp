@@ -52,6 +52,28 @@ const D2D1_RECT_F &cwin::events::interrupt::draw_background::get_area() const{
 	return area_;
 }
 
+cwin::events::interrupt::resize::resize(events::target &target, const SIZE &size)
+	: object(target), size_(size){}
+
+cwin::events::interrupt::resize::~resize() = default;
+
+const SIZE &cwin::events::interrupt::resize::get_size() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return size_;
+}
+
+cwin::events::interrupt::hit_test::hit_test(events::target &target, const POINT &position)
+	: object(target), position_(position){}
+
+cwin::events::interrupt::hit_test::~hit_test() = default;
+
+const POINT &cwin::events::interrupt::hit_test::get_position() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return position_;
+}
+
 cwin::events::interrupt::set_text::set_text(target &context, const std::wstring &value)
 	: object(context), value_(value){}
 

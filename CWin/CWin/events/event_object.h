@@ -223,7 +223,7 @@ namespace cwin::events{
 		virtual void set_value(value_type &value){
 			if (!is_thread_context())
 				throw thread::exception::outside_context();
-			value_ = value;
+			value_ = &value;
 		}
 
 		virtual value_type &get_value() const{
@@ -238,5 +238,25 @@ namespace cwin::events{
 
 	protected:
 		value_type *value_ = nullptr;
+	};
+
+	template <class value_type>
+	class pass_value : public object{
+	public:
+		using m_value_type = value_type;
+
+		pass_value(events::target &target, value_type &value)
+			: object(target), value_(value){}
+
+		virtual ~pass_value() = default;
+
+		virtual value_type &get_value() const{
+			if (!is_thread_context())
+				throw thread::exception::outside_context();
+			return value_;
+		}
+
+	protected:
+		value_type &value_;
 	};
 }

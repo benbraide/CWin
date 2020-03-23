@@ -1,4 +1,4 @@
-#include "../ui/ui_non_window_surface.h"
+#include "../ui/ui_visible_surface.h"
 #include "../events/interrupt_events.h"
 #include "../thread/thread_object.h"
 

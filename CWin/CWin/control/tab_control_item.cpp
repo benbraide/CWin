@@ -14,7 +14,7 @@ cwin::control::tab_item::tab_item(tab &parent, std::size_t index){
 	else//Error
 		throw thread::exception::context_mismatch();
 
-	insert_object<hook::placement>(nullptr, hook::placement::alignment_type::top_left);
+	set_position_(POINT{});
 	insert_object<hook::fill>(nullptr);
 
 	bind_default_([=](events::control::get_tool_tip_text &){

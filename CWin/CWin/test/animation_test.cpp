@@ -192,10 +192,6 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 			bg.set_color(D2D1::ColorF(D2D1::ColorF::Red));
 		});
 
-		item.get_events().bind([](events::get_caption &){
-			return L"Target Rectangle";
-		});
-		
 		item.get_events().bind([&](events::io::non_client_move_begin &){
 			animation_->stop(ui::surface::get_static_position_animation_id());
 		});
@@ -220,7 +216,7 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 			item.set_size(SIZE{ 207, 63 });
 		});
 
-		item.insert_object<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::client_handle>>();
+		item.insert_object<hook::non_window::rectangle_handle<hook::non_window::non_client_handle>>(nullptr, L"Target Rectangle");
 		item.insert_object<cwin::hook::io>();
 
 		item.insert_object([&](cwin::hook::animation &hk){

@@ -97,75 +97,28 @@ namespace cwin::events::interrupt{
 		virtual ~update_window_position() = default;
 	};
 
-	template <bool is_client>
-	class resize_handle : public object{
+	class resize : public object{
 	public:
-		resize_handle(events::target &target, HRGN value, const SIZE &size)
-			: object(target), size_(size){
-			result_ = reinterpret_cast<LRESULT>(value);
-		}
+		resize(events::target &target, const SIZE &size);
 
-		virtual ~resize_handle() = default;
+		virtual ~resize();
 
-		virtual void set_value(HRGN value){
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			result_ = reinterpret_cast<LRESULT>(value);
-		}
-
-		virtual HRGN get_value() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return reinterpret_cast<HRGN>(result_);
-		}
-
-		virtual const SIZE &get_size() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return size_;
-		}
+		virtual const SIZE &get_size() const;
 
 	protected:
-		virtual bool handle_set_result_(const void *value, const std::type_info &type) override{
-			if (type == typeid(HRGN))
-				result_ = reinterpret_cast<LRESULT>(*static_cast<const HRGN *>(value));
-			else
-				throw exception::bad_value();
-
-			return true;
-		}
-
 		SIZE size_;
 	};
 
-	using resize_non_client_handle = resize_handle<false>;
-	using resize_client_handle = resize_handle<true>;
-
-	template <bool is_client>
-	class destroy_handle : public object{
+	class hit_test : public object{
 	public:
-		destroy_handle(events::target &target, HRGN value)
-			: object(target){
-			result_ = reinterpret_cast<LRESULT>(&value);
-		}
+		hit_test(events::target &target, const POINT &position);
 
-		virtual ~destroy_handle() = default;
+		virtual ~hit_test();
 
-		virtual HRGN get_value() const{
-			if (!is_thread_context())
-				throw thread::exception::outside_context();
-			return reinterpret_cast<HRGN>(result_);
-		}
-	};
+		virtual const POINT &get_position() const;
 
-	using destroy_non_client_handle = destroy_handle<false>;
-	using destroy_client_handle = destroy_handle<true>;
-
-	class is_big_border_handle : public object{
-	public:
-		using object::object;
-
-		virtual ~is_big_border_handle() = default;
+	protected:
+		POINT position_;
 	};
 
 	class get_client_size : public retrieve_value<SIZE>{
@@ -176,12 +129,36 @@ namespace cwin::events::interrupt{
 		virtual ~get_client_size() = default;
 	};
 
+	class get_bound : public retrieve_scalar_value<HRGN>{
+	public:
+		using base_type = retrieve_scalar_value<HRGN>;
+		using base_type::base_type;
+
+		virtual ~get_bound() = default;
+	};
+
 	class get_client_bound : public retrieve_scalar_value<HRGN>{
 	public:
 		using base_type = retrieve_scalar_value<HRGN>;
 		using base_type::base_type;
 
 		virtual ~get_client_bound() = default;
+	};
+
+	class offset_point_to_window : public pass_value<POINT &>{
+	public:
+		using base_type = pass_value<POINT &>;
+		using base_type::base_type;
+
+		virtual ~offset_point_to_window() = default;
+	};
+
+	class offset_point_from_window : public pass_value<POINT &>{
+	public:
+		using base_type = pass_value<POINT &>;
+		using base_type::base_type;
+
+		virtual ~offset_point_from_window() = default;
 	};
 
 	class set_text : public object{

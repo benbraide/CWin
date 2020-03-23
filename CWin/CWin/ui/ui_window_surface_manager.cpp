@@ -7,7 +7,6 @@
 #include "../subhook/subhook.c"
 
 #include "ui_window_surface.h"
-#include "ui_non_window_surface.h"
 #include "ui_window_surface_manager.h"
 
 cwin::ui::window_surface_manager::window_surface_manager(thread::object &thread)
@@ -387,26 +386,9 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 	}
 
 	target.offset_point_to_window_(offset);
-	target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){
-		if (dynamic_cast<window_surface *>(&child) != nullptr || !child.is_created() || !child.is_visible_())
-			return true;
-
-		auto &child_position = child.get_position();
-		POINT window_position{ (child_position.x + offset.x), (child_position.y + offset.y) };
-
-		paint_(child, message, 0, 0, window_position);
-		auto child_bound = child.get_bound();
-
-		if (dynamic_cast<visible_surface *>(&child) != nullptr){
-			utility::rgn::move(child_bound, window_position);
-			ExtSelectClipRgn(paint_info_.hdc, child_bound, RGN_DIFF);//Exclude clip
-		}
-
-		return true;
-	});
-
 	if (auto window_target = dynamic_cast<window_surface *>(&target); window_target != nullptr){
 		SaveDC(paint_info_.hdc);
+		paint_children_(target, offset);
 		target.get_events().trigger<events::paint>(MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
 		RestoreDC(paint_info_.hdc, -1);
 	}
@@ -443,7 +425,9 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 			return;
 		}
 
+		paint_children_(target, offset);
 		GetClipBox(paint_info_.hdc, &paint_info.rcPaint);
+
 		SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
 		OffsetRect(&paint_info.rcPaint, -offset.x, -offset.y);
 
@@ -451,11 +435,32 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		RestoreDC(paint_info_.hdc, -1);
 
 		SaveDC(paint_info_.hdc);
+		ExtSelectClipRgn(paint_info_.hdc, client_bound, RGN_AND);
 		SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
 
 		target.get_events().trigger<events::paint>(paint_info);
 		RestoreDC(paint_info_.hdc, -1);
 	}
+}
+
+void cwin::ui::window_surface_manager::paint_children_(visible_surface &target, POINT offset){
+	target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){
+		if (dynamic_cast<window_surface *>(&child) != nullptr || !child.is_created() || !child.is_visible_())
+			return true;
+
+		auto &child_position = child.get_position();
+		POINT window_position{ (child_position.x + offset.x), (child_position.y + offset.y) };
+
+		paint_(child, WM_PAINT, 0, 0, window_position);
+		auto child_bound = child.get_bound();
+
+		if (dynamic_cast<visible_surface *>(&child) != nullptr){
+			utility::rgn::move(child_bound, window_position);
+			ExtSelectClipRgn(paint_info_.hdc, child_bound, RGN_DIFF);//Exclude clip
+		}
+
+		return true;
+	});
 }
 
 void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &target, POINT offset){
@@ -466,7 +471,7 @@ void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &targ
 	offset.x += position.x;
 	offset.y += position.y;
 
-	if (target.events_.trigger_then_report_result<events::interrupt::is_opaque_background>() == FALSE){
+	if (!target.events_.trigger_then_report_result_as<events::interrupt::is_opaque_background, bool>()){
 		target.offset_point_to_window_(offset);
 		target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){//Exclude children
 			exclude_from_paint_(child, offset);

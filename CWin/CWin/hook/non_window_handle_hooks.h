@@ -15,42 +15,66 @@ namespace cwin::hook::non_window{
 
 		virtual ~handle();
 
+		virtual HRGN get_value() const;
+
 	protected:
-		virtual void destroy_value_(HRGN value) const;
+		virtual UINT hit_test_(const POINT &position) const;
 
-		virtual HRGN resize_value_(HRGN value, const SIZE &size) const = 0;
+		virtual SIZE get_size_() const = 0;
 
-		std::function<void()> update_callback_;
+		virtual void do_update_(const SIZE &size) = 0;
+
+		virtual void update_();
+
+		virtual bool should_destroy_before_update_() const;
+
+		virtual void redraw_();
+
+		HRGN value_ = nullptr;
 	};
 
-	class client_handle : public object{
+	class client_handle : public handle{
 	public:
 		explicit client_handle(ui::visible_surface &parent);
 
 		virtual ~client_handle();
 
-		virtual bool is_big_border() const;
-
-		virtual void is_big_border(const std::function<void(bool)> &callback) const;
-
 	protected:
-		virtual void destroy_value_(HRGN value) const;
-
-		virtual HRGN resize_value_(HRGN value, const SIZE &size) const = 0;
-
-		virtual bool is_big_border_() const;
-
-		std::function<void()> update_callback_;
+		virtual SIZE get_size_() const override;
 	};
 
-	class big_border_client_handle : public client_handle{
+	class non_client_handle : public handle{
 	public:
-		using client_handle::client_handle;
+		explicit non_client_handle(ui::visible_surface &parent);
 
-		virtual ~big_border_client_handle();
+		non_client_handle(ui::visible_surface &parent, const std::wstring &caption);
+
+		virtual ~non_client_handle();
+
+		virtual void set_caption(const std::wstring &value);
+
+		virtual const std::wstring &get_caption() const;
+
+		virtual void get_caption(const std::function<void(const std::wstring &)> &callback) const;
 
 	protected:
-		virtual bool is_big_border_() const override;
+		virtual UINT hit_test_(const POINT &position) const;
+
+		virtual SIZE get_size_() const override;
+
+		virtual const RECT &get_client_margin_() const;
+
+		std::wstring caption_;
+	};
+
+	class big_border_non_client_handle : public non_client_handle{
+	public:
+		using non_client_handle::non_client_handle;
+
+		virtual ~big_border_non_client_handle();
+
+	protected:
+		virtual const RECT &get_client_margin_() const override;
 	};
 
 	template <class handle_type>
@@ -75,7 +99,7 @@ namespace cwin::hook::non_window{
 		virtual ~triangle_handle() = default;
 
 	protected:
-		virtual HRGN resize_value_(HRGN value, const SIZE &size) const override{
+		virtual void do_update_(const SIZE &size) override{
 			POINT points[3];
 			switch (pivot_){
 			case pivot_type::top_right:
@@ -100,7 +124,7 @@ namespace cwin::hook::non_window{
 				break;
 			}
 
-			return CreatePolygonRgn(points, 3, WINDING);
+			handle_type::value_ = CreatePolygonRgn(points, 3, WINDING);
 		}
 
 		pivot_type pivot_;
@@ -115,12 +139,15 @@ namespace cwin::hook::non_window{
 		virtual ~rectangle_handle() = default;
 
 	protected:
-		virtual HRGN resize_value_(HRGN value, const SIZE &size) const override{
-			if (value == nullptr)
-				return CreateRectRgn(0, 0, size.cx, size.cy);
+		virtual void do_update_(const SIZE &size) override{
+			if (handle_type::value_ == nullptr)
+				handle_type::value_ = CreateRectRgn(0, 0, size.cx, size.cy);
+			else
+				utility::rgn::resize(handle_type::value_, size);
+		}
 
-			utility::rgn::resize(value, size);
-			return value;
+		virtual bool should_destroy_before_update_() const override{
+			return false;
 		}
 	};
 
@@ -154,14 +181,14 @@ namespace cwin::hook::non_window{
 		}
 
 	protected:
-		virtual HRGN resize_value_(HRGN value, const SIZE &size) const override{
-			return CreateRoundRectRgn(0, 0, size.cx, size.cy, border_curve_size_.cx, border_curve_size_.cy);
+		virtual void do_update_(const SIZE &size) override{
+			handle_type::value_ = CreateRoundRectRgn(0, 0, size.cx, size.cy, border_curve_size_.cx, border_curve_size_.cy);
 		}
 
 		virtual void set_border_curve_size_(const SIZE &value){
 			border_curve_size_ = value;
-			if (handle_type::update_callback_ != nullptr)
-				handle_type::update_callback_();
+			handle_type::update_();
+			handle_type::redraw_();
 		}
 
 		SIZE border_curve_size_{};
@@ -175,30 +202,25 @@ namespace cwin::hook::non_window{
 		virtual ~ellipsis_handle() = default;
 
 	protected:
-		virtual HRGN resize_value_(HRGN value, const SIZE &size) const override{
-			return CreateEllipticRgn(0, 0, size.cx, size.cy);
+		virtual void do_update_(const SIZE &size) override{
+			handle_type::value_ = CreateEllipticRgn(0, 0, size.cx, size.cy);
 		}
 	};
 }
 
 namespace cwin::ui{
 	template <>
-	struct parent_type<hook::non_window::triangle_handle<hook::non_window::handle>>{
-		using value = visible_surface;
-	};
-
-	template <>
 	struct parent_type<hook::non_window::triangle_handle<hook::non_window::client_handle>>{
 		using value = visible_surface;
 	};
 
 	template <>
-	struct parent_type<hook::non_window::triangle_handle<hook::non_window::big_border_client_handle>>{
+	struct parent_type<hook::non_window::triangle_handle<hook::non_window::non_client_handle>>{
 		using value = visible_surface;
 	};
 
 	template <>
-	struct parent_type<hook::non_window::rectangle_handle<hook::non_window::handle>>{
+	struct parent_type<hook::non_window::triangle_handle<hook::non_window::big_border_non_client_handle>>{
 		using value = visible_surface;
 	};
 
@@ -208,12 +230,12 @@ namespace cwin::ui{
 	};
 
 	template <>
-	struct parent_type<hook::non_window::rectangle_handle<hook::non_window::big_border_client_handle>>{
+	struct parent_type<hook::non_window::rectangle_handle<hook::non_window::non_client_handle>>{
 		using value = visible_surface;
 	};
 
 	template <>
-	struct parent_type<hook::non_window::round_rectangle_handle<hook::non_window::handle>>{
+	struct parent_type<hook::non_window::rectangle_handle<hook::non_window::big_border_non_client_handle>>{
 		using value = visible_surface;
 	};
 
@@ -223,12 +245,12 @@ namespace cwin::ui{
 	};
 
 	template <>
-	struct parent_type<hook::non_window::round_rectangle_handle<hook::non_window::big_border_client_handle>>{
+	struct parent_type<hook::non_window::round_rectangle_handle<hook::non_window::non_client_handle>>{
 		using value = visible_surface;
 	};
 
 	template <>
-	struct parent_type<hook::non_window::ellipsis_handle<hook::non_window::handle>>{
+	struct parent_type<hook::non_window::round_rectangle_handle<hook::non_window::big_border_non_client_handle>>{
 		using value = visible_surface;
 	};
 
@@ -238,7 +260,12 @@ namespace cwin::ui{
 	};
 
 	template <>
-	struct parent_type<hook::non_window::ellipsis_handle<hook::non_window::big_border_client_handle>>{
+	struct parent_type<hook::non_window::ellipsis_handle<hook::non_window::non_client_handle>>{
+		using value = visible_surface;
+	};
+
+	template <>
+	struct parent_type<hook::non_window::ellipsis_handle<hook::non_window::big_border_non_client_handle>>{
 		using value = visible_surface;
 	};
 }

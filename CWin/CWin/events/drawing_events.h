@@ -42,9 +42,6 @@ namespace cwin::events{
 		using draw::draw;
 
 		virtual ~non_client_paint();
-
-	protected:
-		virtual void do_default_() override;
 	};
 
 	class get_caption : public retrieve_value<std::wstring>{

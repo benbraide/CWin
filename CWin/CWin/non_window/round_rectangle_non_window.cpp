@@ -10,7 +10,7 @@ cwin::non_window::round_rectangle::round_rectangle(tree &parent, std::size_t ind
 	: round_rectangle(parent, index, SIZE{}){}
 
 cwin::non_window::round_rectangle::round_rectangle(const SIZE &border_curve_size){
-	insert_object<hook::non_window::round_rectangle_handle<hook::non_window::handle>>(nullptr, border_curve_size);
+	insert_object<hook::non_window::round_rectangle_handle<hook::non_window::client_handle>>(nullptr, border_curve_size);
 }
 
 cwin::non_window::round_rectangle::round_rectangle(tree &parent, const SIZE &border_curve_size)
@@ -18,7 +18,7 @@ cwin::non_window::round_rectangle::round_rectangle(tree &parent, const SIZE &bor
 
 cwin::non_window::round_rectangle::round_rectangle(tree &parent, std::size_t index, const SIZE &border_curve_size)
 	: object(parent, index){
-	insert_object<hook::non_window::round_rectangle_handle<hook::non_window::handle>>(nullptr, border_curve_size);
+	insert_object<hook::non_window::round_rectangle_handle<hook::non_window::client_handle>>(nullptr, border_curve_size);
 }
 
 cwin::non_window::round_rectangle::~round_rectangle() = default;

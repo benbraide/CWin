@@ -12,7 +12,7 @@ cwin::control::tab::tab(tree &parent)
 
 cwin::control::tab::tab(tree &parent, std::size_t index)
 	: object(parent, index, WC_TABCONTROLW, ICC_TAB_CLASSES){
-	insert_object<hook::placement>(nullptr, hook::placement::alignment_type::top_left);
+	set_position_(POINT{});
 	insert_object<hook::fill>(nullptr);
 
 	bind_default_([=](events::interrupt::notify &e) -> LRESULT{

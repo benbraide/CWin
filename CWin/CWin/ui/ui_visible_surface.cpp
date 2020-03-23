@@ -61,6 +61,24 @@ void cwin::ui::visible_surface::is_occluded(const std::function<void(bool)> &cal
 	});
 }
 
+void cwin::ui::visible_surface::size_update_(const SIZE &old_value, const SIZE &current_value){
+	auto should_redraw = (is_created_() && !is_occluded_());
+	if (should_redraw)
+		redraw_(nullptr);
+
+	surface::size_update_(old_value, current_value);
+	if (should_redraw)
+		redraw_(nullptr);
+}
+
+void cwin::ui::visible_surface::position_update_(const POINT &old_value, const POINT &current_value){
+	surface::position_update_(old_value, current_value);
+	if (is_created_() && !is_occluded_()){
+		redraw_at_(nullptr, old_value);
+		redraw_at_(nullptr, current_value);
+	}
+}
+
 void cwin::ui::visible_surface::redraw_(HRGN region){
 	redraw_at_(region, get_position_());
 }
