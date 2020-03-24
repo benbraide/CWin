@@ -209,7 +209,7 @@ namespace cwin::events{
 			return true;
 		}
 
-		value_type value_;
+		value_type value_{};
 	};
 
 	template <class value_type>

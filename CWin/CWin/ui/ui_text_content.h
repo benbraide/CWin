@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../hook/background_hooks.h"
 #include "../events/general_events.h"
 #include "../events/drawing_events.h"
 #include "../events/interrupt_events.h"
@@ -248,9 +249,14 @@ namespace cwin::ui{
 		template <typename... args_types>
 		text_label(args_types &&... args)
 			: m_base_type(std::forward<args_types>(args)...){
+			m_base_type::template insert_object<hook::transparent_background>();
+
 			m_base_type::bind_default_([=](events::paint &e){
 				paint_(e);
 			});
+
+			m_base_type::padding_.cx = 0;
+			m_base_type::padding_.cy = 0;
 		}
 
 		virtual ~text_label() = default;

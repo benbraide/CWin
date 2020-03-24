@@ -72,9 +72,9 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 			});
 		});
 
-		item.insert_object([](cwin::non_window::rectangle &item){
+		item.insert_object([](cwin::non_window::push_button &item){
 			item.set_position(POINT{ 10, 120 });
-			//item.insert_object<hook::mimic::push_button>(nullptr, L"NW Button");
+			item.set_text(L"NW Button");
 		});
 	});
 }

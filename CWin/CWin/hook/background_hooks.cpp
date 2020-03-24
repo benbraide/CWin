@@ -24,6 +24,23 @@ cwin::hook::background::background(ui::visible_surface &parent){
 
 cwin::hook::background::~background() = default;
 
+cwin::hook::transparent_background::~transparent_background() = default;
+
+void cwin::hook::transparent_background::draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const{
+	auto visible_target = dynamic_cast<ui::visible_surface *>(parent_);
+	if (visible_target == nullptr)
+		return;
+
+	visible_target->traverse_ancestors([&](ui::visible_surface &ancestor){
+		if (auto bg = ancestor.get_first_child<background>(); bg != nullptr){
+			bg->draw_(render, area);
+			return false;
+		}
+
+		return true;
+	});
+}
+
 cwin::hook::color_background::color_background(ui::visible_surface &parent)
 	: color_background(parent, D2D1::ColorF(D2D1::ColorF::White)){}
 
@@ -157,40 +174,3 @@ void cwin::hook::color_background::color_update_(const D2D1_COLOR_F &old_value, 
 const D2D1_COLOR_F &cwin::hook::color_background::get_color_() const{
 	return current_color_;
 }
-
-/*
-cwin::hook::caption::caption(ui::non_window_surface &target)
-	: caption(target, L""){}
-
-cwin::hook::caption::caption(ui::non_window_surface &target, const std::wstring &value)
-	: object(target), value_(value){
-	target.get_events().bind([=](events::get_caption &e){
-		e.set_value(value_);
-	}, get_talk_id());
-}
-
-cwin::hook::caption::~caption() = default;
-
-void cwin::hook::caption::set_value(const std::wstring &value){
-	post_or_execute_task([=]{
-		set_value_(value);
-	});
-}
-
-const std::wstring &cwin::hook::caption::get_value() const{
-	return *execute_task([&]{
-		return &value_;
-	});
-}
-
-void cwin::hook::caption::get_value(const std::function<void(const std::wstring &)> &callback) const{
-	post_or_execute_task([=]{
-		callback(value_);
-	});
-}
-
-void cwin::hook::caption::set_value_(const std::wstring &value){
-	value_ = value;
-	if (auto non_window_parent = dynamic_cast<ui::non_window_surface *>(parent_); non_window_parent != nullptr)
-		non_window_parent->redraw();
-}*/

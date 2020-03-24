@@ -5,6 +5,7 @@
 #include "../non_window/rectangle_non_window.h"
 #include "../non_window/round_rectangle_non_window.h"
 #include "../non_window/ellipsis_non_window.h"
+#include "../non_window/non_window_push_button.h"
 
 #include "../events/drawing_events.h"
 #include "../events/interrupt_events.h"
@@ -12,7 +13,6 @@
 #include "../hook/io_hook.h"
 #include "../hook/background_hooks.h"
 #include "../hook/responsive_hooks.h"
-#include "../hook/mimic_hooks.h"
 
 #include "../control/tab_control.h"
 
