@@ -260,8 +260,6 @@ namespace cwin::ui{
 		template <typename... args_types>
 		text_label(args_types &&... args)
 			: m_base_type(std::forward<args_types>(args)...){
-			m_base_type::template insert_object<hook::transparent_background>();
-
 			m_base_type::bind_default_([=](events::paint &e){
 				paint_(e);
 			});

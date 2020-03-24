@@ -360,37 +360,27 @@ void cwin::ui::window_surface_manager::after_paint_(window_surface &target, UINT
 	paint_info_.hdc = nullptr;
 }
 
+void cwin::ui::window_surface_manager::erase_background_(visible_surface &target, WPARAM wparam, LPARAM lparam, POINT offset, const PAINTSTRUCT &paint_info){
+	utility::save_dc save_dc(paint_info_.hdc);
+	exclude_children_from_paint_(target, offset);
+
+	auto window_target = dynamic_cast<window_surface *>(&target);
+	target.get_events().trigger<events::erase_background>(
+		MSG{ ((window_target == nullptr) ? nullptr : window_target->handle_), WM_ERASEBKGND, wparam, lparam },
+		((window_target == nullptr) ? nullptr : thread_.get_class_entry(window_target->get_class_name_())),
+		paint_info
+	);
+}
+
 void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT message, WPARAM wparam, LPARAM lparam, POINT offset){
 	auto render = thread_.get_device_render_target();
-	if (message == WM_ERASEBKGND){//Erase background
-		auto window_target = dynamic_cast<window_surface *>(&target);
-		if (window_target == nullptr)
-			return;
+	if (message == WM_ERASEBKGND)//Erase background
+		return erase_background_(target, wparam, lparam, offset, paint_info_);
 
-		SaveDC(paint_info_.hdc);
-		target.offset_point_to_window_(offset);
-
-		target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){//Exclude children
-			exclude_from_paint_(child, offset);
-			return true;
-		});
-
-		target.get_events().trigger<events::erase_background>(
-			MSG{ window_target->handle_, message, wparam, lparam },
-			thread_.get_class_entry(window_target->get_class_name_()),
-			paint_info_
-		);
-
-		RestoreDC(paint_info_.hdc, -1);
-		return;
-	}
-
-	target.offset_point_to_window_(offset);
 	if (auto window_target = dynamic_cast<window_surface *>(&target); window_target != nullptr){
-		SaveDC(paint_info_.hdc);
+		utility::save_dc save_dc(paint_info_.hdc);
 		paint_children_(target, offset);
 		target.get_events().trigger<events::paint>(MSG{ window_target->handle_, message, wparam, lparam }, thread_.get_class_entry(window_target->get_class_name_()), paint_info_);
-		RestoreDC(paint_info_.hdc, -1);
 	}
 	else if (auto visible_target = dynamic_cast<visible_surface *>(&target); visible_target != nullptr && visible_target->is_created_()){
 		auto bound = visible_target->get_bound_();
@@ -398,52 +388,48 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 
 		auto paint_info = paint_info_;
 		if (bound != client_bound){//Paint non-client area
-			auto non_client_offset = offset;
-			target.offset_point_from_window_(non_client_offset);
+			utility::save_dc save_dc(paint_info_.hdc);
+			utility::rgn::move(bound, offset);
 
-			utility::rgn::move(bound, non_client_offset);
-
-			SaveDC(paint_info_.hdc);
-			if (ExtSelectClipRgn(paint_info_.hdc, bound, RGN_AND) == NULLREGION){//Target is outside update region
-				RestoreDC(paint_info_.hdc, -1);
+			if (ExtSelectClipRgn(paint_info_.hdc, bound, RGN_AND) == NULLREGION)//Target is outside update region
 				return;
-			}
 
 			GetClipBox(paint_info_.hdc, &paint_info.rcPaint);
-			SetViewportOrgEx(paint_info_.hdc, non_client_offset.x, non_client_offset.y, nullptr);
-			OffsetRect(&paint_info.rcPaint, -non_client_offset.x, -non_client_offset.y);
+			SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
 
+			OffsetRect(&paint_info.rcPaint, -offset.x, -offset.y);
 			target.get_events().trigger<events::non_client_paint>(paint_info);
-			RestoreDC(paint_info_.hdc, -1);
 		}
 
-		utility::rgn::move(client_bound, offset);
-		SaveDC(paint_info_.hdc);
+		{//Position client bound
+			auto client_offset = offset;
+			target.offset_point_to_window_(client_offset);
+			utility::rgn::move(client_bound, client_offset);
+		}
 
-		if (ExtSelectClipRgn(paint_info_.hdc, client_bound, RGN_AND) == NULLREGION){//Client is outside update region
-			RestoreDC(paint_info_.hdc, -1);
+		utility::save_dc save_dc(paint_info_.hdc);
+		if (ExtSelectClipRgn(paint_info_.hdc, client_bound, RGN_AND) == NULLREGION)//Client is outside update region
 			return;
-		}
 
-		paint_children_(target, offset);
 		GetClipBox(paint_info_.hdc, &paint_info.rcPaint);
-
-		SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
 		OffsetRect(&paint_info.rcPaint, -offset.x, -offset.y);
 
-		target.get_events().trigger<events::erase_background>(paint_info);
-		RestoreDC(paint_info_.hdc, -1);
-
-		SaveDC(paint_info_.hdc);
-		ExtSelectClipRgn(paint_info_.hdc, client_bound, RGN_AND);
+		{//Erase background
+			utility::save_dc save_dc(paint_info_.hdc);
+			SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
+			erase_background_(target, wparam, lparam, offset, paint_info);
+		}
+		
+		paint_children_(target, offset);
 		SetViewportOrgEx(paint_info_.hdc, offset.x, offset.y, nullptr);
 
+		exclude_children_from_paint_(target, offset);
 		target.get_events().trigger<events::paint>(paint_info);
-		RestoreDC(paint_info_.hdc, -1);
 	}
 }
 
 void cwin::ui::window_surface_manager::paint_children_(visible_surface &target, POINT offset){
+	target.offset_point_to_window_(offset);
 	target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){
 		if (dynamic_cast<window_surface *>(&child) != nullptr || !child.is_created() || !child.is_visible_())
 			return true;
@@ -463,6 +449,14 @@ void cwin::ui::window_surface_manager::paint_children_(visible_surface &target, 
 	});
 }
 
+void cwin::ui::window_surface_manager::exclude_children_from_paint_(visible_surface &target, POINT offset){
+	target.offset_point_to_window_(offset);
+	target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){//Exclude children
+		exclude_from_paint_(child, offset);
+		return true;
+	});
+}
+
 void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &target, POINT offset){
 	if (dynamic_cast<window_surface *>(&target) != nullptr || !target.is_created() || !target.is_visible_())
 		return;
@@ -471,18 +465,13 @@ void cwin::ui::window_surface_manager::exclude_from_paint_(visible_surface &targ
 	offset.x += position.x;
 	offset.y += position.y;
 
-	if (!target.events_.trigger_then_report_result_as<events::interrupt::is_opaque_background, bool>()){
-		target.offset_point_to_window_(offset);
-		target.reverse_traverse_children_<visible_surface>([&](visible_surface &child){//Exclude children
-			exclude_from_paint_(child, offset);
-			return true;
-		});
-	}
-	else{//Exclude
+	if (target.events_.trigger_then_report_result_as<events::interrupt::is_opaque_background, bool>()){
 		auto bound = target.get_bound();
 		utility::rgn::move(bound, offset);
-		ExtSelectClipRgn(paint_info_.hdc, bound, RGN_DIFF);//Exclude clip
+		ExtSelectClipRgn(paint_info_.hdc, bound, RGN_DIFF);
 	}
+	else//Exclude offspring
+		exclude_children_from_paint_(target, offset);
 }
 
 LRESULT cwin::ui::window_surface_manager::command_(window_surface &target, WPARAM wparam, LPARAM lparam){

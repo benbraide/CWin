@@ -7,6 +7,7 @@
 #include "../subhook/subhook.h"
 
 #include "../events/io_events.h"
+#include "../utility/save_dc.h"
 
 namespace cwin::thread{
 	class object;
@@ -69,9 +70,13 @@ namespace cwin::ui{
 
 		void after_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);
 
+		void erase_background_(visible_surface &target, WPARAM wparam, LPARAM lparam, POINT offset, const PAINTSTRUCT &paint_info);
+
 		void paint_(visible_surface &target, UINT message, WPARAM wparam, LPARAM lparam, POINT offset);
 
 		void paint_children_(visible_surface &target, POINT offset);
+
+		void exclude_children_from_paint_(visible_surface &target, POINT offset);
 
 		void exclude_from_paint_(visible_surface &target, POINT offset);
 

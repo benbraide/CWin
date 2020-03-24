@@ -160,6 +160,14 @@ namespace cwin::events::interrupt{
 		virtual ~get_client_bound() = default;
 	};
 
+	class apply_margin : public pass_value<POINT &>{
+	public:
+		using base_type = pass_value<POINT &>;
+		using base_type::base_type;
+
+		virtual ~apply_margin() = default;
+	};
+
 	class offset_point_to_window : public pass_value<POINT &>{
 	public:
 		using base_type = pass_value<POINT &>;

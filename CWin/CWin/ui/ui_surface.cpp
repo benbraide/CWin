@@ -484,6 +484,10 @@ void cwin::ui::surface::compute_absolute_to_relative_(RECT &value) const{
 	OffsetRect(&value, -(position.x + offset.x), -(position.y + offset.y));
 }
 
+void cwin::ui::surface::apply_margin_(POINT &value) const{
+	events_.trigger<events::interrupt::apply_margin>(value);
+}
+
 void cwin::ui::surface::offset_point_to_window_(POINT &value) const{
 	events_.trigger<events::interrupt::offset_point_to_window>(value);
 }

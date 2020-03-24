@@ -142,6 +142,8 @@ namespace cwin::ui{
 
 		virtual void compute_absolute_to_relative_(RECT &value) const;
 
+		virtual void apply_margin_(POINT &value) const;
+
 		virtual void offset_point_to_window_(POINT &value) const;
 
 		virtual void offset_point_from_window_(POINT &value) const;

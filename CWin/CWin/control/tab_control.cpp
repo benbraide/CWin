@@ -97,6 +97,11 @@ SIZE cwin::control::tab::compute_client_size_() const{
 	return SIZE{ (value.cx - (client_margin_.left + client_margin_.right)), (value.cy - (client_margin_.top + client_margin_.bottom)) };
 }
 
+void cwin::control::tab::apply_margin_(POINT &value) const{
+	value.x += client_margin_.left;
+	value.y += client_margin_.top;
+}
+
 void cwin::control::tab::offset_point_to_window_(POINT &value) const{
 	value.x += client_margin_.left;
 	value.y += client_margin_.top;
