@@ -182,7 +182,7 @@ namespace cwin::hook::non_window{
 
 	protected:
 		virtual void do_update_(const SIZE &size) override{
-			handle_type::value_ = CreateRoundRectRgn(0, 0, size.cx, size.cy, border_curve_size_.cx, border_curve_size_.cy);
+			handle_type::value_ = CreateRoundRectRgn(0, 0, (size.cx + 1), (size.cy + 1), border_curve_size_.cx, border_curve_size_.cy);
 		}
 
 		virtual void set_border_curve_size_(const SIZE &value){
@@ -203,7 +203,7 @@ namespace cwin::hook::non_window{
 
 	protected:
 		virtual void do_update_(const SIZE &size) override{
-			handle_type::value_ = CreateEllipticRgn(0, 0, size.cx, size.cy);
+			handle_type::value_ = CreateEllipticRgn(0, 0, (size.cx + 1), (size.cy + 1));
 		}
 	};
 }

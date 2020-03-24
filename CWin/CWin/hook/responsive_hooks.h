@@ -234,11 +234,11 @@ namespace cwin::hook{
 		using next_sibling = ui::next_sibling<ui::surface>;
 		using sibling_type = relative_placement::sibling_type;
 
-		mirror_size(ui::surface &parent, ui::surface &source, bool is_two_way = true);
+		mirror_size(ui::surface &parent, ui::surface &source);
 
-		mirror_size(ui::surface &parent, sibling_type source, bool is_two_way = true);
+		mirror_size(ui::surface &parent, sibling_type source);
 
-		mirror_size(ui::surface &parent, const sibling &source, bool is_two_way = true);
+		mirror_size(ui::surface &parent, const sibling &source);
 
 		virtual ~mirror_size();
 
@@ -247,11 +247,7 @@ namespace cwin::hook{
 		virtual void get_source(const std::function<void(ui::surface &)> &callback) const;
 
 	protected:
-		virtual void update_();
-
 		ui::surface &source_;
-		bool is_two_way_ = true;
-		bool is_updating_ = false;
 	};
 
 	class contain : public children_dimension{

@@ -158,8 +158,8 @@ SIZE cwin::control::text_input::compute_additional_size_(const SIZE &computed_si
 	return SIZE{};
 }
 
-SIZE cwin::control::text_input::get_computed_size_() const{
-	auto value = m_base_type::get_computed_size_();
+SIZE cwin::control::text_input::get_computed_size_(bool check_limits) const{
+	auto value = m_base_type::get_computed_size_(check_limits);
 	return SIZE{ (value.cx + 7), value.cy };
 }
 

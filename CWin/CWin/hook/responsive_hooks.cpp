@@ -629,8 +629,8 @@ void cwin::hook::fill::update_(){
 	});
 }
 
-cwin::hook::mirror_size::mirror_size(ui::surface &parent, ui::surface &source, bool is_two_way)
-	: source_(source), is_two_way_(is_two_way){
+cwin::hook::mirror_size::mirror_size(ui::surface &parent, ui::surface &source)
+	: source_(source){
 	parent.get_first_child([&](mirror_size &child){
 		parent.remove_child(child);
 	});
@@ -640,22 +640,41 @@ cwin::hook::mirror_size::mirror_size(ui::surface &parent, ui::surface &source, b
 	else//Error
 		throw thread::exception::context_mismatch();
 
-	parent.get_events().bind([this](events::after_size_update &e){
-		update_();
-	}, get_talk_id());
+	bind_(parent, [this](events::after_size_update &e){
+		source_.get_events().trigger<events::interrupt::update_size>();
+	});
 
-	source.get_events().bind([this](events::after_size_update &e){
-		update_();
-	}, get_talk_id());
+	bind_(parent, [this](events::get_min_size &e){
+		e.prevent_default();
+		source_.get_events().trigger_then<events::interrupt::compute_size>([&](events::interrupt::compute_size &compute_size_e){
+			e.set_value(compute_size_e.get_value());
+		});
+	});
 
-	update_();
+	bind_(source, [this](events::after_size_update &e){
+		if (parent_ != nullptr)
+			parent_->get_events().trigger<events::interrupt::update_size>();
+	});
+	
+	bind_(source, [this](events::get_min_size &e){
+		if (parent_ == nullptr)
+			return;
+
+		e.prevent_default();
+		parent_->get_events().trigger_then<events::interrupt::compute_size>([&](events::interrupt::compute_size &compute_size_e){
+			e.set_value(compute_size_e.get_value());
+		});
+	});
+
+	parent.get_events().trigger<events::interrupt::compute_size>();
+	source.get_events().trigger<events::interrupt::compute_size>();
 }
 
-cwin::hook::mirror_size::mirror_size(ui::surface &parent, sibling_type source, bool is_two_way)
-	: mirror_size(parent, relative_placement::get_sibling(parent, source), is_two_way){}
+cwin::hook::mirror_size::mirror_size(ui::surface &parent, sibling_type source)
+	: mirror_size(parent, relative_placement::get_sibling(parent, source)){}
 
-cwin::hook::mirror_size::mirror_size(ui::surface &parent, const sibling &source, bool is_two_way)
-	: mirror_size(parent, source.get(parent), is_two_way){}
+cwin::hook::mirror_size::mirror_size(ui::surface &parent, const sibling &source)
+	: mirror_size(parent, source.get(parent)){}
 
 cwin::hook::mirror_size::~mirror_size() = default;
 
@@ -669,46 +688,6 @@ void cwin::hook::mirror_size::get_source(const std::function<void(ui::surface &)
 	post_or_execute_task([=]{
 		callback(source_);
 	});
-}
-
-void cwin::hook::mirror_size::update_(){
-	if (is_updating_)
-		return;
-
-	auto surface_target = dynamic_cast<ui::surface *>(parent_);
-	if (surface_target == nullptr)
-		return;
-
-	try{
-		auto target_size = surface_target->get_true_size();
-		auto source_size = source_.get_true_size();
-
-		auto new_target_size = target_size;
-		auto new_source_size = source_size;
-
-		if (target_size.cx < source_size.cx)
-			new_target_size.cx = source_size.cx;
-		else//Update source
-			new_source_size.cx = target_size.cx;
-
-		if (target_size.cy < source_size.cy)
-			new_target_size.cy = source_size.cy;
-		else//Update source
-			new_source_size.cy = target_size.cy;
-
-		is_updating_ = true;
-		if (new_target_size.cx != target_size.cx || new_target_size.cy != target_size.cy)
-			surface_target->set_size(new_target_size);
-
-		if (is_two_way_ && (new_source_size.cx != source_size.cx || new_source_size.cy != source_size.cy))
-			source_.set_size(new_source_size);
-
-		is_updating_ = false;
-	}
-	catch (...){
-		is_updating_ = false;
-		throw;
-	}
 }
 
 cwin::hook::contain::contain(ui::surface &parent)

@@ -13,5 +13,7 @@ namespace cwin::non_window{
 
 	protected:
 		push_button();
+
+		virtual bool is_default_event_(const events::object &e) const override;
 	};
 }

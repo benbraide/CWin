@@ -96,7 +96,7 @@ namespace cwin::control{
 
 		virtual const std::wstring &get_text_() const override;
 
-		virtual SIZE get_computed_size_() const override;
+		virtual SIZE get_computed_size_(bool check_limits) const override;
 
 		virtual void set_limit_(long value);
 

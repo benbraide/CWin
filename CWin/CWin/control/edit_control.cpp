@@ -397,7 +397,7 @@ const std::wstring &cwin::control::edit::get_text_() const{
 	return text_;
 }
 
-SIZE cwin::control::edit::get_computed_size_() const{
+SIZE cwin::control::edit::get_computed_size_(bool check_limits) const{
 	return get_size_();
 }
 

@@ -35,10 +35,6 @@ namespace cwin::ui{
 
 		virtual void get_size(const std::function<void(const SIZE &)> &callback) const;
 
-		virtual SIZE get_true_size() const;
-
-		virtual void get_true_size(const std::function<void(const SIZE &)> &callback) const;
-
 		virtual void set_position(const POINT &value);
 
 		virtual void set_x_position(int value);
@@ -115,8 +111,6 @@ namespace cwin::ui{
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value);
 
 		virtual const SIZE &get_size_() const;
-
-		virtual SIZE get_true_size_() const;
 
 		virtual void set_position_(const POINT &value);
 

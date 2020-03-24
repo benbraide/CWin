@@ -72,3 +72,7 @@ cwin::non_window::push_button::push_button(tree &parent, std::size_t index)
 }
 
 cwin::non_window::push_button::~push_button() = default;
+
+bool cwin::non_window::push_button::is_default_event_(const events::object &e) const{
+	return (dynamic_cast<const events::io::click *>(&e) != nullptr);
+}

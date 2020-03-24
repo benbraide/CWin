@@ -129,6 +129,21 @@ namespace cwin::events::interrupt{
 		virtual ~get_client_size() = default;
 	};
 
+	class compute_size : public retrieve_value<SIZE>{
+	public:
+		using base_type = retrieve_value<SIZE>;
+		using base_type::base_type;
+
+		virtual ~compute_size() = default;
+	};
+
+	class update_size : public object{
+	public:
+		using object::object;
+
+		virtual ~update_size() = default;
+	};
+
 	class get_bound : public retrieve_scalar_value<HRGN>{
 	public:
 		using base_type = retrieve_scalar_value<HRGN>;

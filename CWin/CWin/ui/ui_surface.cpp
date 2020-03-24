@@ -14,6 +14,10 @@ cwin::ui::surface::surface()
 		e.set_value(get_size_());
 	});
 	
+	bind_default_([=](events::interrupt::compute_size &e){
+		e.set_value(get_size_());
+	});
+	
 	bind_default_([=](events::interrupt::get_bound &){
 		auto handle_bound = thread_.get_handle_bound();
 		auto &size = get_size_();
@@ -95,18 +99,6 @@ const SIZE &cwin::ui::surface::get_size() const{
 void cwin::ui::surface::get_size(const std::function<void(const SIZE &)> &callback) const{
 	post_or_execute_task([=]{
 		callback(get_size_());
-	});
-}
-
-SIZE cwin::ui::surface::get_true_size() const{
-	return execute_task([&]{
-		return get_true_size_();
-	});
-}
-
-void cwin::ui::surface::get_true_size(const std::function<void(const SIZE &)> &callback) const{
-	post_or_execute_task([=]{
-		callback(get_true_size_());
 	});
 }
 
@@ -353,10 +345,6 @@ void cwin::ui::surface::size_update_(const SIZE &old_value, const SIZE &current_
 
 const SIZE &cwin::ui::surface::get_size_() const{
 	return current_size_;
-}
-
-SIZE cwin::ui::surface::get_true_size_() const{
-	return get_size_();
 }
 
 void cwin::ui::surface::set_position_(const POINT &value){

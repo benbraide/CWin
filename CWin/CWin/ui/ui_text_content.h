@@ -36,6 +36,14 @@ namespace cwin::ui{
 			base_type::bind_default_([=](events::interrupt::set_text &e){
 				set_text_(e.get_value());
 			});
+
+			base_type::bind_default_([=](events::interrupt::compute_size &e){
+				e.set_value(get_computed_size_(false));
+			});
+
+			base_type::bind_default_([=](events::interrupt::update_size &){
+				update_size_(true);
+			});
 		}
 
 		virtual ~text_content(){
@@ -155,7 +163,7 @@ namespace cwin::ui{
 		}
 
 		virtual void update_size_(bool enable_interrupt, const std::function<void(const SIZE &, const SIZE &)> &callback){
-			base_type::set_size_(get_computed_size_(), enable_interrupt, callback);
+			base_type::set_size_(get_computed_size_(true), enable_interrupt, callback);
 		}
 
 		virtual SIZE compute_size_() const{
@@ -170,7 +178,7 @@ namespace cwin::ui{
 			return SIZE{};
 		}
 
-		virtual SIZE get_computed_size_() const{
+		virtual SIZE get_computed_size_(bool check_limits) const{
 			SIZE size{};
 			try{
 				text_size_ = size = compute_themed_size_();
@@ -187,6 +195,9 @@ namespace cwin::ui{
 				size.cx += (additional_size.cx + padding_.cx);
 				size.cy += (additional_size.cy + padding_.cy);
 			}
+
+			if (!check_limits)
+				return size;
 
 			SIZE min_size{}, max_size{};
 			base_type::events_.trigger_then<events::get_min_size>([&](events::get_min_size &e){
