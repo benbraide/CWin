@@ -4,7 +4,7 @@
 
 #include "../non_window/rectangle_non_window.h"
 #include "../non_window/round_rectangle_non_window.h"
-#include "../non_window/ellipsis_non_window.h"
+#include "../non_window/ellipse_non_window.h"
 #include "../non_window/non_window_push_button.h"
 
 #include "../events/drawing_events.h"

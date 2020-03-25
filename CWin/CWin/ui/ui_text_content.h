@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../hook/background_hooks.h"
 #include "../events/general_events.h"
 #include "../events/drawing_events.h"
 #include "../events/interrupt_events.h"

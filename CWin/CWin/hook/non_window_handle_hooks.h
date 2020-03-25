@@ -195,11 +195,11 @@ namespace cwin::hook::non_window{
 	};
 
 	template <class handle_type>
-	class ellipsis_handle : public handle_type{
+	class ellipse_handle : public handle_type{
 	public:
 		using handle_type::handle_type;
 
-		virtual ~ellipsis_handle() = default;
+		virtual ~ellipse_handle() = default;
 
 	protected:
 		virtual void do_update_(const SIZE &size) override{
@@ -255,17 +255,17 @@ namespace cwin::ui{
 	};
 
 	template <>
-	struct parent_type<hook::non_window::ellipsis_handle<hook::non_window::client_handle>>{
+	struct parent_type<hook::non_window::ellipse_handle<hook::non_window::client_handle>>{
 		using value = visible_surface;
 	};
 
 	template <>
-	struct parent_type<hook::non_window::ellipsis_handle<hook::non_window::non_client_handle>>{
+	struct parent_type<hook::non_window::ellipse_handle<hook::non_window::non_client_handle>>{
 		using value = visible_surface;
 	};
 
 	template <>
-	struct parent_type<hook::non_window::ellipsis_handle<hook::non_window::big_border_non_client_handle>>{
+	struct parent_type<hook::non_window::ellipse_handle<hook::non_window::big_border_non_client_handle>>{
 		using value = visible_surface;
 	};
 }

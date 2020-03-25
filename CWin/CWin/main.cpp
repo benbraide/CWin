@@ -5,17 +5,6 @@
 #include "window/child_window.h"
 #include "window/top_level_window.h"
 
-#include "non_window/rectangle_non_window.h"
-#include "non_window/round_rectangle_non_window.h"
-
-#include "hook/io_hook.h"
-#include "hook/background_hooks.h"
-#include "hook/responsive_hooks.h"
-
-#include "grid/grid_object.h"
-#include "events/drawing_events.h"
-#include "events/general_events.h"
-
 #include "menu/popup_menu.h"
 #include "menu/action_menu_item.h"
 #include "menu/check_menu_item.h"
@@ -34,28 +23,14 @@
 #include "menu/library_action_menu_item.h"
 #include "menu/library_menu_separator.h"
 
-#include "control/push_button_control.h"
-#include "control/split_button_control.h"
-#include "control/radio_check_button_control_group.h"
-#include "control/tool_tip_control.h"
-#include "control/tab_control.h"
-#include "control/toolbar_control.h"
-#include "control/action_toolbar_control_item.h"
-#include "control/status_bar_control.h"
-#include "control/text_input_control.h"
-#include "control/text_box_control.h"
-#include "control/label_control.h"
-
-#include "audio/pcm_audio_source.h"
-#include "audio/asf_audio_source.h"
-#include "audio/wave_audio.h"
-
 #include "test/non_window_test.h"
 #include "test/events_test.h"
 #include "test/controls_test.h"
 #include "test/animation_test.h"
 #include "test/hook_test.h"
+#include "test/audio_test.h"
 
+/*
 struct audio_player_info{
 	cwin::control::tab_item *page;
 	cwin::audio::wave *output;
@@ -85,11 +60,11 @@ struct audio_player_info{
 
 	unsigned __int64 progress;
 	IFileDialog *file_diag;
-};
+};*/
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_show){
 	cwin::app::object::init();
-	audio_player_info player_info{};
+	//audio_player_info player_info{};
 
 	/*CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&player_info.file_diag));
 	COMDLG_FILTERSPEC filters[] = {
@@ -226,6 +201,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR cmd_line, int cmd_sh
 		tab.insert_object<cwin::test::controls>();
 		tab.insert_object<cwin::test::animation>();
 		tab.insert_object<cwin::test::hook>();
+		tab.insert_object<cwin::test::audio>();
 
 		/*tab.insert_object([&](cwin::control::tab_item &page){
 			page.set_caption(L"First Tab Page");

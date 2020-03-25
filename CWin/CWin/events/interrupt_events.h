@@ -62,6 +62,29 @@ namespace cwin::events::interrupt{
 		D2D1_RECT_F area_;
 	};
 
+	class custom_draw : public object{
+	public:
+		enum class state_type{
+			nil,
+			is_hot,
+			is_pressed,
+		};
+
+		custom_draw(target &context, const PAINTSTRUCT &info, state_type state);
+
+		virtual ~custom_draw();
+
+		virtual ID2D1RenderTarget &get_render() const;
+
+		virtual const PAINTSTRUCT &get_info() const;
+
+		virtual state_type get_state() const;
+
+	protected:
+		PAINTSTRUCT info_;
+		state_type state_;
+	};
+
 	class is_opaque_background : public object{
 	public:
 		using object::object;

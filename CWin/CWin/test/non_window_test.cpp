@@ -54,7 +54,7 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 			});
 		}, SIZE{ 20, 20 });
 
-		item.insert_object([](cwin::non_window::ellipsis &inner_item){
+		item.insert_object([](cwin::non_window::ellipse &inner_item){
 			inner_item.set_size(SIZE{ 153, 90 });
 			inner_item.set_position(POINT{ 356, 10 });
 
@@ -82,7 +82,7 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 			item.set_text(L"Ellipsis Shape");
 			item.set_scale(D2D1::SizeF(1.0f, 1.5f));
 			item.insert_object<cwin::hook::client_drag>();
-			item.insert_object<cwin::hook::non_window::ellipsis_handle<cwin::hook::non_window::client_handle>>();
+			item.insert_object<cwin::hook::non_window::ellipse_handle<cwin::hook::non_window::client_handle>>();
 		});
 	});
 }
