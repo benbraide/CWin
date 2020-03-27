@@ -242,7 +242,7 @@ void cwin::audio::wave::create_(){
 
 	auto format = reinterpret_cast<WAVEFORMATEX *>(events_.trigger_then_report_result<events::audio::get_format>());
 	if (format == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	auto result = waveOutOpen(
 		&handle_,
@@ -382,7 +382,7 @@ void cwin::audio::wave::write_skipped_(){
 
 void cwin::audio::wave::flush_(){
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (!state_.is_set(option_type::start))
 		return;
@@ -402,7 +402,7 @@ void cwin::audio::wave::flush_(){
 
 void cwin::audio::wave::start_(){
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (state_.is_set(option_type::start))
 		return;
@@ -425,7 +425,7 @@ void cwin::audio::wave::start_(){
 
 void cwin::audio::wave::stop_(){
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (!state_.is_set(option_type::start))
 		return;
@@ -448,7 +448,7 @@ void cwin::audio::wave::toggle_start_(){
 
 void cwin::audio::wave::pause_(){
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (!state_.is_set(option_type::start) || state_.is_set(option_type::pause))
 		return;
@@ -463,7 +463,7 @@ void cwin::audio::wave::pause_(){
 
 void cwin::audio::wave::resume_(){
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (!state_.is_set(option_type::pause))
 		return;
@@ -485,7 +485,7 @@ void cwin::audio::wave::toggle_pause_(){
 
 void cwin::audio::wave::seek_(const std::chrono::nanoseconds &offset){
 	if (handle_ == nullptr || !state_.is_set(option_type::start))
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	seek_time_ = offset;
 	progress_ = 0u;
@@ -495,7 +495,7 @@ void cwin::audio::wave::seek_(const std::chrono::nanoseconds &offset){
 
 void cwin::audio::wave::set_volume_(float left, float right){
 	if (handle_ == nullptr || !state_.is_set(option_type::volume_control))
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	auto left_value = static_cast<WORD>(left * std::numeric_limits<WORD>::max());
 	auto right_value = (state_.is_set(option_type::lr_volume) ? static_cast<WORD>(right * std::numeric_limits<WORD>::max()) : left_value);
@@ -506,7 +506,7 @@ void cwin::audio::wave::set_volume_(float left, float right){
 
 float cwin::audio::wave::get_left_volume_() const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	DWORD value = 0u;
 	if (waveOutGetVolume(handle_, &value) != MMSYSERR_NOERROR)
@@ -517,7 +517,7 @@ float cwin::audio::wave::get_left_volume_() const{
 
 float cwin::audio::wave::get_right_volume_() const{
 	if (handle_ == nullptr || !state_.is_set(option_type::lr_volume))
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	DWORD value = 0u;
 	if (waveOutGetVolume(handle_, &value) != MMSYSERR_NOERROR)
@@ -528,7 +528,7 @@ float cwin::audio::wave::get_right_volume_() const{
 
 void cwin::audio::wave::set_speed_(float value){
 	if (handle_ == nullptr || !state_.is_set(option_type::speed_control))
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (waveOutSetPlaybackRate(handle_, wave_helper::pack_float(value)) != MMSYSERR_NOERROR)
 		throw ui::exception::action_failed();
@@ -536,7 +536,7 @@ void cwin::audio::wave::set_speed_(float value){
 
 float cwin::audio::wave::get_speed_() const{
 	if (handle_ == nullptr || !state_.is_set(option_type::speed_control))
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	DWORD value = 0u;
 	if (waveOutGetPlaybackRate(handle_, &value) != MMSYSERR_NOERROR)
@@ -547,7 +547,7 @@ float cwin::audio::wave::get_speed_() const{
 
 void cwin::audio::wave::set_pitch_(float value){
 	if (handle_ == nullptr || !state_.is_set(option_type::pitch_control))
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (waveOutSetPitch(handle_, wave_helper::pack_float(value)) != MMSYSERR_NOERROR)
 		throw ui::exception::action_failed();
@@ -555,7 +555,7 @@ void cwin::audio::wave::set_pitch_(float value){
 
 float cwin::audio::wave::get_pitch_() const{
 	if (handle_ == nullptr || !state_.is_set(option_type::pitch_control))
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	DWORD value = 0u;
 	if (waveOutGetPitch(handle_, &value) != MMSYSERR_NOERROR)
@@ -566,7 +566,7 @@ float cwin::audio::wave::get_pitch_() const{
 
 void cwin::audio::wave::enable_reverse_(){
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	state_.set(option_type::reverse);
 	if (state_.is_set(option_type::start))
@@ -575,7 +575,7 @@ void cwin::audio::wave::enable_reverse_(){
 
 void cwin::audio::wave::disable_reverse_(){
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	state_.clear(option_type::reverse);
 	if (state_.is_set(option_type::start))
@@ -584,11 +584,11 @@ void cwin::audio::wave::disable_reverse_(){
 
 std::chrono::nanoseconds cwin::audio::wave::compute_progress_() const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	auto format = reinterpret_cast<WAVEFORMATEX *>(events_.trigger_then_report_result<events::audio::get_format>());
 	if (format == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	auto duration_in_seconds = ((progress_ * 8.0) / ((format->nSamplesPerSec * static_cast<__int64>(format->nChannels)) * format->wBitsPerSample));
 	return std::chrono::nanoseconds(seek_time_.count() + static_cast<__int64>(duration_in_seconds * 1000000000));

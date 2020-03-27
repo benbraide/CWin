@@ -281,7 +281,7 @@ void cwin::hook::non_window::non_client_handle::get_caption(const std::function<
 IDWriteTextFormat &cwin::hook::non_window::non_client_handle::get_text_format() const{
 	return *execute_task([&]{
 		if (text_format_ == nullptr)
-			throw ui::exception::not_supported();
+			throw cwin::exception::not_supported();
 		return text_format_;
 	});
 }

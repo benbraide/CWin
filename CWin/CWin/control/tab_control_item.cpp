@@ -56,7 +56,7 @@ void cwin::control::tab_item::changed_parent_(ui::tree *old_value){
 			});
 		}
 	}
-	catch (const ui::exception::not_supported &){
+	catch (const cwin::exception::not_supported &){
 		if (old_value != nullptr){
 			old_value->traverse_children([&](tab_item &child){
 				child.update_active_index_(active_index, false);
@@ -74,7 +74,7 @@ void cwin::control::tab_item::after_create_(){
 	auto tab_parent = dynamic_cast<tab *>(parent_);
 	if (tab_parent == nullptr){
 		destroy_();
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	}
 
 	int index = 0;
@@ -106,7 +106,7 @@ void cwin::control::tab_item::after_create_(){
 				else
 					hide_();
 			}
-			catch (const ui::exception::not_supported &){}
+			catch (const cwin::exception::not_supported &){}
 		}
 		else if (active_index_ == -1 && child.is_created_())
 			++index;

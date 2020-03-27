@@ -35,7 +35,7 @@ namespace cwin::ui{
 			if (auto compatible_parent = dynamic_cast<menu::system_radio_group *>(&parent); compatible_parent != nullptr)
 				return std::make_shared<menu::system_check_item>(*compatible_parent, std::forward<args_types>(args)...);
 
-			throw exception::not_supported();
+			throw cwin::exception::not_supported();
 		}
 	};
 

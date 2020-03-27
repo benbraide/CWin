@@ -417,12 +417,12 @@ void cwin::control::edit::undo_(){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, EM_UNDO, 0, 0);
 	else
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 }
 
 bool cwin::control::edit::can_undo_() const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	return (SendMessageW(handle_, EM_CANUNDO, 0, 0) != FALSE);
 }
 
@@ -430,12 +430,12 @@ void cwin::control::edit::redo_(){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, EM_REDO, 0, 0);
 	else
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 }
 
 bool cwin::control::edit::can_redo_() const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	return (SendMessageW(handle_, EM_CANREDO, 0, 0) != FALSE);
 }
 
@@ -443,7 +443,7 @@ void cwin::control::edit::copy_(){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, WM_COPY, 0, 0);
 	else
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 }
 
 bool cwin::control::edit::can_copy_() const{
@@ -454,25 +454,25 @@ void cwin::control::edit::cut_(){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, WM_CUT, 0, 0);
 	else
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 }
 
 void cwin::control::edit::paste_(){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, WM_PASTE, 0, 0);
 	else
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 }
 
 bool cwin::control::edit::can_paste_() const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	return (SendMessageW(handle_, EM_CANPASTE, 0, 0) != FALSE);
 }
 
 void cwin::control::edit::del_(){
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	CHARRANGE range{};
 	SendMessageW(handle_, EM_EXGETSEL, 0, reinterpret_cast<LPARAM>(&range));
@@ -494,7 +494,7 @@ void cwin::control::edit::select_(const CHARRANGE &range){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, EM_EXSETSEL, 0, reinterpret_cast<LPARAM>(&range));
 	else
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 }
 
 void cwin::control::edit::select_all_(){
@@ -510,7 +510,7 @@ void cwin::control::edit::collapse_selection_(bool collapse_left){
 
 CHARRANGE cwin::control::edit::get_selection_() const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	CHARRANGE range{};
 	SendMessageW(handle_, EM_EXGETSEL, 0, reinterpret_cast<LPARAM>(&range));
@@ -522,12 +522,12 @@ void cwin::control::edit::replace_selection_(const std::wstring &value){
 	if (handle_ != nullptr)
 		SendMessageW(handle_, EM_REPLACESEL, TRUE, reinterpret_cast<LPARAM>(value.c_str()));
 	else
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 }
 
 long cwin::control::edit::get_char_at_position_(const POINT &value) const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	POINTL position{ value.x, value.y };
 	return static_cast<long>(SendMessageW(handle_, EM_CHARFROMPOS, 0, reinterpret_cast<LPARAM>(&position)));
@@ -544,7 +544,7 @@ POINTL cwin::control::edit::compute_char_index_at_position_(const POINT &value) 
 
 POINT cwin::control::edit::get_char_position_(long index) const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	POINTL position{};
 	SendMessageW(handle_, EM_POSFROMCHAR, reinterpret_cast<LPARAM>(&position), index);
@@ -554,13 +554,13 @@ POINT cwin::control::edit::get_char_position_(long index) const{
 
 long cwin::control::edit::get_char_line_(long index) const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	return static_cast<long>(SendMessageW(handle_, EM_LINEFROMCHAR, 0, index));
 }
 
 long cwin::control::edit::get_char_at_line_(long index) const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	return static_cast<long>(SendMessageW(handle_, EM_LINEINDEX, index, 0));
 }
 

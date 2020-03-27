@@ -53,7 +53,7 @@ void cwin::control::split_button::after_create_(){
 	try{
 		popup_->create();
 	}
-	catch (const ui::exception::not_supported &){}
+	catch (const cwin::exception::not_supported &){}
 	catch (const ui::exception::action_canceled &){}
 	catch (const ui::exception::action_failed &){}
 }

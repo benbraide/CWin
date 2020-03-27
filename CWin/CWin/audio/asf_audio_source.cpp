@@ -144,7 +144,7 @@ bool cwin::audio::asf_source::is_created_() const{
 
 void cwin::audio::asf_source::seek_(const std::chrono::nanoseconds &offset){
 	if (!is_created_())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	auto offset_count = static_cast<QWORD>(offset.count() / 100u);
 	if (offset_count < first_sample_time_)
@@ -171,7 +171,7 @@ void cwin::audio::asf_source::seek_(float offset){
 
 std::shared_ptr<cwin::audio::buffer> cwin::audio::asf_source::get_buffer_(){
 	if (!is_created_())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	INSSBuffer *store = nullptr;
 	DWORD flags = 0u;
@@ -188,7 +188,7 @@ std::shared_ptr<cwin::audio::buffer> cwin::audio::asf_source::get_buffer_(){
 
 std::shared_ptr<cwin::audio::buffer> cwin::audio::asf_source::get_reverse_buffer_(){
 	if (!is_created_())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	auto remaining_time = (last_sample_time_ - first_sample_time_);
 	if (remaining_time == 0u)
@@ -217,18 +217,18 @@ std::shared_ptr<cwin::audio::buffer> cwin::audio::asf_source::get_reverse_buffer
 
 const WAVEFORMATEX &cwin::audio::asf_source::get_format_() const{
 	if (!is_created_())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	return format_;
 }
 
 std::chrono::nanoseconds cwin::audio::asf_source::compute_duration_() const{
 	if (!is_created_())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	return duration_;
 }
 
 std::chrono::nanoseconds cwin::audio::asf_source::compute_progress_() const{
 	if (!is_created_())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	return std::chrono::nanoseconds((last_sample_time_ + last_sample_duration_) * 100u);
 }

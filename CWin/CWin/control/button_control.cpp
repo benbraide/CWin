@@ -65,7 +65,7 @@ const wchar_t *cwin::control::button::get_theme_name_() const{
 
 void cwin::control::button::click_() const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	events_.trigger<events::io::click>();
 	focus_();

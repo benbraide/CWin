@@ -182,7 +182,7 @@ int cwin::thread::object::run(){
 		catch (const exception::thread_exit &){
 			throw;//Forward
 		}
-		catch (const cwin::exception_base &){
+		catch (const cwin::exception::base &){
 			// #TODO: Log exception
 		}
 	}

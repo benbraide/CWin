@@ -72,7 +72,7 @@ void cwin::control::status_bar::item::create_(){
 
 	auto status_bar_ancestor = get_ancestor_<status_bar::object>(0u);
 	if (status_bar_ancestor == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	int index = 0;
 	status_bar_ancestor->traverse_offspring([&](item &offspring){
@@ -98,7 +98,7 @@ void cwin::control::status_bar::item::destroy_(){
 
 	auto status_bar_ancestor = get_ancestor_<status_bar::object>(0u);
 	if (status_bar_ancestor == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	status_bar_ancestor->traverse_children([&](item &child){
 		child.update_active_index_(active_index_, false);

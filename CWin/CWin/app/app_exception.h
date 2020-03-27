@@ -8,9 +8,9 @@ namespace cwin::app::exception{
 		unitialized,
 	};
 
-	class base : public exception_base{
+	class base : public cwin::exception::base{
 	public:
-		using exception_base::exception_base;
+		using cwin::exception::base::base;
 
 		virtual ~base() = default;
 

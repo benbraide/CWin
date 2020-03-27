@@ -82,5 +82,5 @@ void cwin::control::toolbar::text_action_item::prepare_info_(TBBUTTON &info) con
 }
 
 void cwin::control::toolbar::text_action_item::set_image_(const image_info &value){
-	throw ui::exception::not_supported();
+	throw cwin::exception::not_supported();
 }

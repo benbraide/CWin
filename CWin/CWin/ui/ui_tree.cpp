@@ -10,7 +10,7 @@ cwin::ui::tree::~tree(){
 		try{
 			object.second = nullptr;//Delete
 		}
-		catch (const exception::not_supported &){}
+		catch (const cwin::exception::not_supported &){}
 		catch (const exception::action_canceled &){}
 	}
 
@@ -19,7 +19,7 @@ cwin::ui::tree::~tree(){
 		try{
 			remove_child_(*child);
 		}
-		catch (const exception::not_supported &){}
+		catch (const cwin::exception::not_supported &){}
 		catch (const exception::action_canceled &){}
 	}
 }
@@ -80,7 +80,7 @@ void cwin::ui::tree::after_destroy_(){
 		try{
 			object.second = nullptr;//Delete
 		}
-		catch (const exception::not_supported &){}
+		catch (const cwin::exception::not_supported &){}
 		catch (const exception::action_canceled &){}
 	}
 
@@ -128,7 +128,7 @@ void cwin::ui::tree::inserted_child_(object &child, tree *old_parent){
 
 void cwin::ui::tree::remove_child_(object &child){
 	if (child.parent_ != this)//Error
-		throw exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (!removing_child_(child))
 		throw exception::action_canceled();
@@ -174,14 +174,14 @@ void cwin::ui::tree::change_child_index_(object &child, std::size_t value){
 	});
 
 	if (it == children_.end())//Error
-		throw exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	change_child_index_(child, std::distance(children_.begin(), it), value);
 }
 
 void cwin::ui::tree::change_child_index_(object &child, std::size_t old_value, std::size_t value){
 	if (child.parent_ != this || children_.size() <= old_value)
-		throw exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (!changing_child_index_(child, old_value, value))
 		throw exception::action_canceled();

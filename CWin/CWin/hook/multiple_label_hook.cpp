@@ -78,7 +78,7 @@ void cwin::hook::multiple_label::add_(const std::wstring &value){
 
 void cwin::hook::multiple_label::set_active_index_(std::size_t value){
 	if (list_.size() <= value)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (value != index_){
 		index_ = value;
@@ -89,7 +89,7 @@ void cwin::hook::multiple_label::set_active_index_(std::size_t value){
 
 void cwin::hook::multiple_label::toggle_(){
 	if (list_.empty())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (list_.size() == 1u)
 		return;

@@ -194,7 +194,7 @@ void cwin::control::text_input::set_password_state_(bool value){
 
 void cwin::control::text_input::set_password_char_(wchar_t value){
 	if (value == L'\0')
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	password_char_ = value;
 	if (is_password_ && handle_ != nullptr)

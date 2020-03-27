@@ -91,7 +91,7 @@ bool cwin::thread::queue::run_next_(int min_priority, bool single){
 		catch (const exception::thread_exit &){
 			throw;//Forward
 		}
-		catch (const cwin::exception_base &){
+		catch (const cwin::exception::base &){
 			// #TODO: Log exception
 		}
 	}

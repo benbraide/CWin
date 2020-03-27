@@ -285,7 +285,7 @@ namespace cwin::ui{
 		std::shared_ptr<object_type> create_object_(std::false_type, args_types &&... args){
 			auto compatible_self = dynamic_cast<typename parent_type<object_type>::value *>(this);
 			if (compatible_self == nullptr)
-				throw exception::not_supported();
+				throw cwin::exception::not_supported();
 
 			return create_compatible_object<object_type>::get(*compatible_self, std::forward<args_types>(args)...);
 		}

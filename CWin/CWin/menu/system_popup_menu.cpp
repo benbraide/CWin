@@ -38,7 +38,7 @@ void cwin::menu::system_popup::create_(){
 
 	auto window_parent = dynamic_cast<ui::window_surface *>(parent_);
 	if (window_parent == nullptr || !window_parent->is_created())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	GetSystemMenu(window_parent->get_handle(), TRUE);//Reset
 	if ((handle_ = GetSystemMenu(window_parent->get_handle(), FALSE)) == nullptr)

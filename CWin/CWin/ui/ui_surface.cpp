@@ -249,7 +249,7 @@ void cwin::ui::surface::get_bound(const std::function<void(HRGN)> &callback) con
 void cwin::ui::surface::set_size_animation_id(unsigned __int64 value){
 	post_or_execute_task([=]{
 		if (value == 0u)
-			throw exception::not_supported();
+			throw cwin::exception::not_supported();
 		size_animation_id_ = value;
 	});
 }
@@ -269,7 +269,7 @@ void cwin::ui::surface::get_size_animation_id(const std::function<void(unsigned 
 void cwin::ui::surface::set_position_animation_id(unsigned __int64 value){
 	post_or_execute_task([=]{
 		if (value == 0u)
-			throw exception::not_supported();
+			throw cwin::exception::not_supported();
 		position_animation_id_ = value;
 	});
 }

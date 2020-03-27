@@ -97,7 +97,7 @@ namespace cwin::ui{
 		virtual IDWriteTextFormat &get_text_format() const{
 			return *base_type::execute_task([&]{
 				if (text_format_ == nullptr)
-					throw exception::not_supported();
+					throw cwin::exception::not_supported();
 				return text_format_;
 			});
 		}
@@ -316,7 +316,7 @@ namespace cwin::ui{
 		}
 
 		virtual SIZE compute_themed_size_() const{
-			throw exception::not_supported();
+			throw cwin::exception::not_supported();
 		}
 
 		virtual SIZE compute_additional_size_(const SIZE &computed_size) const{
@@ -328,7 +328,7 @@ namespace cwin::ui{
 			try{
 				text_size_ = size = compute_themed_size_();
 			}
-			catch (const exception::not_supported &){
+			catch (const cwin::exception::not_supported &){
 				text_size_ = size = compute_size_();
 			}
 

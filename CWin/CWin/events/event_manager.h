@@ -411,7 +411,7 @@ namespace cwin::events{
 		unsigned __int64 bind_default_(const events::action &action, const trigger_condition::m_callback_type &condition){
 			auto handler = action.get_handler();
 			if (handler == nullptr)
-				throw ui::exception::not_supported();
+				throw cwin::exception::not_supported();
 
 			return bind_default_<object_type, void>([=](object_type &e){
 				handler(e);

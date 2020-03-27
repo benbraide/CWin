@@ -113,7 +113,7 @@ void cwin::control::toolbar::item::create_(){
 
 	auto toolbar_ancestor = get_ancestor_<toolbar::object>(0u);
 	if (toolbar_ancestor == nullptr || !toolbar_ancestor->is_created())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	int index = 0;
 	toolbar_ancestor->traverse_offspring([&](item &offspring){
@@ -148,7 +148,7 @@ void cwin::control::toolbar::item::destroy_(){
 
 	auto toolbar_ancestor = get_ancestor_<toolbar::object>(0u);
 	if (toolbar_ancestor == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (toolbar_ancestor->is_created() && SendMessageW(toolbar_ancestor->get_handle(), TB_DELETEBUTTON, active_index_, 0) == FALSE)
 		throw ui::exception::action_failed();

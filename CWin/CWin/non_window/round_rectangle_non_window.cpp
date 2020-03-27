@@ -32,7 +32,7 @@ void cwin::non_window::round_rectangle::set_border_curve_size(const SIZE &value)
 const SIZE &cwin::non_window::round_rectangle::get_border_curve_size() const{
 	auto child = get_first_child<hook::non_window::round_rectangle_handle<hook::non_window::handle>>();
 	if (child == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	return child->get_border_curve_size();
 }

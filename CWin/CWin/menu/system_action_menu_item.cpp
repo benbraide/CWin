@@ -54,7 +54,7 @@ bool cwin::menu::default_system_action_item::changing_parent_(ui::tree *value){
 }
 
 void cwin::menu::default_system_action_item::create_(){
-	throw ui::exception::not_supported();
+	throw cwin::exception::not_supported();
 }
 
 void cwin::menu::default_system_action_item::destroy_(){

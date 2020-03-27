@@ -14,7 +14,7 @@ namespace cwin::ui{
 		virtual object_type &get(const object &target) const{
 			auto value = target.get_sibling<object_type>(index_);
 			if (value == nullptr)
-				throw ui::exception::not_supported();
+				throw cwin::exception::not_supported();
 
 			return *value;
 		}
@@ -32,7 +32,7 @@ namespace cwin::ui{
 		virtual object_type &get(const object &target) const override{
 			auto value = target.reverse_get_sibling<object_type>(base_type::index_);
 			if (value == nullptr)
-				throw ui::exception::not_supported();
+				throw cwin::exception::not_supported();
 
 			return *value;
 		}
@@ -47,7 +47,7 @@ namespace cwin::ui{
 		virtual object_type &get(const object &target) const override{
 			auto value = target.get_previous_sibling<object_type>(base_type::index_);
 			if (value == nullptr)
-				throw ui::exception::not_supported();
+				throw cwin::exception::not_supported();
 
 			return *value;
 		}
@@ -62,7 +62,7 @@ namespace cwin::ui{
 		virtual object_type &get(const object &target) const override{
 			auto value = target.get_next_sibling<object_type>(base_type::index_);
 			if (value == nullptr)
-				throw ui::exception::not_supported();
+				throw cwin::exception::not_supported();
 
 			return *value;
 		}
@@ -79,7 +79,7 @@ namespace cwin::ui{
 		virtual object_type &get(const object &target) const override{
 			auto value = target.get_first_sibling<object_type>();
 			if (value == nullptr)
-				throw ui::exception::not_supported();
+				throw cwin::exception::not_supported();
 
 			return *value;
 		}
@@ -96,7 +96,7 @@ namespace cwin::ui{
 		virtual object_type &get(const object &target) const override{
 			auto value = target.get_last_sibling<object_type>();
 			if (value == nullptr)
-				throw ui::exception::not_supported();
+				throw cwin::exception::not_supported();
 
 			return *value;
 		}

@@ -4,11 +4,18 @@
 #include <memory>
 #include <exception>
 
-namespace cwin{
-	class exception_base : public std::exception{
+namespace cwin::exception{
+	class base : public std::exception{
 	public:
 		using exception::exception;
 
-		virtual ~exception_base() = default;
+		virtual ~base() = default;
+	};
+
+	class not_supported : public base{
+	public:
+		using base::base;
+
+		virtual ~not_supported() = default;
 	};
 }

@@ -12,7 +12,7 @@ SIZE cwin::ui::text_content_helper::measure_themed_text(const std::wstring &valu
 
 SIZE cwin::ui::text_content_helper::measure_themed_text(const std::wstring &value, HTHEME theme, int part, int state, HDC device, DWORD format_flags){
 	if (theme == nullptr)
-		throw exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	RECT region{}, symbols_region{};
 	GetThemeTextExtent(theme, device, part, state, symbol_list, -1, format_flags, nullptr, &symbols_region);

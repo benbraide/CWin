@@ -69,7 +69,7 @@ void cwin::hook::color_background::get_color(const std::function<void(const D2D1
 void cwin::hook::color_background::set_animation_id(unsigned __int64 value){
 	post_or_execute_task([=]{
 		if (value == 0u)
-			throw ui::exception::not_supported();
+			throw cwin::exception::not_supported();
 		animation_id_ = value;
 	});
 }

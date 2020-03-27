@@ -21,7 +21,8 @@ cwin::ui::safe_action::safe_action(const events::action &target)
 		try{
 			handler(e);
 		}
-		catch (const exception::not_supported &){}
+		catch (const cwin::exception::not_supported &){}
+		catch (const exception::parent_not_created &){}
 		catch (const exception::action_canceled &){}
 		catch (const exception::action_failed &){}
 	};
@@ -51,7 +52,7 @@ cwin::ui::object::~object(){
 	try{
 		remove_parent_();
 	}
-	catch (const exception::not_supported &){}
+	catch (const cwin::exception::not_supported &){}
 	catch (const exception::action_canceled &){}
 }
 
@@ -114,9 +115,9 @@ void cwin::ui::object::create(){
 		if (is_created_())
 			return;
 
-		traverse_ancestors_<tree>([&](tree &ancestor){
+		get_ancestor_<tree>(0u, [&](tree &ancestor){
 			if (!ancestor.is_created_())
-				throw exception::not_supported();
+				throw exception::parent_not_created();
 			return true;
 		});
 
@@ -252,7 +253,7 @@ void cwin::ui::object::force_destroy_(){
 	try{
 		destroy_();
 	}
-	catch (const ui::exception::not_supported &){}
+	catch (const cwin::exception::not_supported &){}
 	catch (const ui::exception::action_canceled &){}
 	catch (const ui::exception::action_failed &){}
 }

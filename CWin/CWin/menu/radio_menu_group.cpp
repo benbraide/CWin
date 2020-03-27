@@ -25,7 +25,7 @@ void cwin::menu::radio_group::create_(){
 	if (parent_ != nullptr && parent_->is_created())
 		creation_state_ = true;
 	else
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 }
 
 void cwin::menu::radio_group::destroy_(){

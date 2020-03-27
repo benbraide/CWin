@@ -1,12 +1,12 @@
 #include "ui_exception.h"
 
-cwin::ui::exception::not_supported::not_supported()
-	: base("Action is not supported"){}
+cwin::ui::exception::parent_not_created::parent_not_created()
+	: base("Parent is not created"){}
 
-cwin::ui::exception::not_supported::~not_supported() = default;
+cwin::ui::exception::parent_not_created::~parent_not_created() = default;
 
-cwin::ui::exception::code cwin::ui::exception::not_supported::get_code() const{
-	return code::not_supported;
+cwin::ui::exception::code cwin::ui::exception::parent_not_created::get_code() const{
+	return code::parent_not_created;
 }
 
 cwin::ui::exception::action_canceled::action_canceled()

@@ -71,7 +71,7 @@ void cwin::events::target::added_default_event_handler_(const std::type_info &ty
 void cwin::events::target::removed_default_event_handler_(const std::type_info &type, unsigned __int64 id, std::size_t count){}
 
 void cwin::events::target::trigger_default_event_() const{
-	throw ui::exception::not_supported();
+	throw cwin::exception::not_supported();
 }
 
 bool cwin::events::target::is_default_event_(const object &e) const{

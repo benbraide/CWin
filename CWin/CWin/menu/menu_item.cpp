@@ -141,7 +141,7 @@ void cwin::menu::item::create_(){
 
 	auto object_ancestor = get_ancestor_<menu::object>(0u);
 	if (object_ancestor == nullptr || !object_ancestor->is_created())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	UINT index = 0u;
 	object_ancestor->traverse_offspring_<item>([&](item &offspring){
@@ -182,7 +182,7 @@ void cwin::menu::item::destroy_(){
 
 	auto object_ancestor = get_ancestor_<menu::object>(0u);
 	if (object_ancestor == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (object_ancestor->is_created() && RemoveMenu(object_ancestor->get_handle(), active_index_, MF_BYPOSITION) == FALSE)
 		throw ui::exception::action_failed();

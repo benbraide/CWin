@@ -28,7 +28,7 @@ cwin::control::tab::tab(tree &parent, std::size_t index)
 				break;
 			}
 		}
-		catch (const ui::exception::not_supported &){}
+		catch (const cwin::exception::not_supported &){}
 
 		return e.get_result();
 	});
@@ -157,11 +157,11 @@ bool cwin::control::tab::deactivate_current_item_() const{
 
 cwin::control::tab_item &cwin::control::tab::get_current_item_() const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	auto current_index = TabCtrl_GetCurSel(handle_);
 	if (current_index < 0)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	tab_item *current_item = nullptr;
 	traverse_children_<tab_item>([&](tab_item &child){
@@ -174,7 +174,7 @@ cwin::control::tab_item &cwin::control::tab::get_current_item_() const{
 	});
 
 	if (current_item == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	return *current_item;
 }

@@ -30,7 +30,7 @@ cwin::control::tool_tip::tool_tip()
 				break;
 			}
 		}
-		catch (const ui::exception::not_supported &){}
+		catch (const cwin::exception::not_supported &){}
 
 		return e.get_result();
 	});
@@ -91,14 +91,14 @@ void cwin::control::tool_tip::need_text_(ui::object &current_item, NMHDR &info){
 
 cwin::control::tool_tip_item &cwin::control::tool_tip::get_current_item_() const{
 	if (handle_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	TTTOOLINFOW info{
 		sizeof(TTTOOLINFOW)
 	};
 
 	if (SendMessageW(handle_, TTM_GETCURRENTTOOL, 0, reinterpret_cast<LPARAM>(&info)) == FALSE || info.uId != info.lParam)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	return *reinterpret_cast<tool_tip_item *>(info.lParam);
 }

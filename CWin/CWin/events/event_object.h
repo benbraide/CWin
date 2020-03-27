@@ -231,7 +231,7 @@ namespace cwin::events{
 				throw thread::exception::outside_context();
 
 			if (value_ == nullptr)
-				throw ui::exception::not_supported();
+				throw cwin::exception::not_supported();
 
 			return *value_;
 		}

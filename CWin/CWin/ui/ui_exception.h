@@ -5,26 +5,26 @@
 namespace cwin::ui::exception{
 	enum class code{
 		nil,
-		not_supported,
+		parent_not_created,
 		action_canceled,
 		duplicate_entry,
 		action_failed,
 	};
 
-	class base : public exception_base{
+	class base : public cwin::exception::base{
 	public:
-		using exception_base::exception_base;
+		using cwin::exception::base::base;
 
 		virtual ~base() = default;
 
 		virtual code get_code() const = 0;
 	};
 
-	class not_supported : public base{
+	class parent_not_created : public base{
 	public:
-		not_supported();
+		parent_not_created();
 
-		virtual ~not_supported();
+		virtual ~parent_not_created();
 
 		virtual code get_code() const override;
 	};

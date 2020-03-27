@@ -29,7 +29,7 @@ bool cwin::menu::default_system_separator::changing_parent_(ui::tree *value){
 }
 
 void cwin::menu::default_system_separator::create_(){
-	throw ui::exception::not_supported();
+	throw cwin::exception::not_supported();
 }
 
 void cwin::menu::default_system_separator::destroy_(){

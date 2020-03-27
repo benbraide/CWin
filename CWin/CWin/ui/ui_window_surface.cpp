@@ -435,12 +435,12 @@ void cwin::ui::window_surface::focus_() const{
 	if (handle_ != nullptr)
 		SetFocus(handle_);
 	else
-		throw exception::not_supported();
+		throw cwin::exception::not_supported();
 }
 
 void cwin::ui::window_surface::blur_() const{
 	if (handle_ == nullptr)
-		throw exception::not_supported();
+		throw cwin::exception::not_supported();
 	
 	if (GetFocus() != handle_)
 		return;

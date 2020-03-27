@@ -76,7 +76,7 @@ HWND cwin::ui::window_surface_manager::create(window_surface &owner, const wchar
 	HWND ancestor_handle_value = nullptr;
 	owner.traverse_ancestors_<surface>([&](surface &ancestor){
 		if (!ancestor.is_created())
-			throw ui::exception::not_supported();
+			throw cwin::exception::not_supported();
 
 		ancestor.offset_point_to_window(position);
 		if (auto window_ancestor = dynamic_cast<window_surface *>(&ancestor); window_ancestor != nullptr){

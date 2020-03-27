@@ -13,7 +13,7 @@ void cwin::events::action::execute(events::object &e) const{
 	if (auto handler = get_handler(); handler != nullptr)
 		handler(e);
 	else
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 }
 
 void cwin::events::action::execute() const{
@@ -23,7 +23,7 @@ void cwin::events::action::execute() const{
 }
 
 cwin::events::target &cwin::events::action::get_target() const{
-	throw ui::exception::not_supported();
+	throw cwin::exception::not_supported();
 }
 
 cwin::events::action::handler_type cwin::events::action::get_handler() const{
@@ -48,7 +48,7 @@ cwin::events::proxy_action::proxy_action(const action &target)
 	try{
 		target_ = &target.get_target();
 	}
-	catch (const ui::exception::not_supported &){
+	catch (const cwin::exception::not_supported &){
 		target_ = nullptr;
 	}
 }
@@ -61,7 +61,7 @@ unsigned __int64 cwin::events::proxy_action::get_talk_id() const{
 
 cwin::events::target &cwin::events::proxy_action::get_target() const{
 	if (target_ == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	return *target_;
 }
 

@@ -34,7 +34,7 @@ void cwin::menu::link_item::prepare_info_(MENUITEMINFOW &info) const{
 
 cwin::menu::popup &cwin::menu::link_item::get_popup_() const{
 	if (popup_ == nullptr && (popup_ = create_popup_()) == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 	return *popup_;
 }
 

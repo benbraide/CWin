@@ -459,7 +459,7 @@ cwin::ui::surface &cwin::hook::relative_placement::get_sibling(ui::surface &targ
 	}
 
 	if (sibling == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	return *sibling;
 }

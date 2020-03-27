@@ -26,7 +26,7 @@ cwin::control::tool_tip_item::tool_tip_item(tool_tip &parent, std::size_t index,
 		try{
 			create();
 		}
-		catch (const ui::exception::not_supported &){}
+		catch (const cwin::exception::not_supported &){}
 		catch (const ui::exception::action_canceled &){}
 		catch (const ui::exception::action_failed &){}
 	});
@@ -205,7 +205,7 @@ void cwin::control::tool_tip_item::create_(){
 
 	auto tool_tip_parent = dynamic_cast<tool_tip *>(parent_);
 	if (tool_tip_parent == nullptr || !tool_tip_parent->is_created() || !target_.is_created())
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	POINT offset{};
 	HWND window_handle = nullptr;
@@ -259,7 +259,7 @@ void cwin::control::tool_tip_item::destroy_(){
 
 	auto tool_tip_parent = dynamic_cast<tool_tip *>(parent_);
 	if (tool_tip_parent == nullptr)
-		throw ui::exception::not_supported();
+		throw cwin::exception::not_supported();
 
 	if (!tool_tip_parent->is_created()){
 		id_ = 0u;
