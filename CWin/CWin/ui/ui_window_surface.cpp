@@ -282,28 +282,18 @@ UINT cwin::ui::window_surface::hit_test_(const POINT &value) const{
 	return static_cast<UINT>(SendMessageW(handle_, WM_NCHITTEST, 0, MAKELONG(value.x, value.y)));
 }
 
-void cwin::ui::window_surface::redraw_(HRGN region){
-	if (handle_ == nullptr)
-		return;
-
-	if (region != nullptr){
-		POINT offset{};
-		offset_point_to_window_(offset);
-		utility::rgn::offset(region, offset);
-	}
-
-	InvalidateRgn(handle_, region, TRUE);
+void cwin::ui::window_surface::redraw_(){
+	if (handle_ != nullptr)
+		InvalidateRgn(handle_, nullptr, TRUE);
 }
 
-void cwin::ui::window_surface::redraw_(const RECT &region){
+void cwin::ui::window_surface::redraw_(RECT region){
 	if (handle_ != nullptr){
-		auto region_copy = region;
-
 		POINT offset{};
 		offset_point_to_window_(offset);
 
-		OffsetRect(&region_copy, offset.x, offset.y);
-		InvalidateRect(handle_, &region_copy, TRUE);
+		OffsetRect(&region, offset.x, offset.y);
+		InvalidateRect(handle_, &region, TRUE);
 	}
 }
 

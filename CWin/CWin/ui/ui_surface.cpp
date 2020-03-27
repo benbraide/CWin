@@ -2,7 +2,7 @@
 #include "../events/interrupt_events.h"
 #include "../thread/thread_object.h"
 
-#include "ui_visible_surface.h"
+#include "ui_window_surface.h"
 
 cwin::ui::surface::surface()
 	: size_animation_id_(get_static_size_animation_id()), position_animation_id_(get_static_position_animation_id()){
@@ -135,6 +135,18 @@ const POINT &cwin::ui::surface::get_position() const{
 void cwin::ui::surface::get_position(const std::function<void(const POINT &)> &callback) const{
 	post_or_execute_task([=]{
 		callback(get_position_());
+	});
+}
+
+POINT cwin::ui::surface::compute_window_position() const{
+	return execute_task([&]{
+		return compute_window_position_();
+	});
+}
+
+void cwin::ui::surface::compute_window_position(const std::function<void(const POINT &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(compute_window_position_());
 	});
 }
 
@@ -417,6 +429,23 @@ void cwin::ui::surface::update_window_position_(){
 
 const POINT &cwin::ui::surface::get_position_() const{
 	return current_position_;
+}
+
+POINT cwin::ui::surface::compute_window_position_() const{
+	auto position = get_position_();
+	traverse_ancestors_<ui::surface>([&](ui::surface &ancestor){
+		ancestor.offset_point_to_window(position);
+		if (dynamic_cast<window_surface *>(&ancestor) != nullptr)
+			return false;
+
+		auto &ancestor_position = ancestor.get_position();
+		position.x += ancestor_position.x;
+		position.y += ancestor_position.y;
+
+		return true;
+	});
+
+	return position;
 }
 
 POINT cwin::ui::surface::compute_absolute_position_() const{

@@ -79,7 +79,7 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 
 		item.insert_object([](cwin::non_window::push_button &item){
 			item.set_position(POINT{ 270, 120 });
-			item.set_text(L"Ellipsis Shape");
+			item.set_text(L"Ellipse Shape");
 			item.set_scale(D2D1::SizeF(1.0f, 1.5f));
 			item.insert_object<cwin::hook::client_drag>();
 			item.insert_object<cwin::hook::non_window::ellipse_handle<cwin::hook::non_window::client_handle>>();

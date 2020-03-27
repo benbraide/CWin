@@ -36,50 +36,6 @@ const cwin::events::interrupt::animate::callback_type &cwin::events::interrupt::
 	return callback_;
 }
 
-cwin::events::interrupt::draw_background::draw_background(target &context, ID2D1RenderTarget &render, const D2D1_RECT_F &area)
-	: object(context), render_(render), area_(area){}
-
-cwin::events::interrupt::draw_background::~draw_background() = default;
-
-ID2D1RenderTarget &cwin::events::interrupt::draw_background::get_render() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return render_;
-}
-
-const D2D1_RECT_F &cwin::events::interrupt::draw_background::get_area() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return area_;
-}
-
-cwin::events::interrupt::custom_draw::custom_draw(target &context, const PAINTSTRUCT &info, state_type state)
-	: object(context), info_(info), state_(state){}
-
-cwin::events::interrupt::custom_draw::~custom_draw() = default;
-
-ID2D1RenderTarget &cwin::events::interrupt::custom_draw::get_render() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-
-	if (auto render = thread_.get_device_render_target(); render != nullptr)
-		return *render;
-
-	throw ui::exception::not_supported();
-}
-
-const PAINTSTRUCT &cwin::events::interrupt::custom_draw::get_info() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return info_;
-}
-
-cwin::events::interrupt::custom_draw::state_type cwin::events::interrupt::custom_draw::get_state() const{
-	if (!is_thread_context())
-		throw thread::exception::outside_context();
-	return state_;
-}
-
 cwin::events::interrupt::resize::resize(events::target &target, const SIZE &size)
 	: object(target), size_(size){}
 

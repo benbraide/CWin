@@ -17,8 +17,6 @@ namespace cwin::ui{
 
 		virtual void redraw();
 
-		virtual void redraw(HRGN region);
-
 		virtual void redraw(const RECT &region);
 
 		virtual void show();
@@ -46,11 +44,11 @@ namespace cwin::ui{
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value) override;
 
-		virtual void redraw_(HRGN region);
+		virtual void redraw_();
 
-		virtual void redraw_(const RECT &region);
+		virtual void redraw_(RECT region);
 
-		virtual void redraw_at_(HRGN region, POINT position);
+		virtual void redraw_at_(POINT position);
 
 		virtual void show_();
 

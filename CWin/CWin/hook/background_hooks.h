@@ -20,17 +20,7 @@ namespace cwin::hook{
 	protected:
 		friend class transparent_background;
 
-		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const = 0;
-	};
-
-	class transparent_background : public background{
-	public:
-		using background::background;
-
-		virtual ~transparent_background();
-
-	protected:
-		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const override;
+		virtual void draw_(ID2D1RenderTarget &render_target, const PAINTSTRUCT &info) const = 0;
 	};
 
 	class color_background : public background{
@@ -60,7 +50,7 @@ namespace cwin::hook{
 		static unsigned __int64 get_static_animation_id();
 
 	protected:
-		virtual void draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const override;
+		virtual void draw_(ID2D1RenderTarget &render_target, const PAINTSTRUCT &info) const override;
 
 		virtual void set_color_(const D2D1_COLOR_F &value);
 

@@ -37,7 +37,7 @@ namespace cwin::test{
 		virtual ~audio();
 
 	protected:
-		virtual void draw_button_background_(cwin::non_window::push_button &target, const PAINTSTRUCT &info, cwin::events::interrupt::custom_draw::state_type state) const;
+		virtual void draw_button_background_(cwin::non_window::push_button &target, const PAINTSTRUCT &info, cwin::events::custom_draw::state_type state) const;
 
 		button_brush_info button_brush_{};
 	};

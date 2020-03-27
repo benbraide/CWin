@@ -23,12 +23,21 @@ namespace cwin::ui{
 
 		static void draw_background(events::paint &e, RECT &region);
 
+		static IDWriteFactory *get_write_factory();
+
 		static const wchar_t *symbol_list;
 	};
 
 	template <class base_type>
 	class text_content : public base_type{
 	public:
+		struct font_properties_info{
+			float size;
+			DWRITE_FONT_WEIGHT weight;
+			DWRITE_FONT_STYLE style;
+			DWRITE_FONT_STRETCH stretch;
+		};
+
 		template <typename... args_types>
 		text_content(args_types &&... args)
 			: base_type(std::forward<args_types>(args)...){
@@ -85,6 +94,57 @@ namespace cwin::ui{
 			});
 		}
 
+		virtual IDWriteTextFormat &get_text_format() const{
+			return *base_type::execute_task([&]{
+				if (text_format_ == nullptr)
+					throw exception::not_supported();
+				return text_format_;
+			});
+		}
+
+		virtual void get_text_format(const std::function<void(IDWriteTextFormat &)> &callback) const{
+			base_type::post_or_execute_task([=]{
+				if (text_format_ != nullptr)
+					callback(*text_format_);
+			});
+		}
+
+		virtual void set_font_family_name(const std::wstring &value){
+			base_type::post_or_execute_task([=]{
+				set_font_family_name_(value);
+			});
+		}
+
+		virtual const std::wstring &get_font_family_name() const{
+			return *base_type::execute_task([&]{
+				return &font_family_name_;
+			});
+		}
+
+		virtual void get_font_family_name(const std::function<void(const std::wstring &)> &callback) const{
+			base_type::post_or_execute_task([=]{
+				callback(font_family_name_);
+			});
+		}
+
+		virtual void set_font_properties(const font_properties_info &value){
+			base_type::post_or_execute_task([=]{
+				set_font_properties_(value);
+			});
+		}
+
+		virtual const font_properties_info &get_font_properties() const{
+			return *base_type::execute_task([&]{
+				return &font_properties_;
+			});
+		}
+
+		virtual void get_font_properties(const std::function<void(const font_properties_info &)> &callback) const{
+			base_type::post_or_execute_task([=]{
+				callback(font_properties_);
+			});
+		}
+
 		virtual void set_scale(const D2D1_SIZE_F &value){
 			base_type::post_or_execute_task([=]{
 				set_scale_(value);
@@ -122,8 +182,32 @@ namespace cwin::ui{
 		}
 
 	protected:
+		virtual void after_create_() override{
+			base_type::after_create_();
+			create_text_format_();
+			if (text_format_ != nullptr)
+				update_size_(false);
+		}
+
+		virtual void after_destroy_() override{
+			if (text_format_ != nullptr){
+				text_format_->Release();
+				text_format_ = nullptr;
+			}
+
+			if (text_layout_ != nullptr){
+				text_layout_->Release();
+				text_layout_ = nullptr;
+			}
+
+			base_type::after_destroy_();
+		}
+
 		virtual void set_text_(const std::wstring &value){
 			text_ = value;
+			if (text_format_ != nullptr)
+				create_text_format_();
+
 			if (!base_type::events_.trigger_then_report_result_as<events::disable_auto_size, bool>())
 				update_size_();
 		}
@@ -136,6 +220,62 @@ namespace cwin::ui{
 			font_ = value;
 			if (!base_type::events_.trigger_then_report_result_as<events::disable_auto_size, bool>())
 				update_size_();
+		}
+
+		virtual void set_font_family_name_(const std::wstring &value){
+			font_family_name_ = value;
+			if (text_layout_ != nullptr)
+				text_layout_->SetFontFamilyName(value.data(), DWRITE_TEXT_RANGE{ 0u, static_cast<UINT32>(text_.size()) });
+		}
+
+		virtual void set_font_properties_(const font_properties_info &value){
+			font_properties_ = value;
+			if (text_layout_ != nullptr){
+				DWRITE_TEXT_RANGE range{
+					0u,
+					static_cast<UINT32>(text_.size())
+				};
+
+				text_layout_->SetFontSize(value.size, range);
+				text_layout_->SetFontWeight(value.weight, range);
+				text_layout_->SetFontStyle(value.style, range);
+				text_layout_->SetFontStretch(value.stretch, range);
+			}
+		}
+
+		virtual void create_text_format_(){
+			if (text_format_ != nullptr){
+				text_format_->Release();
+				text_format_ = nullptr;
+			}
+
+			text_content_helper::get_write_factory()->CreateTextFormat(
+				font_family_name_.data(),
+				nullptr,
+				font_properties_.weight,
+				font_properties_.style,
+				font_properties_.stretch,
+				font_properties_.size,
+				L"",
+				&text_format_
+			);
+
+			if (text_format_ == nullptr)
+				return;
+
+			if (text_layout_ != nullptr){
+				text_layout_->Release();
+				text_layout_ = nullptr;
+			}
+
+			text_content_helper::get_write_factory()->CreateTextLayout(
+				text_.data(),
+				static_cast<UINT32>(text_.size()),
+				text_format_,
+				std::numeric_limits<float>::max(),
+				std::numeric_limits<float>::max(),
+				&text_layout_
+			);
 		}
 
 		virtual void set_scale_(const D2D1_SIZE_F &value){
@@ -166,7 +306,13 @@ namespace cwin::ui{
 		}
 
 		virtual SIZE compute_size_() const{
-			return text_content_helper::measure_text(text_, font_, DT_SINGLELINE);
+			if (text_layout_ == nullptr)
+				return text_content_helper::measure_text(text_, font_, DT_SINGLELINE);
+
+			DWRITE_TEXT_METRICS metrics{};
+			text_layout_->GetMetrics(&metrics);
+
+			return SIZE{ static_cast<int>(metrics.width), static_cast<int>(metrics.height) };
 		}
 
 		virtual SIZE compute_themed_size_() const{
@@ -227,6 +373,11 @@ namespace cwin::ui{
 		SIZE padding_{ 20, 10 };
 
 		HFONT font_ = nullptr;
+		IDWriteTextFormat *text_format_ = nullptr;
+		IDWriteTextLayout *text_layout_ = nullptr;
+
+		std::wstring font_family_name_ = L"Segoe UI";
+		font_properties_info font_properties_{ 14.0f, DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL };
 	};
 
 	template <class base_type>
@@ -382,6 +533,20 @@ namespace cwin::ui{
 	protected:
 		using m_base_type::update_size_;
 
+		virtual void after_create_() override{
+			m_base_type::after_create_();
+			is_created_value_ = true;
+		}
+
+		virtual void after_destroy_() override{
+			is_created_value_ = false;
+			m_base_type::after_destroy_();
+		}
+
+		virtual bool is_created_() const override{
+			return is_created_value_;
+		}
+
 		virtual void update_size_(bool enable_interrupt, const std::function<void(const SIZE &, const SIZE &)> &callback) override{
 			m_base_type::update_size_(enable_interrupt, callback);
 			computed_text_offset_ = compute_text_offset(m_base_type::get_size_(), m_base_type::text_size_, text_alignment_);
@@ -389,23 +554,23 @@ namespace cwin::ui{
 
 		virtual void set_text_color_(const D2D1_COLOR_F &value){
 			text_color_ = value;
-			m_base_type::redraw_(nullptr);
+			m_base_type::redraw_();
 		}
 
 		virtual void set_text_background_color_(const D2D1_COLOR_F &value){
 			text_background_color_ = value;
-			m_base_type::redraw_(nullptr);
+			m_base_type::redraw_();
 		}
 
 		virtual void set_text_alignment_(alignment_type value){
 			text_alignment_ = value;
 			computed_text_offset_ = compute_text_offset(m_base_type::get_size_(), m_base_type::text_size_, text_alignment_);
-			m_base_type::redraw_(nullptr);
+			m_base_type::redraw_();
 		}
 
 		virtual void set_text_offset_(const POINT &value){
 			text_offset_ = value;
-			m_base_type::redraw_(nullptr);
+			m_base_type::redraw_();
 		}
 
 		virtual void paint_(events::paint &e) const{
@@ -419,30 +584,22 @@ namespace cwin::ui{
 				size.cy
 			};
 
-			SaveDC(info.hdc);
-			prepare_paint_color_(e, region);
-
 			do_paint_(e, region);
-			RestoreDC(info.hdc, -1);
 		}
 
 		virtual void do_paint_(events::paint &e, RECT &region) const{
-			DrawTextW(e.get_info().hdc, m_base_type::text_.data(), static_cast<int>(m_base_type::text_.size()), &region, DT_SINGLELINE);
-		}
+			if (m_base_type::text_layout_ == nullptr)
+				return;
 
-		virtual void prepare_paint_color_(events::paint &e, RECT &region) const{
-			auto &info = e.get_info();
-			if (text_background_color_.a == 0.0f)//Transparent background
-				SetBkMode(info.hdc, TRANSPARENT);
-			else//Draw background
-				text_content_helper::draw_background(e, region);
+			auto &render_target = e.get_render_target();
+			auto &color_brush = e.get_color_brush();
 
-			SelectObject(info.hdc, m_base_type::font_);
-			SetTextColor(info.hdc, RGB(
-				static_cast<int>(text_color_.r * 255),
-				static_cast<int>(text_color_.g * 255),
-				static_cast<int>(text_color_.b * 255)
-			));
+			color_brush.SetColor(text_color_);
+			render_target.DrawTextLayout(
+				D2D1::Point2F(static_cast<float>(region.left), static_cast<float>(region.top)),
+				m_base_type::text_layout_,
+				&color_brush
+			);
 		}
 
 		D2D1_COLOR_F text_color_{ 1.0f, 1.0f, 1.0f, 1.0f };
@@ -451,6 +608,8 @@ namespace cwin::ui{
 		alignment_type text_alignment_ = alignment_type::top_left;
 		POINT text_offset_{};
 		POINT computed_text_offset_{};
+
+		bool is_created_value_ = false;
 	};
 
 	using visible_text_label = text_label<visible_surface>;

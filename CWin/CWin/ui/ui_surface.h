@@ -47,6 +47,10 @@ namespace cwin::ui{
 
 		virtual void get_position(const std::function<void(const POINT &)> &callback) const;
 
+		virtual POINT compute_window_position() const;
+
+		virtual void compute_window_position(const std::function<void(const POINT &)> &callback) const;
+
 		virtual POINT compute_absolute_position() const;
 
 		virtual void compute_absolute_position(const std::function<void(const POINT &)> &callback) const;
@@ -127,6 +131,8 @@ namespace cwin::ui{
 		virtual void update_window_position_();
 
 		virtual const POINT &get_position_() const;
+
+		virtual POINT compute_window_position_() const;
 
 		virtual POINT compute_absolute_position_() const;
 

@@ -88,6 +88,8 @@ namespace cwin::thread{
 
 		ID2D1SolidColorBrush *get_color_brush() const;
 
+		ID2D1PathGeometry *get_path_geomerty() const;
+
 		HRGN get_rgn(HRGN blacklist = nullptr, HRGN other_blacklist = nullptr) const;
 
 		HTHEME get_theme(const std::wstring &name) const;
@@ -220,6 +222,7 @@ namespace cwin::thread{
 
 		ID2D1DCRenderTarget *device_render_target_ = nullptr;
 		ID2D1SolidColorBrush *color_brush_ = nullptr;
+		ID2D1PathGeometry *path_geomerty_ = nullptr;
 
 		HRGN rgns_[3];
 		mutable std::unordered_map<std::wstring, HTHEME> themes_;

@@ -10,12 +10,12 @@ cwin::menu::item::item(){
 
 	bind_default_([=](events::erase_background &e){
 		e.prevent_default();
-		erase_background_(*reinterpret_cast<DRAWITEMSTRUCT *>(e.get_message().lParam), e.get_info(), e.get_render());
+		erase_background_(*reinterpret_cast<DRAWITEMSTRUCT *>(e.get_message().lParam), e.get_info(), e.get_render_target());
 	});
 
 	bind_default_([=](events::paint &e){
 		e.prevent_default();
-		paint_(*reinterpret_cast<DRAWITEMSTRUCT *>(e.get_message().lParam), e.get_info(), e.get_render());
+		paint_(*reinterpret_cast<DRAWITEMSTRUCT *>(e.get_message().lParam), e.get_info(), e.get_render_target());
 	});
 }
 

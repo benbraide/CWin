@@ -5,19 +5,32 @@
 namespace cwin::events{
 	class draw : public message_object{
 	public:
-		draw(events::target &target, const PAINTSTRUCT &info);
+		struct render_info{
+			ID2D1RenderTarget *target;
+			ID2D1SolidColorBrush *brush;
+		};
 
-		draw(events::target &target, const MSG &message_info, WNDPROC default_callback, const PAINTSTRUCT &info);
+		draw(events::target &target, const PAINTSTRUCT &info, const draw::render_info &render_info);
+
+		draw(events::target &target, const MSG &message_info, WNDPROC default_callback, const PAINTSTRUCT &info, const draw::render_info &render_info);
 
 		virtual ~draw();
 
+		virtual void begin();
+
+		virtual void end();
+
 		virtual const PAINTSTRUCT &get_info() const;
 
-		virtual ID2D1RenderTarget &get_render() const;
+		virtual const render_info &get_render_info() const;
+
+		virtual ID2D1RenderTarget &get_render_target() const;
+
+		virtual ID2D1SolidColorBrush &get_color_brush() const;
 
 	protected:
 		PAINTSTRUCT info_{};
-		ID2D1DCRenderTarget *render_ = nullptr;
+		render_info render_info_{};
 	};
 
 	class erase_background : public draw{
@@ -34,30 +47,39 @@ namespace cwin::events{
 	public:
 		using draw::draw;
 
-		virtual ~paint();
+		virtual ~paint() = default;
 	};
 
 	class non_client_paint : public draw{
 	public:
 		using draw::draw;
 
-		virtual ~non_client_paint();
+		virtual ~non_client_paint() = default;
 	};
 
-	class get_caption : public retrieve_value<std::wstring>{
+	class draw_background : public draw{
 	public:
-		using base_type = retrieve_value<std::wstring>;
-		using base_type::base_type;
-		using base_type::set_value;
+		using draw::draw;
 
-		virtual ~get_caption();
+		virtual ~draw_background() = default;
+	};
 
-		virtual void set_value(const std::wstring_view &value);
+	class custom_draw : public draw{
+	public:
+		enum class state_type{
+			nil,
+			is_hot,
+			is_pressed,
+		};
 
-		virtual void set_value(const wchar_t *value);
+		custom_draw(events::target &target, const PAINTSTRUCT &info, const draw::render_info &render_info, state_type state);
+
+		virtual ~custom_draw();
+
+		virtual state_type get_state() const;
 
 	protected:
-		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
+		state_type state_;
 	};
 
 	class measure_item : public object{
@@ -74,5 +96,21 @@ namespace cwin::events{
 		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
 
 		MEASUREITEMSTRUCT &info_;
+	};
+
+	class get_caption : public retrieve_value<std::wstring>{
+	public:
+		using base_type = retrieve_value<std::wstring>;
+		using base_type::base_type;
+		using base_type::set_value;
+
+		virtual ~get_caption();
+
+		virtual void set_value(const std::wstring_view &value);
+
+		virtual void set_value(const wchar_t *value);
+
+	protected:
+		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
 	};
 }

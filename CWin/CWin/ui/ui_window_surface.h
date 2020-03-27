@@ -87,9 +87,9 @@ namespace cwin::ui{
 
 		virtual UINT hit_test_(const POINT &value) const override;
 
-		virtual void redraw_(HRGN region) override;
+		virtual void redraw_() override;
 
-		virtual void redraw_(const RECT &region) override;
+		virtual void redraw_(RECT region) override;
 
 		virtual void show_() override;
 
@@ -169,5 +169,7 @@ namespace cwin::ui{
 			if (m_base_type::handle_ != nullptr)
 				SendMessageW(m_base_type::handle_, WM_SETFONT, reinterpret_cast<LPARAM>(value), TRUE);
 		}
+
+		virtual void create_text_format_() override{}
 	};
 }

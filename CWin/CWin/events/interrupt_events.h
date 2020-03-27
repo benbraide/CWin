@@ -47,44 +47,6 @@ namespace cwin::events::interrupt{
 		callback_type callback_;
 	};
 
-	class draw_background : public object{
-	public:
-		draw_background(target &context, ID2D1RenderTarget &render, const D2D1_RECT_F &area);
-
-		virtual ~draw_background();
-
-		virtual ID2D1RenderTarget &get_render() const;
-
-		virtual const D2D1_RECT_F &get_area() const;
-
-	protected:
-		ID2D1RenderTarget &render_;
-		D2D1_RECT_F area_;
-	};
-
-	class custom_draw : public object{
-	public:
-		enum class state_type{
-			nil,
-			is_hot,
-			is_pressed,
-		};
-
-		custom_draw(target &context, const PAINTSTRUCT &info, state_type state);
-
-		virtual ~custom_draw();
-
-		virtual ID2D1RenderTarget &get_render() const;
-
-		virtual const PAINTSTRUCT &get_info() const;
-
-		virtual state_type get_state() const;
-
-	protected:
-		PAINTSTRUCT info_;
-		state_type state_;
-	};
-
 	class is_opaque_background : public object{
 	public:
 		using object::object;
@@ -111,6 +73,20 @@ namespace cwin::events::interrupt{
 		using object::object;
 
 		virtual ~is_created() = default;
+	};
+
+	class has_non_client : public object{
+	public:
+		using object::object;
+
+		virtual ~has_non_client() = default;
+	};
+
+	class handles_erase_background : public object{
+	public:
+		using object::object;
+
+		virtual ~handles_erase_background() = default;
 	};
 
 	class update_window_position : public object{
@@ -144,6 +120,13 @@ namespace cwin::events::interrupt{
 		POINT position_;
 	};
 
+	class is_inside_client : public hit_test{
+	public:
+		using hit_test::hit_test;
+
+		virtual ~is_inside_client() = default;
+	};
+
 	class get_client_size : public retrieve_value<SIZE>{
 	public:
 		using base_type = retrieve_value<SIZE>;
@@ -167,6 +150,13 @@ namespace cwin::events::interrupt{
 		virtual ~update_size() = default;
 	};
 
+	class update_position : public object{
+	public:
+		using object::object;
+
+		virtual ~update_position() = default;
+	};
+
 	class get_bound : public retrieve_scalar_value<HRGN>{
 	public:
 		using base_type = retrieve_scalar_value<HRGN>;
@@ -181,6 +171,22 @@ namespace cwin::events::interrupt{
 		using base_type::base_type;
 
 		virtual ~get_client_bound() = default;
+	};
+
+	class get_geometry : public retrieve_scalar_value<ID2D1Geometry *>{
+	public:
+		using base_type = retrieve_scalar_value<ID2D1Geometry *>;
+		using base_type::base_type;
+
+		virtual ~get_geometry() = default;
+	};
+
+	class get_client_geometry : public retrieve_scalar_value<ID2D1Geometry *>{
+	public:
+		using base_type = retrieve_scalar_value<ID2D1Geometry *>;
+		using base_type::base_type;
+
+		virtual ~get_client_geometry() = default;
 	};
 
 	class apply_margin : public pass_value<POINT &>{

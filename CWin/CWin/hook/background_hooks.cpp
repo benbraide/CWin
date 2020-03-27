@@ -17,29 +17,12 @@ cwin::hook::background::background(ui::visible_surface &parent){
 	else//Error
 		throw thread::exception::context_mismatch();
 
-	parent.get_events().bind([=](events::interrupt::draw_background &e){
-		draw_(e.get_render(), e.get_area());
+	parent.get_events().bind([=](events::draw_background &e){
+		draw_(e.get_render_target(), e.get_info());
 	}, get_talk_id());
 }
 
 cwin::hook::background::~background() = default;
-
-cwin::hook::transparent_background::~transparent_background() = default;
-
-void cwin::hook::transparent_background::draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const{
-	auto visible_target = dynamic_cast<ui::visible_surface *>(parent_);
-	if (visible_target == nullptr)
-		return;
-
-	visible_target->traverse_ancestors([&](ui::visible_surface &ancestor){
-		if (auto bg = ancestor.get_first_child<background>(); bg != nullptr){
-			bg->draw_(render, area);
-			return false;
-		}
-
-		return true;
-	});
-}
 
 cwin::hook::color_background::color_background(ui::visible_surface &parent)
 	: color_background(parent, D2D1::ColorF(D2D1::ColorF::White)){}
@@ -107,9 +90,9 @@ unsigned __int64 cwin::hook::color_background::get_static_animation_id(){
 	return reinterpret_cast<unsigned __int64>(&typeid(events::after_background_color_update));
 }
 
-void cwin::hook::color_background::draw_(ID2D1RenderTarget &render, const D2D1_RECT_F &area) const{
+void cwin::hook::color_background::draw_(ID2D1RenderTarget &render_target, const PAINTSTRUCT &info) const{
 	if (auto &color = get_color_(); color.a != 0.0f)
-		render.Clear(color);//Draw non-transparent background
+		render_target.Clear(color);//Draw non-transparent background
 }
 
 void cwin::hook::color_background::set_color_(const D2D1_COLOR_F &value){

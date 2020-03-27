@@ -15,22 +15,24 @@ namespace cwin::hook::non_window{
 
 		virtual ~handle();
 
-		virtual HRGN get_value() const;
+		virtual ID2D1Geometry *get_value() const;
+
+		static ID2D1Factory *get_draw_factoy();
 
 	protected:
-		virtual UINT hit_test_(const POINT &position) const;
+		virtual void redraw_();
+
+		virtual void destroy_();
+
+		virtual ID2D1Geometry *create_(const SIZE &size) const = 0;
+
+		virtual UINT hit_test_(const POINT &position) const = 0;
 
 		virtual SIZE get_size_() const = 0;
 
-		virtual void do_update_(const SIZE &size) = 0;
+		virtual POINT get_window_position_() const;
 
-		virtual void update_();
-
-		virtual bool should_destroy_before_update_() const;
-
-		virtual void redraw_();
-
-		HRGN value_ = nullptr;
+		mutable ID2D1Geometry *value_ = nullptr;
 	};
 
 	class client_handle : public handle{
@@ -40,11 +42,22 @@ namespace cwin::hook::non_window{
 		virtual ~client_handle();
 
 	protected:
+		virtual UINT hit_test_(const POINT &position) const override;
+
 		virtual SIZE get_size_() const override;
+
+		virtual POINT get_window_position_() const override;
 	};
 
 	class non_client_handle : public handle{
 	public:
+		struct font_properties_info{
+			float size;
+			DWRITE_FONT_WEIGHT weight;
+			DWRITE_FONT_STYLE style;
+			DWRITE_FONT_STRETCH stretch;
+		};
+
 		explicit non_client_handle(ui::visible_surface &parent);
 
 		non_client_handle(ui::visible_surface &parent, const std::wstring &caption);
@@ -56,25 +69,62 @@ namespace cwin::hook::non_window{
 		virtual const std::wstring &get_caption() const;
 
 		virtual void get_caption(const std::function<void(const std::wstring &)> &callback) const;
+		
+		virtual IDWriteTextFormat &get_text_format() const;
+
+		virtual void get_text_format(const std::function<void(IDWriteTextFormat &)> &callback) const;
+
+		virtual void set_font_family_name(const std::wstring &value);
+
+		virtual const std::wstring &get_font_family_name() const;
+
+		virtual void get_font_family_name(const std::function<void(const std::wstring &)> &callback) const;
+
+		virtual void set_font_properties(const font_properties_info &value);
+
+		virtual const font_properties_info &get_font_properties() const;
+
+		virtual void get_font_properties(const std::function<void(const font_properties_info &)> &callback) const;
 
 	protected:
-		virtual UINT hit_test_(const POINT &position) const;
+		virtual void destroy_() override;
+
+		virtual UINT hit_test_(const POINT &position) const override;
 
 		virtual SIZE get_size_() const override;
 
 		virtual const RECT &get_client_margin_() const;
 
+		virtual POINT get_caption_offset_() const;
+
+		virtual void set_caption_(const std::wstring &value);
+
+		virtual void set_font_family_name_(const std::wstring &value);
+
+		virtual void set_font_properties_(const font_properties_info &value);
+
+		virtual void create_text_format_();
+
 		std::wstring caption_;
+		IDWriteTextFormat *text_format_ = nullptr;
+		IDWriteTextLayout *text_layout_ = nullptr;
+
+		std::wstring font_family_name_ = L"Segoe UI";
+		font_properties_info font_properties_{ 11.0f, DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL };
 	};
 
 	class big_border_non_client_handle : public non_client_handle{
 	public:
-		using non_client_handle::non_client_handle;
+		explicit big_border_non_client_handle(ui::visible_surface &parent);
+
+		big_border_non_client_handle(ui::visible_surface &parent, const std::wstring &caption);
 
 		virtual ~big_border_non_client_handle();
 
 	protected:
 		virtual const RECT &get_client_margin_() const override;
+
+		virtual POINT get_caption_offset_() const override;
 	};
 
 	template <class handle_type>
@@ -99,7 +149,7 @@ namespace cwin::hook::non_window{
 		virtual ~triangle_handle() = default;
 
 	protected:
-		virtual void do_update_(const SIZE &size) override{
+		/*virtual void do_update_(const SIZE &size) override{
 			POINT points[3];
 			switch (pivot_){
 			case pivot_type::top_right:
@@ -125,7 +175,7 @@ namespace cwin::hook::non_window{
 			}
 
 			handle_type::value_ = CreatePolygonRgn(points, 3, WINDING);
-		}
+		}*/
 
 		pivot_type pivot_;
 		SIZE pivot_offset_;
@@ -139,15 +189,16 @@ namespace cwin::hook::non_window{
 		virtual ~rectangle_handle() = default;
 
 	protected:
-		virtual void do_update_(const SIZE &size) override{
-			if (handle_type::value_ == nullptr)
-				handle_type::value_ = CreateRectRgn(0, 0, size.cx, size.cy);
-			else
-				utility::rgn::resize(handle_type::value_, size);
-		}
+		virtual ID2D1Geometry *create_(const SIZE &size) const override{
+			ID2D1RectangleGeometry *value = nullptr;
+			handle::get_draw_factoy()->CreateRectangleGeometry(D2D1::RectF(
+				0.0f,
+				0.0f,
+				static_cast<float>(size.cx),
+				static_cast<float>(size.cy)
+			), &value);
 
-		virtual bool should_destroy_before_update_() const override{
-			return false;
+			return value;
 		}
 	};
 
@@ -181,13 +232,21 @@ namespace cwin::hook::non_window{
 		}
 
 	protected:
-		virtual void do_update_(const SIZE &size) override{
-			handle_type::value_ = CreateRoundRectRgn(0, 0, (size.cx + 1), (size.cy + 1), border_curve_size_.cx, border_curve_size_.cy);
+		virtual ID2D1Geometry *create_(const SIZE &size) const override{
+			ID2D1RoundedRectangleGeometry *value = nullptr;
+			handle::get_draw_factoy()->CreateRoundedRectangleGeometry(D2D1::RoundedRect(D2D1::RectF(
+				0.0f,
+				0.0f,
+				static_cast<float>(size.cx),
+				static_cast<float>(size.cy)
+			), (border_curve_size_.cx / 2.0f), (border_curve_size_.cy / 2.0f)), &value);
+
+			return value;
 		}
 
 		virtual void set_border_curve_size_(const SIZE &value){
 			border_curve_size_ = value;
-			handle_type::update_();
+			handle_type::destroy_();
 			handle_type::redraw_();
 		}
 
@@ -202,8 +261,15 @@ namespace cwin::hook::non_window{
 		virtual ~ellipse_handle() = default;
 
 	protected:
-		virtual void do_update_(const SIZE &size) override{
-			handle_type::value_ = CreateEllipticRgn(0, 0, (size.cx + 1), (size.cy + 1));
+		virtual ID2D1Geometry *create_(const SIZE &size) const override{
+			ID2D1EllipseGeometry *value = nullptr;
+			handle::get_draw_factoy()->CreateEllipseGeometry(D2D1::Ellipse(
+				D2D1::Point2F((size.cx / 2.0f), (size.cy / 2.0f)),
+				(size.cx / 2.0f),
+				(size.cy / 2.0f)
+			), &value);
+
+			return value;
 		}
 	};
 }

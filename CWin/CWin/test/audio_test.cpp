@@ -20,7 +20,7 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 			return false;
 		});
 
-		bind_(item, [&](cwin::events::interrupt::custom_draw &e){
+		bind_(item, [&](cwin::events::custom_draw &e){
 			e.prevent_default();
 			draw_button_background_(item, e.get_info(), e.get_state());
 		});
@@ -36,7 +36,7 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 
 cwin::test::audio::~audio() = default;
 
-void cwin::test::audio::draw_button_background_(cwin::non_window::push_button &target, const PAINTSTRUCT &info, cwin::events::interrupt::custom_draw::state_type state) const{
+void cwin::test::audio::draw_button_background_(cwin::non_window::push_button &target, const PAINTSTRUCT &info, cwin::events::custom_draw::state_type state) const{
 	auto render = thread_.get_device_render_target();
 	auto brush = thread_.get_color_brush();
 

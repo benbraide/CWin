@@ -174,6 +174,10 @@ LRESULT cwin::menu::manager::draw_item_(ui::window_surface &target, DRAWITEMSTRU
 	if (init_target_ == nullptr)
 		return ui::window_surface_manager::call_default(target, WM_DRAWITEM, 0, reinterpret_cast<LPARAM>(&info));
 
+	auto render_target = thread_.get_device_render_target();
+	if (render_target == nullptr)
+		return ui::window_surface_manager::call_default(target, WM_DRAWITEM, 0, reinterpret_cast<LPARAM>(&info));
+
 	auto item = reinterpret_cast<menu::item *>(info.itemData);
 	if (item == nullptr)
 		return ui::window_surface_manager::call_default(target, WM_DRAWITEM, 0, reinterpret_cast<LPARAM>(&info));
@@ -184,6 +188,7 @@ LRESULT cwin::menu::manager::draw_item_(ui::window_surface &target, DRAWITEMSTRU
 		info.rcItem
 	};
 
+	render_target->BindDC(paint_info.hdc, &paint_info.rcPaint);
 	MSG msg{
 		target.get_handle(),
 		WM_DRAWITEM,
@@ -192,11 +197,11 @@ LRESULT cwin::menu::manager::draw_item_(ui::window_surface &target, DRAWITEMSTRU
 	};
 
 	SaveDC(paint_info.hdc);
-	item->get_events().trigger<events::erase_background>(msg, nullptr, paint_info);
+	item->get_events().trigger<events::erase_background>(msg, nullptr, paint_info, events::draw::render_info{ render_target, thread_.get_color_brush() });
 	RestoreDC(paint_info.hdc, -1);
 
 	SaveDC(paint_info.hdc);
-	item->get_events().trigger<events::paint>(msg, nullptr, paint_info);
+	item->get_events().trigger<events::paint>(msg, nullptr, paint_info, events::draw::render_info{ render_target, thread_.get_color_brush() });
 	RestoreDC(paint_info.hdc, -1);
 
 	return TRUE;

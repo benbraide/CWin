@@ -10,12 +10,8 @@
 cwin::ui::visible_surface::~visible_surface() = default;
 
 void cwin::ui::visible_surface::redraw(){
-	redraw(nullptr);
-}
-
-void cwin::ui::visible_surface::redraw(HRGN region){
 	post_or_execute_task([=]{
-		redraw_(region);
+		redraw_();
 	});
 }
 
@@ -64,58 +60,49 @@ void cwin::ui::visible_surface::is_occluded(const std::function<void(bool)> &cal
 void cwin::ui::visible_surface::size_update_(const SIZE &old_value, const SIZE &current_value){
 	auto should_redraw = (is_created_() && !is_occluded_());
 	if (should_redraw)
-		redraw_(nullptr);
+		redraw_();
 
 	surface::size_update_(old_value, current_value);
 	if (should_redraw)
-		redraw_(nullptr);
+		redraw_();
 }
 
 void cwin::ui::visible_surface::position_update_(const POINT &old_value, const POINT &current_value){
 	surface::position_update_(old_value, current_value);
 	if (is_created_() && !is_occluded_()){
-		redraw_at_(nullptr, old_value);
-		redraw_at_(nullptr, current_value);
+		redraw_at_(old_value);
+		redraw_at_(current_value);
 	}
 }
 
-void cwin::ui::visible_surface::redraw_(HRGN region){
-	redraw_at_(region, get_position_());
+void cwin::ui::visible_surface::redraw_(){
+	redraw_at_(get_position_());
 }
 
-void cwin::ui::visible_surface::redraw_(const RECT &region){
-	auto source_region = thread_.get_rgn();
-	utility::rgn::set_dimension(source_region, region);
-	redraw_(source_region);
-}
-
-void cwin::ui::visible_surface::redraw_at_(HRGN region, POINT position){
+void cwin::ui::visible_surface::redraw_(RECT region){
 	if (!is_created_())
 		return;
 
-	auto visible_ancestor = find_surface_ancestor_<visible_surface>(&position);
+	auto offset = get_position_();
+	auto visible_ancestor = find_surface_ancestor_<visible_surface>(&offset);
+
 	if (visible_ancestor == nullptr)
 		return;
 
-	auto destination_region = thread_.get_rgn(region);
-	if (region != nullptr){//Use client region
-		auto client_bound = events_.trigger_then_report_result_as<events::interrupt::get_client_bound, HRGN>();
+	offset_point_to_window_(offset);
+	OffsetRect(&region, offset.x, offset.y);
 
-		POINT offset{};
-		offset_point_to_window_(offset);
+	visible_ancestor->redraw_(region);
+}
 
-		utility::rgn::offset(region, offset);
-		utility::rgn::move(client_bound, offset);
+void cwin::ui::visible_surface::redraw_at_(POINT position){
+	if (!is_created_())
+		return;
 
-		utility::rgn::intersect(destination_region, client_bound, region);
-		utility::rgn::offset(destination_region, position);
+	if (auto visible_ancestor = find_surface_ancestor_<visible_surface>(&position); visible_ancestor != nullptr){
+		auto &size = get_size_();
+		visible_ancestor->redraw_(RECT{ position.x, position.y, (position.x + size.cx), (position.y + size.cy) });
 	}
-	else{//Use entire region
-		auto non_client_bound = get_bound_();
-		utility::rgn::move((destination_region = non_client_bound), position);
-	}
-
-	visible_ancestor->redraw(destination_region);
 }
 
 void cwin::ui::visible_surface::show_(){
@@ -123,7 +110,7 @@ void cwin::ui::visible_surface::show_(){
 		return;
 
 	visible_ = true;
-	redraw_(nullptr);
+	redraw_();
 
 	set_windows_visibility_(visible_);
 	events_.trigger<events::show>();
@@ -134,7 +121,7 @@ void cwin::ui::visible_surface::hide_(){
 		return;
 
 	visible_ = false;
-	redraw_(nullptr);
+	redraw_();
 
 	set_windows_visibility_(visible_);
 	events_.trigger<events::hide>();

@@ -1,5 +1,6 @@
 #include "../app/app_object.h"
 #include "../events/drawing_events.h"
+#include "../events/interrupt_events.h"
 
 #include "control_object.h"
 
@@ -10,6 +11,10 @@ cwin::control::object::object(const std::wstring &class_name, DWORD common_id)
 
 	bind_default_([](events::erase_background &e){
 		e.do_default();
+	});
+
+	bind_default_([](events::interrupt::handles_erase_background &){
+		return true;
 	});
 }
 

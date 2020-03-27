@@ -65,4 +65,8 @@ void cwin::ui::text_content_helper::draw_background(events::paint &e, RECT &regi
 
 }
 
+IDWriteFactory *cwin::ui::text_content_helper::get_write_factory(){
+	return app::object::get_thread().get_write_factory();
+}
+
 const wchar_t *cwin::ui::text_content_helper::symbol_list = L"AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";

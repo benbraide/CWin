@@ -1,7 +1,9 @@
-#include "../ui/ui_visible_surface.h"
+#include "../ui/ui_window_surface.h"
+#include "../app/app_object.h"
 #include "../thread/thread_object.h"
 
 #include "../events/drawing_events.h"
+#include "../events/general_events.h"
 #include "../events/interrupt_events.h"
 
 #include "non_window_handle_hooks.h"
@@ -13,21 +15,21 @@ cwin::hook::non_window::handle::handle(ui::visible_surface &parent){
 		throw thread::exception::context_mismatch();
 
 	bind_(parent, [=](events::interrupt::create &){
-		update_();
+		destroy_();
+		value_ = create_(get_size_());
 	});
 
 	bind_(parent, [=](events::interrupt::destroy &){
-		if (value_ != nullptr){
-			DeleteObject(value_);
-			value_ = nullptr;
-		}
+		destroy_();
 	});
 
 	bind_(parent, [=](events::interrupt::resize &){
-		if (value_ != nullptr)
-			update_();
+		if (value_ != nullptr){
+			destroy_();
+			value_ = create_(get_size_());
+		}
 	});
-
+	
 	bind_(parent, [=](events::interrupt::is_created &e){
 		e.prevent_default();
 		return (value_ != nullptr);
@@ -42,41 +44,17 @@ cwin::hook::non_window::handle::handle(ui::visible_surface &parent){
 }
 
 cwin::hook::non_window::handle::~handle(){
-	if (value_ != nullptr){
-		DeleteObject(value_);
-		value_ = nullptr;
-	}
+	destroy_();
 }
 
-HRGN cwin::hook::non_window::handle::get_value() const{
+ID2D1Geometry *cwin::hook::non_window::handle::get_value() const{
 	return execute_task([&]{
 		return value_;
 	});
 }
 
-UINT cwin::hook::non_window::handle::hit_test_(const POINT &position) const{
-	auto surface_target = dynamic_cast<ui::surface *>(parent_);
-	if (surface_target == nullptr)
-		return HTNOWHERE;
-
-	auto absolute_position = surface_target->compute_absolute_position();
-	surface_target->offset_point_to_window(absolute_position);
-
-	utility::rgn::move(value_, absolute_position);
-	return (utility::rgn::hit_test(value_, position) ? HTCLIENT : HTNOWHERE);
-}
-
-void cwin::hook::non_window::handle::update_(){
-	if (value_ != nullptr && should_destroy_before_update_()){
-		DeleteObject(value_);
-		value_ = nullptr;
-	}
-
-	do_update_(get_size_());
-}
-
-bool cwin::hook::non_window::handle::should_destroy_before_update_() const{
-	return true;
+ID2D1Factory *cwin::hook::non_window::handle::get_draw_factoy(){
+	return app::object::get_thread().get_draw_factory();
 }
 
 void cwin::hook::non_window::handle::redraw_(){
@@ -84,22 +62,64 @@ void cwin::hook::non_window::handle::redraw_(){
 		visible_target->redraw();
 }
 
+void cwin::hook::non_window::handle::destroy_(){
+	if (value_ != nullptr){
+		value_->Release();
+		value_ = nullptr;
+	}
+}
+
+POINT cwin::hook::non_window::handle::get_window_position_() const{
+	if (auto surface_target = dynamic_cast<ui::surface *>(parent_); surface_target != nullptr)
+		return surface_target->compute_window_position();
+	return POINT{};
+}
+
 cwin::hook::non_window::client_handle::client_handle(ui::visible_surface &parent)
 	: handle(parent){
-	bind_(parent, [=](events::interrupt::get_bound &e){
+	bind_(parent, [=](events::interrupt::get_geometry &e){
 		if (e.get_result() == 0){
 			e.prevent_default();
 			e.set_result(value_);
 		}
 	});
 
-	bind_(parent, [=](events::interrupt::get_client_bound &e){
+	bind_(parent, [=](events::interrupt::get_client_geometry &e){
 		e.prevent_default();
 		return value_;
+	});
+
+	bind_(parent, [=](events::interrupt::is_inside_client &e){
+		if (value_ == nullptr)
+			return false;
+
+		BOOL is_inside = FALSE;
+		value_->FillContainsPoint(D2D1::Point2F(static_cast<float>(e.get_position().x), static_cast<float>(e.get_position().y)), D2D1::IdentityMatrix(), &is_inside);
+
+		return (is_inside != FALSE);
 	});
 }
 
 cwin::hook::non_window::client_handle::~client_handle() = default;
+
+UINT cwin::hook::non_window::client_handle::hit_test_(const POINT &position) const{
+	auto surface_target = dynamic_cast<ui::surface *>(parent_);
+	if (surface_target == nullptr)
+		return HTNOWHERE;
+
+	BOOL is_inside = FALSE;
+	auto absolute_position = surface_target->compute_absolute_position();
+
+	POINT relative_position{
+		(position.x - absolute_position.x),
+		(position.y - absolute_position.y)
+	};
+
+	surface_target->offset_point_from_window(relative_position);
+	value_->FillContainsPoint(D2D1::Point2F(static_cast<float>(relative_position.x), static_cast<float>(relative_position.y)), D2D1::IdentityMatrix(), &is_inside);
+
+	return ((is_inside == FALSE) ? HTNOWHERE : HTCLIENT);
+}
 
 SIZE cwin::hook::non_window::client_handle::get_size_() const{
 	SIZE value{};
@@ -112,12 +132,27 @@ SIZE cwin::hook::non_window::client_handle::get_size_() const{
 	return value;
 }
 
+POINT cwin::hook::non_window::client_handle::get_window_position_() const{
+	auto position = handle::get_window_position_();
+	if (auto surface_target = dynamic_cast<ui::surface *>(parent_); surface_target != nullptr)
+		surface_target->offset_point_to_window(position);
+	return position;
+}
+
 cwin::hook::non_window::non_client_handle::non_client_handle(ui::visible_surface &parent)
 	: non_client_handle(parent, L""){}
 
 cwin::hook::non_window::non_client_handle::non_client_handle(ui::visible_surface &parent, const std::wstring &caption)
 	: handle(parent), caption_(caption){
-	bind_(parent, [=](events::interrupt::get_bound &e){
+	bind_(parent, [=](events::after_create &){
+		create_text_format_();
+	});
+
+	bind_(parent, [=](events::interrupt::has_non_client &){
+		return true;
+	});
+
+	bind_(parent, [=](events::interrupt::get_geometry &e){
 		e.prevent_default();
 		return value_;
 	});
@@ -157,63 +192,77 @@ cwin::hook::non_window::non_client_handle::non_client_handle(ui::visible_surface
 		if (visible_target == nullptr)
 			return;
 
-		e.prevented_default();
+		e.prevent_default();
 		if (value_ == nullptr || visible_target->is_occluded())
 			return;
-
-		auto theme = thread_.get_theme(L"WINDOW");
-		if (theme == nullptr)
-			return;
-
-		auto &info = e.get_info();
-		auto is_big_border = (dynamic_cast<big_border_non_client_handle *>(this) != nullptr);
 
 		auto &size = visible_target->get_size();
 		auto &client_margin = get_client_margin_();
 
-		RECT area{ 0, 0, size.cx, client_margin.top };
-		DrawThemeBackground(theme, info.hdc, (is_big_border ? WP_CAPTION : WP_SMALLCAPTION), CS_ACTIVE, &area, nullptr);
+		auto &render_target = e.get_render_target();
+		auto &color_brush = e.get_color_brush();
 
-		area = RECT{ 0, (size.cy - client_margin.bottom), size.cx, size.cy };
-		DrawThemeBackground(theme, info.hdc, (is_big_border ? WP_FRAMEBOTTOM : WP_SMALLFRAMEBOTTOM), 0, &area, nullptr);
+		auto color = GetSysColor(COLOR_ACTIVECAPTION);
+		color_brush.SetColor(D2D1::ColorF(
+			(GetRValue(color) / 255.0f),
+			(GetGValue(color) / 255.0f),
+			(GetBValue(color) / 255.0f)
+		));
 
-		area = RECT{ 0, client_margin.top, client_margin.left, (size.cy - client_margin.bottom) };
-		DrawThemeBackground(theme, info.hdc, (is_big_border ? WP_FRAMELEFT : WP_SMALLFRAMELEFT), 0, &area, nullptr);
+		render_target.FillRectangle(D2D1::RectF(
+			0.0f,
+			0.0f,
+			static_cast<float>(size.cx),
+			static_cast<float>(client_margin.top)
+		), &color_brush);
 
-		area = RECT{ (size.cx - client_margin.right), client_margin.top, size.cx, (size.cy - client_margin.bottom) };
-		DrawThemeBackground(theme, info.hdc, (is_big_border ? WP_FRAMERIGHT : WP_SMALLFRAMERIGHT), 0, &area, nullptr);
+		render_target.FillRectangle(D2D1::RectF(
+			0.0f,
+			static_cast<float>(size.cy - client_margin.bottom),
+			static_cast<float>(size.cx),
+			static_cast<float>(size.cy)
+		), &color_brush);
 
-		SIZE close_button_size{};
-		GetThemePartSize(theme, info.hdc, (is_big_border ? WP_CLOSEBUTTON : WP_SMALLCLOSEBUTTON), 0, nullptr, THEMESIZE::TS_TRUE, &close_button_size);
+		render_target.FillRectangle(D2D1::RectF(
+			0.0f,
+			static_cast<float>(client_margin.top),
+			static_cast<float>(client_margin.left),
+			static_cast<float>(size.cy - client_margin.bottom)
+		), &color_brush);
 
-		NONCLIENTMETRICSW metrics_info{ sizeof(NONCLIENTMETRICSW) };
-		SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, 0u, &metrics_info, 0u);
+		render_target.FillRectangle(D2D1::RectF(
+			static_cast<float>(size.cx - client_margin.right),
+			static_cast<float>(client_margin.top),
+			static_cast<float>(size.cx),
+			static_cast<float>(size.cy - client_margin.bottom)
+		), &color_brush);
 
-		auto font = CreateFontIndirectW(is_big_border ? &metrics_info.lfCaptionFont : &metrics_info.lfSmCaptionFont);
-		auto caption_offset = (is_big_border ? 0 : 3);
+		if (text_layout_ == nullptr)
+			return;
 
-		SaveDC(info.hdc);
-		SelectObject(info.hdc, font);
+		auto text_color = GetSysColor(COLOR_CAPTIONTEXT);
+		color_brush.SetColor(D2D1::ColorF(
+			(GetRValue(text_color) / 255.0f),
+			(GetGValue(text_color) / 255.0f),
+			(GetBValue(text_color) / 255.0f)
+		));
 
-		area = RECT{
-			(client_margin.left + caption_offset),
-			client_margin.bottom,
-			(size.cx - (close_button_size.cx + client_margin.left + client_margin.left + caption_offset)),
-			client_margin.top
-		};
-
-		DrawThemeText(theme, info.hdc, WP_CAPTION, CS_INACTIVE, caption_.data(), static_cast<int>(caption_.size()), (DT_SINGLELINE | DT_VCENTER | DT_END_ELLIPSIS), 0u, &area);
-		RestoreDC(info.hdc, -1);
-		DeleteObject(font);
+		auto caption_offset = get_caption_offset_();
+		render_target.DrawTextLayout(
+			D2D1::Point2F(static_cast<float>(caption_offset.x), static_cast<float>(caption_offset.y)),
+			text_layout_,
+			&color_brush
+		);
 	});
 }
 
-cwin::hook::non_window::non_client_handle::~non_client_handle() = default;
+cwin::hook::non_window::non_client_handle::~non_client_handle(){
+	destroy_();
+}
 
 void cwin::hook::non_window::non_client_handle::set_caption(const std::wstring &value){
 	post_or_execute_task([=]{
-		caption_ = value;
-		redraw_();
+		set_caption_(value);
 	});
 }
 
@@ -229,24 +278,95 @@ void cwin::hook::non_window::non_client_handle::get_caption(const std::function<
 	});
 }
 
+IDWriteTextFormat &cwin::hook::non_window::non_client_handle::get_text_format() const{
+	return *execute_task([&]{
+		if (text_format_ == nullptr)
+			throw ui::exception::not_supported();
+		return text_format_;
+	});
+}
+
+void cwin::hook::non_window::non_client_handle::get_text_format(const std::function<void(IDWriteTextFormat &)> &callback) const{
+	post_or_execute_task([=]{
+		if (text_format_ != nullptr)
+			callback(*text_format_);
+	});
+}
+
+void cwin::hook::non_window::non_client_handle::set_font_family_name(const std::wstring &value){
+	post_or_execute_task([=]{
+		set_font_family_name_(value);
+	});
+}
+
+const std::wstring &cwin::hook::non_window::non_client_handle::get_font_family_name() const{
+	return *execute_task([&]{
+		return &font_family_name_;
+	});
+}
+
+void cwin::hook::non_window::non_client_handle::get_font_family_name(const std::function<void(const std::wstring &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(font_family_name_);
+	});
+}
+
+void cwin::hook::non_window::non_client_handle::set_font_properties(const font_properties_info &value){
+	post_or_execute_task([=]{
+		set_font_properties_(value);
+	});
+}
+
+const cwin::hook::non_window::non_client_handle::font_properties_info &cwin::hook::non_window::non_client_handle::get_font_properties() const{
+	return *execute_task([&]{
+		return &font_properties_;
+	});
+}
+
+void cwin::hook::non_window::non_client_handle::get_font_properties(const std::function<void(const font_properties_info &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(font_properties_);
+	});
+}
+
+void cwin::hook::non_window::non_client_handle::destroy_(){
+	if (text_format_ != nullptr){
+		text_format_->Release();
+		text_format_ = nullptr;
+	}
+
+	if (text_layout_ != nullptr){
+		text_layout_->Release();
+		text_layout_ = nullptr;
+	}
+
+	handle::destroy_();
+}
+
 UINT cwin::hook::non_window::non_client_handle::hit_test_(const POINT &position) const{
 	auto surface_target = dynamic_cast<ui::surface *>(parent_);
 	if (surface_target == nullptr)
 		return HTNOWHERE;
 
-	auto absolute_position = surface_target->compute_absolute_position();
-	utility::rgn::move(value_, absolute_position);
-
-	if (!utility::rgn::hit_test(value_, position))
-		return HTNOWHERE;
-
 	auto &size = surface_target->get_size();
 	auto &client_handle_margin = get_client_margin_();
 
+	auto absolute_position = surface_target->compute_absolute_position();
 	POINT relative_position{
 		(position.x - absolute_position.x),
 		(position.y - absolute_position.y)
 	};
+
+	BOOL is_inside = FALSE;
+	value_->FillContainsPoint(D2D1::Point2F(static_cast<float>(relative_position.x), static_cast<float>(relative_position.y)), D2D1::IdentityMatrix(), &is_inside);
+	if (is_inside == FALSE)
+		return HTNOWHERE;
+
+	auto relative_client_position = relative_position;
+	surface_target->offset_point_from_window(relative_client_position);
+
+	if (surface_target->get_events().trigger_then_report_result_as<events::interrupt::is_inside_client, bool>(relative_client_position))
+		return HTCLIENT;
 
 	RECT dimension{
 		0,
@@ -338,7 +458,7 @@ UINT cwin::hook::non_window::non_client_handle::hit_test_(const POINT &position)
 	if (PtInRect(&dimension, relative_position) != FALSE)
 		return HTCAPTION;
 
-	return HTCLIENT;
+	return HTBORDER;
 }
 
 SIZE cwin::hook::non_window::non_client_handle::get_size_() const{
@@ -347,12 +467,110 @@ SIZE cwin::hook::non_window::non_client_handle::get_size_() const{
 	return SIZE{};
 }
 
+POINT cwin::hook::non_window::non_client_handle::get_caption_offset_() const{
+	SIZE text_size{};
+	if (text_layout_ != nullptr){
+		DWRITE_TEXT_METRICS metrics{};
+		text_layout_->GetMetrics(&metrics);
+		
+		text_size.cx = static_cast<int>(metrics.width);
+		text_size.cy = static_cast<int>(metrics.height);
+	}
+
+	auto &client_margin = get_client_margin_();
+	return POINT{ (client_margin.left + client_margin.left), ((client_margin.top - text_size.cy) / 2) };
+}
+
 const RECT &cwin::hook::non_window::non_client_handle::get_client_margin_() const{
 	return thread_.get_client_margin();
+}
+
+void cwin::hook::non_window::non_client_handle::set_caption_(const std::wstring &value){
+	caption_ = value;
+	if (text_format_ != nullptr)
+		create_text_format_();
+	redraw_();
+}
+
+void cwin::hook::non_window::non_client_handle::set_font_family_name_(const std::wstring &value){
+	font_family_name_ = value;
+	if (text_layout_ != nullptr)
+		text_layout_->SetFontFamilyName(value.data(), DWRITE_TEXT_RANGE{ 0u, static_cast<UINT32>(caption_.size()) });
+}
+
+void cwin::hook::non_window::non_client_handle::set_font_properties_(const font_properties_info &value){
+	font_properties_ = value;
+	if (text_layout_ != nullptr){
+		DWRITE_TEXT_RANGE range{
+			0u,
+			static_cast<UINT32>(caption_.size())
+		};
+
+		text_layout_->SetFontSize(value.size, range);
+		text_layout_->SetFontWeight(value.weight, range);
+		text_layout_->SetFontStyle(value.style, range);
+		text_layout_->SetFontStretch(value.stretch, range);
+	}
+}
+
+void cwin::hook::non_window::non_client_handle::create_text_format_(){
+	auto visible_target = dynamic_cast<ui::visible_surface *>(parent_);
+	if (visible_target == nullptr)
+		return;
+
+	if (text_format_ != nullptr){
+		text_format_->Release();
+		text_format_ = nullptr;
+	}
+
+	thread_.get_write_factory()->CreateTextFormat(
+		font_family_name_.data(),
+		nullptr,
+		font_properties_.weight,
+		font_properties_.style,
+		font_properties_.stretch,
+		font_properties_.size,
+		L"",
+		&text_format_
+	);
+
+	if (text_format_ == nullptr)
+		return;
+
+	if (text_layout_ != nullptr){
+		text_layout_->Release();
+		text_layout_ = nullptr;
+	}
+
+	auto &size = visible_target->get_size();
+	auto &client_margin = get_client_margin_();
+
+	thread_.get_write_factory()->CreateTextLayout(
+		caption_.data(),
+		static_cast<UINT32>(caption_.size()),
+		text_format_,
+		static_cast<float>(size.cx - (10 + client_margin.left + client_margin.left)),
+		static_cast<float>(client_margin.top),
+		&text_layout_
+	);
+}
+
+cwin::hook::non_window::big_border_non_client_handle::big_border_non_client_handle(ui::visible_surface &parent)
+	: big_border_non_client_handle(parent, L""){}
+
+cwin::hook::non_window::big_border_non_client_handle::big_border_non_client_handle(ui::visible_surface &parent, const std::wstring &caption)
+	: non_client_handle(parent, caption){
+	font_properties_.size = 13.0f;
 }
 
 cwin::hook::non_window::big_border_non_client_handle::~big_border_non_client_handle() = default;
 
 const RECT &cwin::hook::non_window::big_border_non_client_handle::get_client_margin_() const{
 	return thread_.get_big_client_margin();
+}
+
+POINT cwin::hook::non_window::big_border_non_client_handle::get_caption_offset_() const{
+	auto offset = non_client_handle::get_caption_offset_();
+	offset.x -= get_client_margin_().left;
+	return offset;
 }

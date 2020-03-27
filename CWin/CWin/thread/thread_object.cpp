@@ -244,6 +244,12 @@ ID2D1SolidColorBrush *cwin::thread::object::get_color_brush() const{
 	return color_brush_;
 }
 
+ID2D1PathGeometry *cwin::thread::object::get_path_geomerty() const{
+	if (!is_context())
+		throw exception::outside_context();
+	return path_geomerty_;
+}
+
 HRGN cwin::thread::object::get_rgn(HRGN blacklist, HRGN other_blacklist) const{
 	if (!is_context())
 		throw exception::outside_context();
@@ -584,6 +590,9 @@ void cwin::thread::object::initialize_drawing_(){
 		);
 	}
 
+	if (path_geomerty_ == nullptr)
+		draw_factory_->CreatePathGeometry(&path_geomerty_);
+
 	//float dpi_x, dpi_y;
 	//draw_factory_->GetDesktopDpi(&dpi_x, &dpi_y);
 
@@ -592,6 +601,11 @@ void cwin::thread::object::initialize_drawing_(){
 }
 
 void cwin::thread::object::uninitialize_drawing_(){
+	if (path_geomerty_ != nullptr){
+		path_geomerty_->Release();
+		path_geomerty_ = nullptr;
+	}
+
 	if (color_brush_ != nullptr){
 		color_brush_->Release();
 		color_brush_ = nullptr;
