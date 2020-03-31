@@ -62,8 +62,8 @@ void cwin::events::erase_background::do_default_(){
 	}
 }
 
-cwin::events::custom_draw::custom_draw(events::target &target, const PAINTSTRUCT &info, const draw::render_info &render_info, state_type state)
-	: draw(target, info, render_info), state_(state){}
+cwin::events::custom_draw::custom_draw(events::target &target, const PAINTSTRUCT &info, const draw::render_info &render_info, state_type state, action_type action)
+	: draw(target, info, render_info), state_(state), action_(action){}
 
 cwin::events::custom_draw::~custom_draw() = default;
 
@@ -71,6 +71,12 @@ cwin::events::custom_draw::state_type cwin::events::custom_draw::get_state() con
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
 	return state_;
+}
+
+cwin::events::custom_draw::action_type cwin::events::custom_draw::get_action() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return action_;
 }
 
 cwin::events::measure_item::measure_item(events::target &target, MEASUREITEMSTRUCT &info)

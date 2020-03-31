@@ -185,7 +185,7 @@ namespace cwin::ui{
 		virtual void after_create_() override{
 			base_type::after_create_();
 			create_text_format_();
-			if (text_format_ != nullptr)
+			if (text_format_ != nullptr && !base_type::events_.trigger_then_report_result_as<events::disable_auto_size, bool>())
 				update_size_(false);
 		}
 
@@ -534,8 +534,8 @@ namespace cwin::ui{
 		using m_base_type::update_size_;
 
 		virtual void after_create_() override{
-			m_base_type::after_create_();
 			is_created_value_ = true;
+			m_base_type::after_create_();
 		}
 
 		virtual void after_destroy_() override{

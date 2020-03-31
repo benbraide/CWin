@@ -72,14 +72,24 @@ namespace cwin::events{
 			is_pressed,
 		};
 
-		custom_draw(events::target &target, const PAINTSTRUCT &info, const draw::render_info &render_info, state_type state);
+		enum class action_type{
+			erase_background,
+			paint,
+			frame,
+			fill,
+		};
+
+		custom_draw(events::target &target, const PAINTSTRUCT &info, const draw::render_info &render_info, state_type state, action_type action);
 
 		virtual ~custom_draw();
 
 		virtual state_type get_state() const;
 
+		virtual action_type get_action() const;
+
 	protected:
 		state_type state_;
+		action_type action_;
 	};
 
 	class measure_item : public object{

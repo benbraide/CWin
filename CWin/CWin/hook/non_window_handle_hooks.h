@@ -128,57 +128,184 @@ namespace cwin::hook::non_window{
 	};
 
 	template <class handle_type>
-	class triangle_handle : public handle_type{
+	class path_handle : public handle_type{
 	public:
-		enum class pivot_type{
-			top_left,
-			top_right,
-			bottom_left,
-			bottom_right,
-		};
+		using callback_type = std::function<bool(ID2D1GeometrySink &, std::size_t)>;
 
-		explicit triangle_handle(ui::visible_surface &parent)
-			: triangle_handle(parent, pivot_type::top_left, SIZE{}){}
+		path_handle(ui::visible_surface &parent, const callback_type &callback)
+			: handle_type(parent), callback_(callback){}
 
-		triangle_handle(ui::visible_surface &parent, pivot_type pivot)
-			: triangle_handle(parent, pivot, SIZE{}){}
-
-		triangle_handle(ui::visible_surface &parent, pivot_type pivot, const SIZE &pivot_offset)
-			: handle_type(parent), pivot_(pivot), pivot_offset_(pivot_offset){}
-
-		virtual ~triangle_handle() = default;
+		virtual ~path_handle() = default;
 
 	protected:
-		/*virtual void do_update_(const SIZE &size) override{
-			POINT points[3];
-			switch (pivot_){
-			case pivot_type::top_right:
-				points[0] = POINT{ (size.cx + pivot_offset_.cx), pivot_offset_.cy };
-				points[1] = POINT{ 0, size.cy };
-				points[2] = POINT{ size.cx, size.cy };
-				break;
-			case pivot_type::bottom_left:
-				points[0] = POINT{ pivot_offset_.cx, (size.cy + pivot_offset_.cy) };
-				points[1] = POINT{ size.cx, size.cy };
-				points[2] = POINT{ size.cx, 0 };
-				break;
-			case pivot_type::bottom_right:
-				points[0] = POINT{ (size.cx + pivot_offset_.cx), (size.cy + pivot_offset_.cy) };
-				points[1] = POINT{ size.cx, 0 };
-				points[2] = POINT{ 0, 0 };
-				break;
-			default:
-				points[0] = POINT{ pivot_offset_.cx, pivot_offset_.cy };
-				points[1] = POINT{ 0, size.cy };
-				points[2] = POINT{ size.cx, size.cy };
-				break;
+		virtual ID2D1Geometry *create_(const SIZE &size) const override{
+			if (callback_ == nullptr)
+				return nullptr;
+
+			ID2D1PathGeometry *value = nullptr;
+			handle::get_draw_factoy()->CreatePathGeometry(&value);
+
+			if (value == nullptr)
+				return nullptr;
+
+			ID2D1GeometrySink *sink = nullptr;
+			value->Open(&sink);
+
+			if (sink == nullptr)
+				return nullptr;
+
+			sink->BeginFigure(get_start_point_(), D2D1_FIGURE_BEGIN_FILLED);
+
+			std::size_t index = 0u;
+			while (callback_(*sink, index)){
+				++index;
 			}
 
-			handle_type::value_ = CreatePolygonRgn(points, 3, WINDING);
-		}*/
+			sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+			sink->Close();
+			sink->Release();
 
-		pivot_type pivot_;
-		SIZE pivot_offset_;
+			D2D1_RECT_F bounds{};
+			value->GetBounds(D2D1::IdentityMatrix(), &bounds);
+
+			if (static_cast<float>(size.cx) < (bounds.right - bounds.left) || static_cast<float>(size.cy) < (bounds.bottom - bounds.top)){
+				value->Release();
+				throw cwin::exception::not_supported();
+			}
+
+			return value;
+		}
+
+		virtual D2D1_POINT_2F get_start_point_() const{
+			return D2D1_POINT_2F{};
+		}
+
+		callback_type callback_;
+	};
+
+	struct lines_path_relative_point{
+		float x;
+		float y;
+	};
+
+	using lines_path_variant_type = std::variant<POINT, D2D1_POINT_2F, lines_path_relative_point>;
+	using lines_path_point_list_type = std::vector<lines_path_variant_type>;
+
+	template <class handle_type>
+	class lines_path_handle : public path_handle<handle_type>{
+	public:
+		using base_type = path_handle<handle_type>;
+
+		using relative_point = lines_path_relative_point;
+		using variant_type = lines_path_variant_type;
+		using point_list_type = lines_path_point_list_type;
+
+		lines_path_handle(ui::visible_surface &parent, const point_list_type &points)
+			: lines_path_handle(parent){
+			points_ = points;
+		}
+
+		lines_path_handle(ui::visible_surface &parent, point_list_type &&points)
+			: lines_path_handle(parent){
+			points_ = std::move(points);
+		}
+
+		lines_path_handle(ui::visible_surface &parent, const std::vector<POINT> &points)
+			: lines_path_handle(parent){
+			for (auto &point : points)
+				points_.push_back(point);
+		}
+
+		lines_path_handle(ui::visible_surface &parent, const std::vector<D2D1_POINT_2F> &points)
+			: lines_path_handle(parent){
+			for (auto &point : points)
+				points_.push_back(point);
+		}
+
+		lines_path_handle(ui::visible_surface &parent, const std::vector<relative_point> &points)
+			: lines_path_handle(parent){
+			for (auto &point : points)
+				points_.push_back(point);
+		}
+
+		virtual ~lines_path_handle() = default;
+
+		class point_list_visitor{
+		public:
+			point_list_visitor(ID2D1GeometrySink &sink, const SIZE &target_size)
+				: sink_(sink), target_size_(target_size){}
+
+			void operator ()(const POINT &value) const{
+				sink_.AddLine(D2D1::Point2F(
+					static_cast<float>(value.x),
+					static_cast<float>(value.y)
+				));
+			}
+
+			void operator ()(const D2D1_POINT_2F &value) const{
+				sink_.AddLine(value);
+			}
+
+			void operator ()(const relative_point &value) const{
+				sink_.AddLine(D2D1::Point2F(
+					(target_size_.cx * value.x),
+					(target_size_.cy * value.y)
+				));
+			}
+
+		private:
+			ID2D1GeometrySink &sink_;
+			SIZE target_size_;
+		};
+
+	protected:
+		explicit lines_path_handle(ui::visible_surface &parent)
+			: base_type(parent, nullptr){
+			base_type::callback_ = [=](ID2D1GeometrySink &sink, std::size_t index){
+				if (points_.size() <= index)
+					return false;
+
+				SIZE target_size{};
+				if (auto surface_target = dynamic_cast<ui::surface *>(base_type::parent_); surface_target != nullptr)
+					target_size = surface_target->get_size();
+
+				if (index != 0u)
+					std::visit(point_list_visitor(sink, target_size), points_[index]);
+
+				return true;
+			};
+		}
+
+		virtual D2D1_POINT_2F get_start_point_() const override{
+			if (points_.empty())
+				throw cwin::exception::not_supported();
+
+			if (std::holds_alternative<D2D1_POINT_2F>(points_[0]))
+				return std::get<D2D1_POINT_2F>(points_[0]);
+
+			if (std::holds_alternative<POINT>(points_[0])){
+				auto &point = std::get<POINT>(points_[0]);
+				return D2D1::Point2F(
+					static_cast<float>(point.x),
+					static_cast<float>(point.y)
+				);
+			}
+
+			if (!std::holds_alternative<relative_point>(points_[0]))
+				throw cwin::exception::not_supported();
+
+			SIZE target_size{};
+			if (auto surface_target = dynamic_cast<ui::surface *>(base_type::parent_); surface_target != nullptr)
+				target_size = surface_target->get_size();
+
+			auto &point = std::get<relative_point>(points_[0]);
+			return D2D1::Point2F(
+				(target_size.cx * point.x),
+				(target_size.cy * point.y)
+			);
+		}
+
+		point_list_type points_;
 	};
 
 	template <class handle_type>
@@ -276,17 +403,32 @@ namespace cwin::hook::non_window{
 
 namespace cwin::ui{
 	template <>
-	struct parent_type<hook::non_window::triangle_handle<hook::non_window::client_handle>>{
+	struct parent_type<hook::non_window::path_handle<hook::non_window::client_handle>>{
 		using value = visible_surface;
 	};
 
 	template <>
-	struct parent_type<hook::non_window::triangle_handle<hook::non_window::non_client_handle>>{
+	struct parent_type<hook::non_window::path_handle<hook::non_window::non_client_handle>>{
 		using value = visible_surface;
 	};
 
 	template <>
-	struct parent_type<hook::non_window::triangle_handle<hook::non_window::big_border_non_client_handle>>{
+	struct parent_type<hook::non_window::path_handle<hook::non_window::big_border_non_client_handle>>{
+		using value = visible_surface;
+	};
+
+	template <>
+	struct parent_type<hook::non_window::lines_path_handle<hook::non_window::client_handle>>{
+		using value = visible_surface;
+	};
+
+	template <>
+	struct parent_type<hook::non_window::lines_path_handle<hook::non_window::non_client_handle>>{
+		using value = visible_surface;
+	};
+
+	template <>
+	struct parent_type<hook::non_window::lines_path_handle<hook::non_window::big_border_non_client_handle>>{
 		using value = visible_surface;
 	};
 

@@ -157,7 +157,7 @@ void cwin::ui::window_surface_manager::end_draw(ID2D1RenderTarget &render_target
 }
 
 LRESULT cwin::ui::window_surface_manager::call_default(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
-	return target.get_events().trigger_then_report_result<events::unknown>(MSG{ target.handle_, message, wparam, lparam }, get_class_entry(target));
+	return target.events_.trigger_then_report_result<events::unknown>(MSG{ target.handle_, message, wparam, lparam }, get_class_entry(target));
 }
 
 WNDPROC cwin::ui::window_surface_manager::get_class_entry(ui::window_surface &target){
@@ -221,7 +221,7 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_info &target_info, UI
 
 		target_info.target->handle_ = nullptr;
 		target_info.target->after_destroy_();
-		target_info.target->get_events().trigger<events::after_destroy>();
+		target_info.target->events_.trigger<events::after_destroy>();
 
 		break;
 	case WM_CLOSE:
@@ -264,30 +264,30 @@ LRESULT cwin::ui::window_surface_manager::dispatch_(window_info &target_info, UI
 	case WM_ENABLE:
 		if (wparam == FALSE){
 			target_info.target->is_enabled_ = false;
-			target_info.target->get_events().trigger<events::disable>();
+			target_info.target->events_.trigger<events::disable>();
 		}
 		else{//Enabled
 			target_info.target->is_enabled_ = true;
-			target_info.target->get_events().trigger<events::enable>();
+			target_info.target->events_.trigger<events::enable>();
 		}
 		break;
 	case WM_SETFOCUS:
 		mouse_info_.focused = target_info.target;
-		if (target_info.target->get_events().trigger_then_report_prevented_default<events::io::focus>())
+		if (target_info.target->events_.trigger_then_report_prevented_default<events::io::focus>())
 			return 0;
 		break;
 	case WM_KILLFOCUS:
 		if (target_info.target == mouse_info_.focused)
 			mouse_info_.focused = nullptr;
 
-		if (target_info.target->get_events().trigger_then_report_prevented_default<events::io::blur>())
+		if (target_info.target->events_.trigger_then_report_prevented_default<events::io::blur>())
 			return 0;
 
 		break;
 	case WM_GETDLGCODE:
-		return target_info.target->get_events().trigger_then_report_result<events::io::get_dlg_code>(MSG{ target_info.target->handle_, message, wparam, lparam }, get_class_entry(*target_info.target));
+		return target_info.target->events_.trigger_then_report_result<events::io::get_dlg_code>(MSG{ target_info.target->handle_, message, wparam, lparam }, get_class_entry(*target_info.target));
 	case WM_NCHITTEST:
-		return target_info.target->get_events().trigger_then_report_result<events::io::hit_test>(MSG{ target_info.target->handle_, message, wparam, lparam }, get_class_entry(*target_info.target));
+		return target_info.target->events_.trigger_then_report_result<events::io::hit_test>(MSG{ target_info.target->handle_, message, wparam, lparam }, get_class_entry(*target_info.target));
 	case WM_SETCURSOR:
 		if (reinterpret_cast<HWND>(wparam) != target_info.target->handle_)
 			return FALSE;
@@ -382,7 +382,7 @@ void cwin::ui::window_surface_manager::position_changed_(window_info &target_inf
 }
 
 void cwin::ui::window_surface_manager::show_(visible_surface &target){
-	target.get_events().trigger<events::show>();
+	target.events_.trigger<events::show>();
 	target.traverse_children_<visible_surface>([&](visible_surface &child){
 		if (child.is_visible_())
 			show_(child);
@@ -397,7 +397,7 @@ void cwin::ui::window_surface_manager::hide_(visible_surface &target){
 		return true;
 	});
 
-	target.get_events().trigger<events::hide>();
+	target.events_.trigger<events::hide>();
 }
 
 void cwin::ui::window_surface_manager::before_paint_(window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
@@ -444,7 +444,7 @@ void cwin::ui::window_surface_manager::erase_background_(visible_surface &target
 		return;
 
 	utility::drawing::save_dc save_dc(paint_info_.hdc);
-	target.get_events().trigger<events::erase_background>(
+	target.events_.trigger<events::erase_background>(
 		MSG{ window_target->handle_, WM_ERASEBKGND, wparam, lparam },
 		thread_.get_class_entry(window_target->get_class_name_()),
 		paint_info,
@@ -465,15 +465,15 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 	if (auto window_target = dynamic_cast<window_surface *>(&target); window_target == nullptr){
 		utility::drawing::begin begin(*render.target);
 
-		auto bound = target.get_events().trigger_then_report_result_as<events::interrupt::get_geometry, ID2D1Geometry *>();
-		auto client_bound = target.get_events().trigger_then_report_result_as<events::interrupt::get_client_geometry, ID2D1Geometry *>();
+		auto bound = target.events_.trigger_then_report_result_as<events::interrupt::get_geometry, ID2D1Geometry *>();
+		auto client_bound = target.events_.trigger_then_report_result_as<events::interrupt::get_client_geometry, ID2D1Geometry *>();
 
 		if (bound != nullptr && bound != client_bound){
 			utility::drawing::save_dc save_dc(paint_info_.hdc);
 			utility::drawing::translate translate(*render.target, SIZE{ offset.x, offset.y });
 			utility::drawing::layer layer(*render.target, *bound);
 
-			target.get_events().trigger<events::non_client_paint>(paint_info, render);
+			target.events_.trigger<events::non_client_paint>(paint_info, render);
 		}
 
 		auto client_offset = offset;
@@ -485,8 +485,8 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		if (client_bound != nullptr){
 			utility::drawing::layer layer(*render.target, *client_bound);
 
-			target.get_events().trigger<events::erase_background>(paint_info, render);
-			target.get_events().trigger<events::paint>(paint_info, render);
+			target.events_.trigger<events::erase_background>(paint_info, render);
+			target.events_.trigger<events::paint>(paint_info, render);
 
 			paint_children_(target, offset, render);
 		}
@@ -494,8 +494,8 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 			auto &target_size = target.get_size_();
 			utility::drawing::clip clip(*render.target, RECT{ 0, 0, target_size.cx, target_size.cy });
 
-			target.get_events().trigger<events::erase_background>(paint_info, render);
-			target.get_events().trigger<events::paint>(paint_info, render);
+			target.events_.trigger<events::erase_background>(paint_info, render);
+			target.events_.trigger<events::paint>(paint_info, render);
 
 			paint_children_(target, offset, render);
 		}
@@ -505,9 +505,9 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 		utility::drawing::begin_token begin(*render.target);
 
 		if (!target.events_.trigger_then_report_result_as<events::interrupt::handles_erase_background, bool>())
-			target.get_events().trigger<events::erase_background>(paint_info, render);
+			target.events_.trigger<events::erase_background>(paint_info, render);
 
-		target.get_events().trigger<events::paint>(
+		target.events_.trigger<events::paint>(
 			MSG{ window_target->handle_, message, wparam, lparam },
 			thread_.get_class_entry(window_target->get_class_name_()),
 			paint_info,
@@ -521,10 +521,10 @@ void cwin::ui::window_surface_manager::paint_(visible_surface &target, UINT mess
 void cwin::ui::window_surface_manager::paint_children_(visible_surface &target, POINT offset, render_info &render){
 	target.offset_point_to_window_(offset);
 	target.traverse_children_<visible_surface>([&](visible_surface &child){
-		if (dynamic_cast<window_surface *>(&child) != nullptr || !child.is_created() || !child.is_visible_())
+		if (dynamic_cast<window_surface *>(&child) != nullptr || !child.is_created_() || !child.is_visible_())
 			return true;
 
-		auto &child_position = child.get_position();
+		auto &child_position = child.get_position_();
 		paint_(child, WM_PAINT, 0, 0, POINT{ (child_position.x + offset.x), (child_position.y + offset.y) }, render);
 
 		return true;
@@ -534,7 +534,7 @@ void cwin::ui::window_surface_manager::paint_children_(visible_surface &target, 
 LRESULT cwin::ui::window_surface_manager::command_(window_surface &target, WPARAM wparam, LPARAM lparam){
 	if (lparam != 0){//Control command
 		if (auto sender = find_(reinterpret_cast<HWND>(lparam), true); sender.target != nullptr)
-			return sender.target->get_events().trigger_then_report_result<events::interrupt::command>(MSG{ target.handle_, WM_COMMAND, wparam, lparam }, get_class_entry(target));
+			return sender.target->events_.trigger_then_report_result<events::interrupt::command>(MSG{ target.handle_, WM_COMMAND, wparam, lparam }, get_class_entry(target));
 	}
 
 	if (HIWORD(wparam) != 0u){//Accelerator command
@@ -546,7 +546,7 @@ LRESULT cwin::ui::window_surface_manager::command_(window_surface &target, WPARA
 
 LRESULT cwin::ui::window_surface_manager::notify_(window_surface &target, WPARAM wparam, LPARAM lparam){
 	if (auto sender = find_(reinterpret_cast<NMHDR *>(lparam)->hwndFrom, true); sender.target != nullptr)
-		return sender.target->get_events().trigger_then_report_result<events::interrupt::notify>(MSG{ target.handle_, WM_NOTIFY, wparam, lparam }, get_class_entry(target));
+		return sender.target->events_.trigger_then_report_result<events::interrupt::notify>(MSG{ target.handle_, WM_NOTIFY, wparam, lparam }, get_class_entry(target));
 	return call_default(target, WM_COMMAND, wparam, lparam);
 }
 
