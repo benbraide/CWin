@@ -68,6 +68,7 @@ namespace cwin::events{
 	public:
 		enum class state_type{
 			nil,
+			is_disabled,
 			is_hot,
 			is_pressed,
 		};
@@ -122,5 +123,41 @@ namespace cwin::events{
 
 	protected:
 		virtual bool handle_set_result_(const void *value, const std::type_info &type) override;
+	};
+
+	class get_custom_color : public retrieve_value<D2D1_COLOR_F>{
+	public:
+		using base_type = retrieve_value<D2D1_COLOR_F>;
+		using state_type = custom_draw::state_type;
+
+		get_custom_color(events::target &target, state_type state);
+
+		virtual ~get_custom_color();
+
+		virtual state_type get_state() const;
+
+	protected:
+		state_type state_;
+	};
+
+	class get_background_fill_color : public get_custom_color{
+	public:
+		using get_custom_color::get_custom_color;
+
+		virtual ~get_background_fill_color() = default;
+	};
+
+	class get_background_frame_color : public get_custom_color{
+	public:
+		using get_custom_color::get_custom_color;
+
+		virtual ~get_background_frame_color() = default;
+	};
+
+	class get_text_color : public get_custom_color{
+	public:
+		using get_custom_color::get_custom_color;
+
+		virtual ~get_text_color() = default;
 	};
 }

@@ -411,7 +411,16 @@ namespace cwin::ui{
 		text_label(args_types &&... args)
 			: m_base_type(std::forward<args_types>(args)...){
 			m_base_type::bind_default_([=](events::paint &e){
-				paint_(e);
+				paint_(e, events::custom_draw::state_type::nil);
+			});
+
+			m_base_type::bind_default_([=](events::custom_draw &e){
+				if (e.get_action() == events::custom_draw::action_type::paint)
+					paint_(e, e.get_state());
+			});
+
+			m_base_type::bind_default_([=](events::get_text_color &e){
+				e.set_value(text_color_);
 			});
 
 			m_base_type::padding_.cx = 0;
@@ -438,24 +447,6 @@ namespace cwin::ui{
 			});
 		}
 		
-		virtual void set_text_background_color(const D2D1_COLOR_F &value){
-			m_base_type::post_or_execute_task([=]{
-				set_text_background_color_(value);
-			});
-		}
-
-		virtual const D2D1_COLOR_F &get_text_background_color() const{
-			return *m_base_type::execute_task([&]{
-				return &text_background_color_;
-			});
-		}
-
-		virtual void get_text_background_color(const std::function<void(const D2D1_COLOR_F &)> &callback) const{
-			m_base_type::post_or_execute_task([=]{
-				callback(text_background_color_);
-			});
-		}
-
 		virtual void set_text_alignment(alignment_type value){
 			m_base_type::post_or_execute_task([=]{
 				set_text_alignment_(value);
@@ -557,11 +548,6 @@ namespace cwin::ui{
 			m_base_type::redraw_();
 		}
 
-		virtual void set_text_background_color_(const D2D1_COLOR_F &value){
-			text_background_color_ = value;
-			m_base_type::redraw_();
-		}
-
 		virtual void set_text_alignment_(alignment_type value){
 			text_alignment_ = value;
 			computed_text_offset_ = compute_text_offset(m_base_type::get_size_(), m_base_type::text_size_, text_alignment_);
@@ -573,7 +559,7 @@ namespace cwin::ui{
 			m_base_type::redraw_();
 		}
 
-		virtual void paint_(events::paint &e) const{
+		virtual void paint_(events::draw &e, events::custom_draw::state_type state) const{
 			auto &info = e.get_info();
 			auto &size = m_base_type::get_size_();
 
@@ -584,17 +570,22 @@ namespace cwin::ui{
 				size.cy
 			};
 
-			do_paint_(e, region);
+			do_paint_(e, state, region);
 		}
 
-		virtual void do_paint_(events::paint &e, RECT &region) const{
+		virtual void do_paint_(events::draw &e, events::custom_draw::state_type state, RECT &region) const{
 			if (m_base_type::text_layout_ == nullptr)
 				return;
 
 			auto &render_target = e.get_render_target();
 			auto &color_brush = e.get_color_brush();
 
-			color_brush.SetColor(text_color_);
+			D2D1_COLOR_F color{};
+			m_base_type::events_.trigger_then<events::get_text_color>([&](events::get_text_color &e){
+				color = e.get_value();
+			}, state);
+
+			color_brush.SetColor(color);
 			render_target.DrawTextLayout(
 				D2D1::Point2F(static_cast<float>(region.left), static_cast<float>(region.top)),
 				m_base_type::text_layout_,
@@ -603,9 +594,8 @@ namespace cwin::ui{
 		}
 
 		D2D1_COLOR_F text_color_{ 1.0f, 1.0f, 1.0f, 1.0f };
-		D2D1_COLOR_F text_background_color_{ 0.0f, 0.0f, 0.0f, 0.0f };
-
 		alignment_type text_alignment_ = alignment_type::top_left;
+
 		POINT text_offset_{};
 		POINT computed_text_offset_{};
 

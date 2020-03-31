@@ -221,7 +221,7 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 
 		item.insert_object([&](cwin::hook::animation &hk){
 			animation_ = &hk;
-			hk.set_duration(std::chrono::seconds(2));
+			hk.set_all_duration(std::chrono::seconds(2));
 		});
 		
 		item.insert_object([&](cwin::menu::popup &popup){

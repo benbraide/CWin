@@ -19,9 +19,6 @@ NMHDR &cwin::events::interrupt::notify::get_info() const{
 	return *reinterpret_cast<NMHDR *>(message_info_.lParam);
 }
 
-cwin::events::interrupt::animate::animate(target &context, unsigned __int64 id, const callback_type &callback)
-	: object(context), id_(id), callback_(callback){}
-
 cwin::events::interrupt::animate::~animate() = default;
 
 unsigned __int64 cwin::events::interrupt::animate::get_id() const{
@@ -30,7 +27,7 @@ unsigned __int64 cwin::events::interrupt::animate::get_id() const{
 	return id_;
 }
 
-const cwin::events::interrupt::animate::callback_type &cwin::events::interrupt::animate::get_callback() const{
+const cwin::events::interrupt::animate::m_callback_type &cwin::events::interrupt::animate::get_callback() const{
 	if (!is_thread_context())
 		throw thread::exception::outside_context();
 	return callback_;

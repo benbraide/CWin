@@ -1,10 +1,14 @@
 #pragma once
 
 #include "../ui/ui_text_content.h"
+#include "../events/drawing_events.h"
 
 namespace cwin::non_window{
 	class push_button : public ui::visible_text_label{
 	public:
+		struct fill_background_animation_id{};
+		struct frame_background_animation_id{};
+
 		explicit push_button(tree &parent);
 
 		push_button(tree &parent, std::size_t index);

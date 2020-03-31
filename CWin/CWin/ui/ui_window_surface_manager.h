@@ -66,6 +66,8 @@ namespace cwin::ui{
 
 		void end_draw(ID2D1RenderTarget &render_target);
 
+		bool is_drawing(ID2D1RenderTarget &render_target) const;
+
 		static LRESULT call_default(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam);
 
 		static WNDPROC get_class_entry(ui::window_surface &target);

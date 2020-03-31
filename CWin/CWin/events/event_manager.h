@@ -390,7 +390,7 @@ namespace cwin::events{
 				return 0u;
 
 			auto id = reinterpret_cast<unsigned __int64>(handler_object.get());
-			handler_list.list.push_back(handler_info{
+			handler_list.list.push_front(handler_info{
 				id,
 				handler_object,
 				condition
@@ -436,7 +436,7 @@ namespace cwin::events{
 				return 0u;
 
 			auto id = reinterpret_cast<unsigned __int64>(handler_object.get());
-			handler_list.default_list.push_back(handler_info{
+			handler_list.default_list.push_front(handler_info{
 				id,
 				handler_object,
 				condition

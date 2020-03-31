@@ -156,6 +156,12 @@ void cwin::ui::window_surface_manager::end_draw(ID2D1RenderTarget &render_target
 	}
 }
 
+bool cwin::ui::window_surface_manager::is_drawing(ID2D1RenderTarget &render_target) const{
+	if (!thread_.is_context())
+		throw thread::exception::outside_context();
+	return (begin_draw_count_.find(&render_target) != begin_draw_count_.end());
+}
+
 LRESULT cwin::ui::window_surface_manager::call_default(ui::window_surface &target, UINT message, WPARAM wparam, LPARAM lparam){
 	return target.events_.trigger_then_report_result<events::unknown>(MSG{ target.handle_, message, wparam, lparam }, get_class_entry(target));
 }

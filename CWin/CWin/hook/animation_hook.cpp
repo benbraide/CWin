@@ -12,8 +12,9 @@ cwin::hook::animation::animation(ui::tree &parent, const timing_type &timing)
 cwin::hook::animation::animation(ui::tree &parent, const duration_type &duration)
 	: animation(parent, utility::animation_timing::linear::ease_in, duration){}
 
-cwin::hook::animation::animation(ui::tree &parent, const timing_type &timing, const duration_type &duration)
-	: timing_(timing), duration_(duration){
+cwin::hook::animation::animation(ui::tree &parent, const timing_type &timing, const duration_type &duration){
+	parts_[0u] = part_info{ true, timing, duration, 0u, nullptr, 0u };
+
 	parent.get_first_child([&](animation &child){
 		parent.remove_child(child);
 	});
@@ -24,9 +25,6 @@ cwin::hook::animation::animation(ui::tree &parent, const timing_type &timing, co
 		throw thread::exception::context_mismatch();
 
 	parent.get_events().bind([=](events::interrupt::animate &e){
-		if (!enabled_state_)
-			return;//Disabled
-
 		auto &part = get_part_(e.get_id());
 		if (!part.is_enabled || part.duration.count() == 0)
 			return;//Ignore
@@ -45,8 +43,7 @@ cwin::hook::animation::animation(ui::tree &parent, const timing_type &timing, co
 			part.callback_check_point = check_point;
 			part.active_callback = callback;
 
-			callback(progress, has_more);
-			if (!has_more && part.callback_check_point == check_point)
+			if ((!callback(progress, has_more) || !has_more) && part.callback_check_point == check_point)
 				part.active_callback = nullptr;
 
 			return true;
@@ -58,21 +55,17 @@ cwin::hook::animation::animation(ui::tree &parent, const timing_type &timing, co
 
 cwin::hook::animation::~animation() = default;
 
-void cwin::hook::animation::set_timing(const timing_type &value){
-	set_timing(0u, value);
-}
-
 void cwin::hook::animation::set_timing(unsigned __int64 id, const timing_type &value){
 	post_or_execute_task([=]{
-		if (id == 0u)
-			timing_ = value;
-		else//Retrieve part
-			get_part_(id).timing = value;
+		get_part_(id).timing = value;
 	});
 }
 
-const cwin::hook::animation::timing_type &cwin::hook::animation::get_timing() const{
-	return get_timing(0u);
+void cwin::hook::animation::set_all_timing(const timing_type &value){
+	post_or_execute_task([=]{
+		for (auto &part : parts_)
+			part.second.timing = value;
+	});
 }
 
 const cwin::hook::animation::timing_type &cwin::hook::animation::get_timing(unsigned __int64 id) const{
@@ -81,31 +74,23 @@ const cwin::hook::animation::timing_type &cwin::hook::animation::get_timing(unsi
 	});
 }
 
-void cwin::hook::animation::get_timing(const std::function<void(const timing_type &)> &callback) const{
-	get_timing(0u, callback);
-}
-
 void cwin::hook::animation::get_timing(unsigned __int64 id, const std::function<void(const timing_type &)> &callback) const{
 	post_or_execute_task([=]{
 		callback(get_timing_(id));
 	});
 }
 
-void cwin::hook::animation::set_duration(const duration_type &value){
-	set_duration(0u, value);
-}
-
 void cwin::hook::animation::set_duration(unsigned __int64 id, const duration_type &value){
 	post_or_execute_task([=]{
-		if (id == 0u)
-			duration_ = value;
-		else//Retrieve part
-			get_part_(id).duration = value;
+		get_part_(id).duration = value;
 	});
 }
 
-const cwin::hook::animation::duration_type &cwin::hook::animation::get_duration() const{
-	return get_duration(0u);
+void cwin::hook::animation::set_all_duration(const duration_type &value){
+	post_or_execute_task([=]{
+		for (auto &part : parts_)
+			part.second.duration = value;
+	});
 }
 
 const cwin::hook::animation::duration_type &cwin::hook::animation::get_duration(unsigned __int64 id) const{
@@ -114,18 +99,10 @@ const cwin::hook::animation::duration_type &cwin::hook::animation::get_duration(
 	});
 }
 
-void cwin::hook::animation::get_duration(const std::function<void(const duration_type &)> &callback) const{
-	get_duration(0u, callback);
-}
-
 void cwin::hook::animation::get_duration(unsigned __int64 id, const std::function<void(const duration_type &)> &callback) const{
 	post_or_execute_task([=]{
 		callback(get_duration_(id));
 	});
-}
-
-void cwin::hook::animation::enable(){
-	enable(0u);
 }
 
 void cwin::hook::animation::enable(unsigned __int64 id){
@@ -134,8 +111,11 @@ void cwin::hook::animation::enable(unsigned __int64 id){
 	});
 }
 
-void cwin::hook::animation::disable(){
-	disable(0u);
+void cwin::hook::animation::enable_all(){
+	post_or_execute_task([=]{
+		for (auto &part : parts_)
+			part.second.is_enabled = true;
+	});
 }
 
 void cwin::hook::animation::disable(unsigned __int64 id){
@@ -144,8 +124,11 @@ void cwin::hook::animation::disable(unsigned __int64 id){
 	});
 }
 
-bool cwin::hook::animation::is_enabled() const{
-	return is_enabled(0u);
+void cwin::hook::animation::disable_all(){
+	post_or_execute_task([=]{
+		for (auto &part : parts_)
+			part.second.is_enabled = false;
+	});
 }
 
 bool cwin::hook::animation::is_enabled(unsigned __int64 id) const{
@@ -154,18 +137,10 @@ bool cwin::hook::animation::is_enabled(unsigned __int64 id) const{
 	});
 }
 
-void cwin::hook::animation::is_enabled(const std::function<void(bool)> &callback) const{
-	is_enabled(0u, callback);
-}
-
 void cwin::hook::animation::is_enabled(unsigned __int64 id, const std::function<void(bool)> &callback) const{
 	post_or_execute_task([=]{
 		callback(is_enabled_(id));
 	});
-}
-
-void cwin::hook::animation::cancel(){
-	cancel(0u);
 }
 
 void cwin::hook::animation::cancel(unsigned __int64 id){
@@ -174,8 +149,11 @@ void cwin::hook::animation::cancel(unsigned __int64 id){
 	});
 }
 
-void cwin::hook::animation::stop(){
-	stop(0u);
+void cwin::hook::animation::cancel_all(){
+	post_or_execute_task([=]{
+		for (auto &part : parts_)
+			cancel_(part.first);
+	});
 }
 
 void cwin::hook::animation::stop(unsigned __int64 id){
@@ -184,17 +162,15 @@ void cwin::hook::animation::stop(unsigned __int64 id){
 	});
 }
 
+void cwin::hook::animation::stop_all(){
+	post_or_execute_task([=]{
+		for (auto &part : parts_)
+			stop_(part.first);
+	});
+}
+
 void cwin::hook::animation::cancel_(unsigned __int64 id){
-	if (id == 0u){//Cancel all
-		for (auto &part : parts_){
-			part.second.callback_check_point = ++part.second.check_point;
-			if (part.second.active_callback != nullptr){
-				part.second.active_callback(1.0f, false);
-				part.second.active_callback = nullptr;
-			}
-		}
-	}
-	else if (auto it = parts_.find(id); it != parts_.end()){
+	if (auto it = parts_.find(id); it != parts_.end()){
 		it->second.callback_check_point = ++it->second.check_point;
 		if (it->second.active_callback != nullptr){
 			it->second.active_callback(1.0f, false);
@@ -204,57 +180,34 @@ void cwin::hook::animation::cancel_(unsigned __int64 id){
 }
 
 void cwin::hook::animation::stop_(unsigned __int64 id){
-	if (id == 0u){//Cancel all
-		for (auto &part : parts_){
-			part.second.callback_check_point = ++part.second.check_point;
-			part.second.active_callback = nullptr;
-		}
-	}
-	else if (auto it = parts_.find(id); it != parts_.end()){
+	if (auto it = parts_.find(id); it != parts_.end()){
 		it->second.callback_check_point = ++it->second.check_point;
 		it->second.active_callback = nullptr;
 	}
 }
 
-cwin::hook::animation::part_info &cwin::hook::animation::get_part_(unsigned __int64 id){
+cwin::hook::animation::part_info &cwin::hook::animation::get_part_(unsigned __int64 id) const{
 	if (auto it = parts_.find(id); it != parts_.end())
 		return it->second;
-	return (parts_[id] = part_info{ enabled_state_, timing_, duration_, 0u, nullptr, 0u });
+
+	if (auto it = parts_.find(0u); it != parts_.end())
+		return (parts_[id] = it->second);
+
+	throw cwin::exception::not_supported();
 }
 
 const cwin::hook::animation::timing_type &cwin::hook::animation::get_timing_(unsigned __int64 id) const{
-	if (id == 0u)
-		return timing_;
-
-	if (auto it = parts_.find(id); it != parts_.end())
-		return it->second.timing;
-
-	return timing_;
+	return get_part_(id).timing;
 }
 
 const cwin::hook::animation::duration_type &cwin::hook::animation::get_duration_(unsigned __int64 id) const{
-	if (id == 0u)
-		return duration_;
-
-	if (auto it = parts_.find(id); it != parts_.end())
-		return it->second.duration;
-
-	return duration_;
+	return get_part_(id).duration;
 }
 
 void cwin::hook::animation::set_enabled_state_(unsigned __int64 id, bool value){
-	if (id == 0u)//Apply value to all parts
-		enabled_state_ = value;
-	else
-		get_part_(id).is_enabled = value;
+	get_part_(id).is_enabled = value;
 }
 
 bool cwin::hook::animation::is_enabled_(unsigned __int64 id) const{
-	if (!enabled_state_ || id == 0u)
-		return enabled_state_;
-
-	if (auto it = parts_.find(id); it != parts_.end())
-		return it->second.is_enabled;
-
-	return enabled_state_;
+	return get_part_(id).is_enabled;
 }

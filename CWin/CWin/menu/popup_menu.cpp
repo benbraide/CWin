@@ -12,7 +12,8 @@ cwin::menu::popup::popup(ui::visible_surface &owner)
 cwin::menu::popup::popup(ui::visible_surface &owner, bool bind_context)
 	: object(owner, static_cast<std::size_t>(-1)){
 	if (bind_context){
-		owner.get_events().bind([=](events::menu::context &){
+		owner.get_events().bind([=](events::menu::context &e){
+			e.stop_propagation();
 			return this;
 		}, get_talk_id());
 	}

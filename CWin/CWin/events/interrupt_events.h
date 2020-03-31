@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../utility/traits.h"
+
 #include "event_message_object.h"
 
 namespace cwin::ui{
@@ -32,19 +34,44 @@ namespace cwin::events::interrupt{
 
 	class animate : public object{
 	public:
-		using callback_type = std::function<void(float, bool)>;
+		using m_callback_type = std::function<bool(float, bool)>;
 
-		animate(target &context, unsigned __int64 id, const callback_type &callback);
+		template <typename callback_type>
+		animate(target &context, unsigned __int64 id, const callback_type &callback)
+			: object(context), id_(id){
+			using return_type = typename utility::object_to_function_traits::traits<callback_type>::return_type;
+			callback_ = resolve_callback<return_type>::template get(callback);
+		}
 
 		virtual ~animate();
 
 		virtual unsigned __int64 get_id() const;
 
-		virtual const callback_type &get_callback() const;
+		virtual const m_callback_type &get_callback() const;
 
 	protected:
+		template <class return_type>
+		struct resolve_callback;
+
+		template <>
+		struct resolve_callback<bool>{
+			static m_callback_type get(const std::function<bool(float, bool)> &callback){
+				return callback;
+			}
+		};
+
+		template <>
+		struct resolve_callback<void>{
+			static m_callback_type get(const std::function<void(float, bool)> &callback){
+				return [=](float progress, bool has_more){
+					callback(progress, has_more);
+					return true;
+				};
+			}
+		};
+
 		unsigned __int64 id_;
-		callback_type callback_;
+		m_callback_type callback_;
 	};
 
 	class is_opaque_background : public object{

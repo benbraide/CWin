@@ -20,7 +20,7 @@ namespace cwin::hook{
 			duration_type duration;
 
 			std::size_t check_point;
-			events::interrupt::animate::callback_type active_callback;
+			events::interrupt::animate::m_callback_type active_callback;
 			std::size_t callback_check_point;
 		};
 
@@ -34,60 +34,48 @@ namespace cwin::hook{
 
 		virtual ~animation();
 
-		virtual void set_timing(const timing_type &value);
-
 		virtual void set_timing(unsigned __int64 id, const timing_type &value);
 
-		virtual const timing_type &get_timing() const;
+		virtual void set_all_timing(const timing_type &value);
 
 		virtual const timing_type &get_timing(unsigned __int64 id) const;
 
-		virtual void get_timing(const std::function<void(const timing_type &)> &callback) const;
-
 		virtual void get_timing(unsigned __int64 id, const std::function<void(const timing_type &)> &callback) const;
-
-		virtual void set_duration(const duration_type &value);
 
 		virtual void set_duration(unsigned __int64 id, const duration_type &value);
 
-		virtual const duration_type &get_duration() const;
+		virtual void set_all_duration(const duration_type &value);
 
 		virtual const duration_type &get_duration(unsigned __int64 id) const;
 
-		virtual void get_duration(const std::function<void(const duration_type &)> &callback) const;
-
 		virtual void get_duration(unsigned __int64 id, const std::function<void(const duration_type &)> &callback) const;
-
-		virtual void enable();
 
 		virtual void enable(unsigned __int64 id);
 
-		virtual void disable();
+		virtual void enable_all();
 
 		virtual void disable(unsigned __int64 id);
 
-		virtual bool is_enabled() const;
+		virtual void disable_all();
 
 		virtual bool is_enabled(unsigned __int64 id) const;
 
-		virtual void is_enabled(const std::function<void(bool)> &callback) const;
-
 		virtual void is_enabled(unsigned __int64 id, const std::function<void(bool)> &callback) const;
-
-		virtual void cancel();
 
 		virtual void cancel(unsigned __int64 id);
 
-		virtual void stop();
+		virtual void cancel_all();
 
 		virtual void stop(unsigned __int64 id);
+
+		virtual void stop_all();
 
 	protected:
 		virtual void cancel_(unsigned __int64 id);
 
 		virtual void stop_(unsigned __int64 id);
 
-		virtual part_info &get_part_(unsigned __int64 id);
+		virtual part_info &get_part_(unsigned __int64 id) const;
 		
 		virtual const timing_type &get_timing_(unsigned __int64 id) const;
 
@@ -97,10 +85,6 @@ namespace cwin::hook{
 
 		virtual bool is_enabled_(unsigned __int64 id) const;
 
-		timing_type timing_;
-		duration_type duration_;
-
-		bool enabled_state_ = true;
-		std::unordered_map<unsigned __int64, part_info> parts_;
+		mutable std::unordered_map<unsigned __int64, part_info> parts_;
 	};
 }

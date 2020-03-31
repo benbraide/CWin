@@ -133,3 +133,14 @@ bool cwin::events::get_caption::handle_set_result_(const void *value, const std:
 
 	return true;
 }
+
+cwin::events::get_custom_color::get_custom_color(events::target &target, state_type state)
+	: base_type(target), state_(state){}
+
+cwin::events::get_custom_color::~get_custom_color() = default;
+
+cwin::events::get_custom_color::state_type cwin::events::get_custom_color::get_state() const{
+	if (!is_thread_context())
+		throw thread::exception::outside_context();
+	return state_;
+}
