@@ -40,6 +40,8 @@ namespace cwin::ui{
 		friend class menu::manager;
 		friend class hook::io;
 
+		virtual void after_set_enable_state_() override;
+
 		virtual void size_update_(const SIZE &old_value, const SIZE &current_value) override;
 
 		virtual void position_update_(const POINT &old_value, const POINT &current_value) override;
@@ -64,5 +66,21 @@ namespace cwin::ui{
 
 		bool visible_ = true;
 		hook::io *io_hook_ = nullptr;
+	};
+
+	class create_enabled_visible_surface : public visible_surface{
+	public:
+		using visible_surface::visible_surface;
+
+		virtual ~create_enabled_visible_surface();
+
+	protected:
+		virtual void after_create_() override;
+
+		virtual void after_destroy_() override;
+
+		virtual bool is_created_() const override;
+
+		bool is_created_value_ = false;
 	};
 }

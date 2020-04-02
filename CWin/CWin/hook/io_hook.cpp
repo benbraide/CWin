@@ -515,7 +515,7 @@ void cwin::hook::io::mouse_up_(mouse_button_type button, io **top){
 	options_.clear(option_type::is_dragging_non_client);
 
 	parent_->get_events().trigger<events::io::mouse_up>(*((top == nullptr) ? self : *top)->parent_, position, pressed_button_);
-	if (!was_dragging){//Click
+	if (!was_dragging && !parent_->is_disabled()){//Click
 		parent_->get_events().trigger<events::io::mouse_click>(*((top == nullptr) ? self : *top)->parent_, position, pressed_button_);
 		if (pressed_button_ == mouse_button_type::left && !dynamic_cast<ui::visible_surface *>(parent_)->prevent_mouse_click_translation_())
 			parent_->get_events().trigger<events::io::click>(*((top == nullptr) ? self : *top)->parent_);

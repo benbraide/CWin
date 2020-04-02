@@ -3,6 +3,10 @@
 #include "multiple_label_hook.h"
 
 cwin::hook::multiple_label::multiple_label(ui::visible_surface &parent){
+	parent.get_first_child([&](multiple_label &child){
+		parent.remove_child(child);
+	});
+
 	if (&parent.get_thread() == &thread_)
 		set_parent_(parent);
 	else//Error

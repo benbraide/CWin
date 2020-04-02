@@ -77,6 +77,12 @@ POINT cwin::hook::non_window::handle::get_window_position_() const{
 
 cwin::hook::non_window::client_handle::client_handle(ui::visible_surface &parent)
 	: handle(parent){
+	auto is_created = parent.is_created();
+	parent.get_first_child([&](client_handle &child){
+		if (&child != this)
+			parent.remove_child(child);
+	});
+
 	bind_(parent, [=](events::interrupt::get_geometry &e){
 		if (e.get_result() == 0){
 			e.prevent_default();
@@ -98,6 +104,9 @@ cwin::hook::non_window::client_handle::client_handle(ui::visible_surface &parent
 
 		return (is_inside != FALSE);
 	});
+
+	if (is_created)
+		parent.get_events().trigger<events::interrupt::create>();
 }
 
 cwin::hook::non_window::client_handle::~client_handle() = default;
@@ -144,6 +153,12 @@ cwin::hook::non_window::non_client_handle::non_client_handle(ui::visible_surface
 
 cwin::hook::non_window::non_client_handle::non_client_handle(ui::visible_surface &parent, const std::wstring &caption)
 	: handle(parent), caption_(caption){
+	auto is_created = parent.is_created();
+	parent.get_first_child([&](non_client_handle &child){
+		if (&child != this)
+			parent.remove_child(child);
+	});
+
 	bind_(parent, [=](events::after_create &){
 		create_text_format_();
 	});
@@ -254,6 +269,9 @@ cwin::hook::non_window::non_client_handle::non_client_handle(ui::visible_surface
 			&color_brush
 		);
 	});
+
+	if (is_created)
+		parent.get_events().trigger<events::interrupt::create>();
 }
 
 cwin::hook::non_window::non_client_handle::~non_client_handle(){

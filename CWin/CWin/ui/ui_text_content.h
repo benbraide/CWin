@@ -524,20 +524,6 @@ namespace cwin::ui{
 	protected:
 		using m_base_type::update_size_;
 
-		virtual void after_create_() override{
-			is_created_value_ = true;
-			m_base_type::after_create_();
-		}
-
-		virtual void after_destroy_() override{
-			is_created_value_ = false;
-			m_base_type::after_destroy_();
-		}
-
-		virtual bool is_created_() const override{
-			return is_created_value_;
-		}
-
 		virtual void update_size_(bool enable_interrupt, const std::function<void(const SIZE &, const SIZE &)> &callback) override{
 			m_base_type::update_size_(enable_interrupt, callback);
 			computed_text_offset_ = compute_text_offset(m_base_type::get_size_(), m_base_type::text_size_, text_alignment_);
@@ -598,9 +584,7 @@ namespace cwin::ui{
 
 		POINT text_offset_{};
 		POINT computed_text_offset_{};
-
-		bool is_created_value_ = false;
 	};
 
-	using visible_text_label = text_label<visible_surface>;
+	using visible_text_label = text_label<create_enabled_visible_surface>;
 }

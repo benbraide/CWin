@@ -2,7 +2,6 @@
 #include "../thread/thread_object.h"
 
 #include "../events/io_events.h"
-#include "../events/drawing_events.h"
 #include "../events/interrupt_events.h"
 
 #include "non_window_push_button.h"
@@ -59,33 +58,19 @@ cwin::non_window::push_button::push_button(){
 			return;
 		}
 
-		auto &render_target = e.get_render_target();
-		auto &color_brush = e.get_color_brush();
-
 		if (action == events::custom_draw::action_type::fill){
 			D2D1_COLOR_F color{};
 			events_.trigger_then<events::get_background_fill_color>([&](events::get_background_fill_color &e){
 				color = e.get_value();
 			}, e.get_state());
-
-			auto bound = events_.trigger_then_report_result_as<events::interrupt::get_geometry, ID2D1Geometry *>();
-			if (bound != nullptr){
-				color_brush.SetColor(color);
-				render_target.FillGeometry(bound, &color_brush);
-			}
-			else//Use default clip
-				render_target.Clear(color);
+			fill_background_(e, color);
 		}
-		else{//Frame
+		else if (action == events::custom_draw::action_type::frame){
 			D2D1_COLOR_F color{};
 			events_.trigger_then<events::get_background_frame_color>([&](events::get_background_frame_color &e){
 				color = e.get_value();
 			}, e.get_state());
-
-			if (auto bound = events_.trigger_then_report_result_as<events::interrupt::get_geometry, ID2D1Geometry *>(); bound != nullptr){//Frame bound
-				color_brush.SetColor(color);
-				render_target.DrawGeometry(bound, &color_brush);
-			}
+			frame_background_(e, color);
 		}
 	});
 
@@ -163,4 +148,26 @@ cwin::non_window::push_button::~push_button() = default;
 
 bool cwin::non_window::push_button::is_default_event_(const events::object &e) const{
 	return (dynamic_cast<const events::io::click *>(&e) != nullptr);
+}
+
+void cwin::non_window::push_button::fill_background_(events::custom_draw &e, const D2D1_COLOR_F &color) const{
+	auto &render_target = e.get_render_target();
+	auto &color_brush = e.get_color_brush();
+
+	if (auto bound = events_.trigger_then_report_result_as<events::interrupt::get_geometry, ID2D1Geometry *>(); bound != nullptr){
+		color_brush.SetColor(color);
+		render_target.FillGeometry(bound, &color_brush);
+	}
+	else//Use default clip
+		render_target.Clear(color);
+}
+
+void cwin::non_window::push_button::frame_background_(events::custom_draw &e, const D2D1_COLOR_F &color) const{
+	auto &render_target = e.get_render_target();
+	auto &color_brush = e.get_color_brush();
+
+	if (auto bound = events_.trigger_then_report_result_as<events::interrupt::get_geometry, ID2D1Geometry *>(); bound != nullptr){//Frame bound
+		color_brush.SetColor(color);
+		render_target.DrawGeometry(bound, &color_brush);
+	}
 }
