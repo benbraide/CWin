@@ -15,7 +15,9 @@ cwin::non_window::multimedia_button::object::object(tree &parent, std::size_t in
 cwin::non_window::multimedia_button::object::object(tree &parent, std::size_t index, const SIZE &icon_size_offset, void(*get_pack)(pack_info &))
 	: push_button(parent, index){
 	icon_size_offset_ = icon_size_offset;
-	insert_pack_(get_pack);
+	if (get_pack != nullptr)
+		insert_pack_(get_pack);
+
 	bind_default_([](events::disable_auto_size &){
 		return true;
 	});
@@ -24,7 +26,9 @@ cwin::non_window::multimedia_button::object::object(tree &parent, std::size_t in
 cwin::non_window::multimedia_button::object::object(tree &parent, std::size_t index, const D2D1_SIZE_F &icon_size_offset, void(*get_pack)(pack_info &))
 	: push_button(parent, index){
 	icon_size_offset_ = icon_size_offset;
-	insert_pack_(get_pack);
+	if (get_pack != nullptr)
+		insert_pack_(get_pack);
+
 	bind_default_([](events::disable_auto_size &){
 		return true;
 	});
@@ -146,6 +150,20 @@ void cwin::non_window::multimedia_button::pause::get_pack(pack_info &pack){
 	get_rectangle_points(pack.icons.back().points);
 }
 
+cwin::non_window::multimedia_button::record::~record() = default;
+
+void cwin::non_window::multimedia_button::record::insert_pattern_(){
+	insert_object([&](ui::create_enabled_visible_surface &icon){
+		icon.insert_object<hook::non_window::ellipse_handle<hook::non_window::client_handle>>();
+		icon.insert_object<cwin::hook::placement>(nullptr, cwin::hook::placement::alignment_type::center);
+
+		insert_fill_hook_(icon);
+		bind_(icon, [=](events::erase_background &e){
+			frame_icon_background_(e);
+		});
+	});
+}
+
 cwin::non_window::multimedia_button::stop::~stop() = default;
 
 void cwin::non_window::multimedia_button::stop::get_pack(pack_info &pack){
@@ -166,8 +184,6 @@ void cwin::non_window::multimedia_button::previous::get_pack(pack_info &pack){
 cwin::non_window::multimedia_button::next::~next() = default;
 
 void cwin::non_window::multimedia_button::next::get_pack(pack_info &pack){
-	pack.offset = POINT{ -1, 0 };
-
 	pack.icons.push_back(icon_info{ std::vector<lines_path_relative_point>{}, D2D1_SIZE_F{ 0.33f, 0.0f } });
 	get_right_triangle_points(pack.icons.back().points);
 
@@ -178,7 +194,7 @@ void cwin::non_window::multimedia_button::next::get_pack(pack_info &pack){
 cwin::non_window::multimedia_button::rewind::~rewind() = default;
 
 void cwin::non_window::multimedia_button::rewind::get_pack(pack_info &pack){
-	pack.offset = POINT{ 1, 0 };
+	pack.offset = POINT{ -1, 0 };
 
 	pack.icons.push_back(icon_info{ std::vector<lines_path_relative_point>{}, D2D1_SIZE_F{ 0.5f, 0.0f } });
 	get_left_triangle_points(pack.icons.back().points);
@@ -190,6 +206,8 @@ void cwin::non_window::multimedia_button::rewind::get_pack(pack_info &pack){
 cwin::non_window::multimedia_button::fast_forward::~fast_forward() = default;
 
 void cwin::non_window::multimedia_button::fast_forward::get_pack(pack_info &pack){
+	pack.offset = POINT{ 1, 0 };
+
 	pack.icons.push_back(icon_info{ std::vector<lines_path_relative_point>{}, D2D1_SIZE_F{ 0.5f, 0.0f } });
 	get_right_triangle_points(pack.icons.back().points);
 
@@ -200,23 +218,58 @@ void cwin::non_window::multimedia_button::fast_forward::get_pack(pack_info &pack
 cwin::non_window::multimedia_button::volume::~volume() = default;
 
 void cwin::non_window::multimedia_button::volume::get_pack(pack_info &pack){
-	pack.icons.push_back(icon_info{});
-	get_volume_points(pack.icons.back().points);
-}
-
-cwin::non_window::multimedia_button::volume_extended::~volume_extended() = default;
-
-void cwin::non_window::multimedia_button::volume_extended::get_pack(pack_info &pack){
 	pack.icons.push_back(icon_info{ std::vector<lines_path_relative_point>{}, D2D1_SIZE_F{ 0.58f, 0.0f } });
 	get_volume_points(pack.icons.back().points);
-
 	pack.icons.push_back(icon_info{ std::vector<lines_path_relative_point>{}, D2D1_SIZE_F{ 0.56f, 0.0f } });
+}
+
+cwin::non_window::multimedia_button::volume_low::~volume_low() = default;
+
+void cwin::non_window::multimedia_button::volume_low::frame_icon_background_(events::draw & e) const{
+	volume::frame_icon_background_(e);
+
+	auto surface_target = dynamic_cast<ui::surface *>(&e.get_context());
+	if (surface_target == nullptr || surface_target->get_previous_sibling<ui::create_enabled_visible_surface>(0u) == nullptr)
+		return;
+
+	auto &target_size = surface_target->get_size();
+	auto &color_brush = e.get_color_brush();
+
+	color_brush.SetColor(frame_color_);
+	e.get_render_target().DrawEllipse(
+		D2D1::Ellipse(D2D1::Point2F(0.0f, (target_size.cy / 2.0f)), (target_size.cx / 4.0f), (target_size.cx / 4.0f)),
+		&color_brush
+	);
+}
+
+cwin::non_window::multimedia_button::volume_high::~volume_high() = default;
+
+void cwin::non_window::multimedia_button::volume_high::frame_icon_background_(events::draw & e) const{
+	volume::frame_icon_background_(e);
+
+	auto surface_target = dynamic_cast<ui::surface *>(&e.get_context());
+	if (surface_target == nullptr || surface_target->get_previous_sibling<ui::create_enabled_visible_surface>(0u) == nullptr)
+		return;
+
+	auto &target_size = surface_target->get_size();
+	auto &color_brush = e.get_color_brush();
+
+	color_brush.SetColor(frame_color_);
+	e.get_render_target().DrawEllipse(
+		D2D1::Ellipse(D2D1::Point2F(0.0f, (target_size.cy / 2.0f)), (target_size.cx / 4.0f), (target_size.cx / 4.0f)),
+		&color_brush
+	);
+
+	e.get_render_target().DrawEllipse(
+		D2D1::Ellipse(D2D1::Point2F(0.0f, (target_size.cy / 2.0f)), (target_size.cx / 2.0f), (target_size.cx / 2.0f)),
+		&color_brush
+	);
 }
 
 cwin::non_window::multimedia_button::volume_down::~volume_down() = default;
 
 void cwin::non_window::multimedia_button::volume_down::frame_icon_background_(events::draw &e) const{
-	volume_extended::frame_icon_background_(e);
+	volume::frame_icon_background_(e);
 	
 	auto surface_target = dynamic_cast<ui::surface *>(&e.get_context());
 	if (surface_target == nullptr || surface_target->get_previous_sibling<ui::create_enabled_visible_surface>(0u) == nullptr)
@@ -236,7 +289,7 @@ void cwin::non_window::multimedia_button::volume_down::frame_icon_background_(ev
 cwin::non_window::multimedia_button::volume_up::~volume_up() = default;
 
 void cwin::non_window::multimedia_button::volume_up::frame_icon_background_(events::draw &e) const{
-	volume_extended::frame_icon_background_(e);
+	volume::frame_icon_background_(e);
 
 	auto surface_target = dynamic_cast<ui::surface *>(&e.get_context());
 	if (surface_target == nullptr || surface_target->get_previous_sibling<ui::create_enabled_visible_surface>(0u) == nullptr)
@@ -268,7 +321,7 @@ void cwin::non_window::multimedia_button::volume_up::frame_icon_background_(even
 cwin::non_window::multimedia_button::mute::~mute() = default;
 
 void cwin::non_window::multimedia_button::mute::frame_icon_background_(events::draw &e) const{
-	volume_extended::frame_icon_background_(e);
+	volume::frame_icon_background_(e);
 
 	auto surface_target = dynamic_cast<ui::surface *>(&e.get_context());
 	if (surface_target == nullptr || surface_target->get_previous_sibling<ui::create_enabled_visible_surface>(0u) == nullptr)

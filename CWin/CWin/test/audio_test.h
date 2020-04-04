@@ -25,23 +25,7 @@
 namespace cwin::test{
 	class audio : public control::tab_item{
 	public:
-		using alignment_type = cwin::hook::relative_placement::alignment_type;
 		using m_simple_action = ui::simple_action<audio>;
-		using point_list_type = std::vector<cwin::hook::non_window::lines_path_relative_point>;
-
-		struct icon_info{
-			point_list_type points;
-			POINT offset;
-			D2D1_SIZE_F size_offset;
-		};
-
-		struct button_info{
-			std::vector<icon_info> icons;
-			alignment_type source_alignment;
-			alignment_type target_alignment;
-			POINT alignment_offset;
-			POINT container_offset;
-		};
 
 		explicit audio(control::tab &parent);
 
@@ -49,24 +33,41 @@ namespace cwin::test{
 
 		virtual ~audio();
 
+		static std::wstring convert_time(unsigned __int64 value);
+
 	protected:
 		template <typename button_type>
-		void insert_button_(const std::function<void(button_type &)> &callback){
-			insert_button_<button_type>(callback, false, alignment_type::top_right, alignment_type::top_left, POINT{ 10, 0 });
+		void insert_button_(cwin::ui::visible_surface *container, cwin::non_window::push_button *&button_ref){
+			insert_button_<button_type>(container, nullptr, button_ref, false);
 		}
 
 		template <typename button_type>
-		void insert_button_(const std::function<void(button_type &)> &callback, bool is_first){
-			insert_button_<button_type>(callback, is_first, alignment_type::top_right, alignment_type::top_left, POINT{ 10, 0 });
+		void insert_button_(cwin::ui::visible_surface *container, const cwin::events::action &action, cwin::non_window::push_button *&button_ref){
+			insert_button_<button_type>(container, action, button_ref, false);
 		}
 
 		template <typename button_type>
-		void insert_button_(const std::function<void(button_type &)> &callback, bool is_first, alignment_type source_alignment, alignment_type target_alignment, const POINT &alignment_offset){
-			insert_object([&](button_type &item){
+		void insert_button_(cwin::ui::visible_surface *container, const cwin::events::action &action, cwin::non_window::push_button *&button_ref, bool is_first){
+			insert_button_<button_type>(container, nullptr, button_ref, is_first);
+			button_ref->get_events().bind(action);
+		}
+
+		template <typename button_type>
+		void insert_button_(cwin::ui::visible_surface *container, const std::function<void(button_type &)> &callback, cwin::non_window::push_button *&button_ref){
+			insert_button_<button_type>(container, callback, button_ref, false);
+		}
+
+		template <typename button_type>
+		void insert_button_(cwin::ui::visible_surface *container, const std::function<void(button_type &)> &callback, cwin::non_window::push_button *&button_ref, bool is_first){
+			((container == nullptr) ? this : container)->insert_object([&](button_type &item){
+				button_ref = &item;
+
 				item.set_size(button_size_);
 				item.insert_object<cwin::hook::non_window::ellipse_handle<cwin::hook::non_window::client_handle>>();
 
-				poisition_button_(item, is_first, source_alignment, target_alignment, alignment_offset);
+				if (!is_first)
+					poisition_button_(item);
+
 				bind_(item, [](cwin::events::custom_draw &e){
 					if (e.get_action() == events::custom_draw::action_type::fill && e.get_state() == events::custom_draw::state_type::nil)
 						e.prevent_default();
@@ -77,27 +78,54 @@ namespace cwin::test{
 			}, icon_size_offset_);
 		}
 
-		virtual void poisition_button_(cwin::non_window::push_button &item, bool is_first, alignment_type source_alignment, alignment_type target_alignment, const POINT &alignment_offset);
+		virtual void poisition_button_(cwin::non_window::push_button &item);
 
-		/*virtual void insert_button_(const std::function<void(cwin::non_window::push_button &)> &callback);
+		template <typename source_type>
+		void insert_source_(source_type *&source_ref){
+			insert_source_<source_type>(source_ref, L"");
+		}
 
-		virtual void insert_button_(const std::function<void(cwin::non_window::push_button &)> &callback, const point_list_type &points, const POINT &icon_offset);
+		template <typename source_type>
+		void insert_source_(source_type *&source_ref, const std::wstring &path){
+			insert_object([&](source_type &source){
+				source_ref = &source;
 
-		virtual void insert_button_(const std::function<void(cwin::non_window::push_button &, ui::surface &)> &callback, const POINT &container_offset);
+				bind_(source, [=](cwin::events::after_create &){
+					set_source_(*source_ref);
+				});
 
-		virtual void insert_icon_(const std::function<void(cwin::non_window::lines_path &)> &callback, ui::surface &target, const point_list_type &points, const POINT &offset, const D2D1_SIZE_F &size_offset);
+				bind_(source, [=](cwin::events::after_destroy &){
+					remove_source_();
+				});
+			}, path);
+		}
 
-		virtual void insert_icon_(const std::function<void(cwin::non_window::lines_path &)> &callback, ui::surface &target, const point_list_type &points, const POINT &offset);
+		virtual void set_source_(cwin::audio::source &value);
 
-		virtual void insert_container_(const std::function<void(ui::surface &)> &callback, ui::surface &target, const POINT &offset);
-
-		virtual void poisition_button_(cwin::non_window::push_button &item, bool is_first, alignment_type source_alignment, alignment_type target_alignment, const POINT &alignment_offset);
-
-		virtual void poisition_icon_(cwin::non_window::lines_path &item, std::size_t count, std::size_t index, const POINT &alignment_offset);*/
+		virtual void remove_source_();
 
 		SIZE button_size_{};
+		POINT button_offset_{};
 		D2D1_SIZE_F icon_size_offset_{};
-		D2D1_COLOR_F icon_color_{};
+
+		cwin::audio::wave *output_ = nullptr;
+		cwin::audio::source *source_ = nullptr;
+
+		cwin::audio::pcm_source *pcm_source_ = nullptr;
+		cwin::audio::asf_source *asf_source_ = nullptr;
+
+		cwin::ui::visible_text_label *path_label_ = nullptr;
+		cwin::ui::visible_text_label *progress_label_ = nullptr;
+		cwin::ui::visible_text_label *duration_label_ = nullptr;
+
+		cwin::non_window::push_button *play_button_ = nullptr;
+		cwin::non_window::push_button *pause_button_ = nullptr;
+		cwin::non_window::push_button *stop_button_ = nullptr;
+		cwin::non_window::push_button *rewind_button_ = nullptr;
+		cwin::non_window::push_button *fast_forward_button_ = nullptr;
+
+		unsigned __int64 duration_ = 0u;
+		unsigned __int64 progress_ = 0u;
 	};
 }
 

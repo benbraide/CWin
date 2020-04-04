@@ -27,6 +27,8 @@ namespace cwin::non_window::multimedia_button{
 			POINT offset;
 		};
 
+		explicit object(tree &parent);
+
 		object(tree &parent, void(*get_pack)(pack_info &));
 
 		object(tree &parent, const SIZE &icon_size_offset, void(*get_pack)(pack_info &));
@@ -82,6 +84,20 @@ namespace cwin::non_window::multimedia_button{
 		virtual ~pause();
 
 		static void get_pack(pack_info &pack);
+	};
+
+	class record : public object{
+	public:
+		template <typename... args_types>
+		explicit record(args_types &&... args)
+			: object(std::forward<args_types>(args)..., nullptr){
+			insert_pattern_();
+		}
+
+		virtual ~record();
+
+	protected:
+		void insert_pattern_();
 	};
 
 	class stop : public object{
@@ -150,20 +166,29 @@ namespace cwin::non_window::multimedia_button{
 		static void get_pack(pack_info &pack);
 	};
 
-	class volume_extended : public object{
+	class volume_low : public volume{
 	public:
-		template <typename... args_types>
-		explicit volume_extended(args_types &&... args)
-			: object(std::forward<args_types>(args)..., &get_pack){}
+		using volume::volume;
 
-		virtual ~volume_extended();
+		virtual ~volume_low();
 
-		static void get_pack(pack_info &pack);
+	protected:
+		virtual void frame_icon_background_(events::draw &e) const override;
 	};
 
-	class volume_down : public volume_extended{
+	class volume_high : public volume{
 	public:
-		using volume_extended::volume_extended;
+		using volume::volume;
+
+		virtual ~volume_high();
+
+	protected:
+		virtual void frame_icon_background_(events::draw &e) const override;
+	};
+
+	class volume_down : public volume{
+	public:
+		using volume::volume;
 
 		virtual ~volume_down();
 
@@ -171,9 +196,9 @@ namespace cwin::non_window::multimedia_button{
 		virtual void frame_icon_background_(events::draw &e) const override;
 	};
 
-	class volume_up : public volume_extended{
+	class volume_up : public volume{
 	public:
-		using volume_extended::volume_extended;
+		using volume::volume;
 
 		virtual ~volume_up();
 
@@ -181,9 +206,9 @@ namespace cwin::non_window::multimedia_button{
 		virtual void frame_icon_background_(events::draw &e) const override;
 	};
 
-	class mute : public volume_extended{
+	class mute : public volume{
 	public:
-		using volume_extended::volume_extended;
+		using volume::volume;
 
 		virtual ~mute();
 

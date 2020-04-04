@@ -529,6 +529,11 @@ namespace cwin::ui{
 			computed_text_offset_ = compute_text_offset(m_base_type::get_size_(), m_base_type::text_size_, text_alignment_);
 		}
 
+		virtual void set_text_(const std::wstring &value) override{
+			m_base_type::set_text_(value);
+			m_base_type::redraw_();
+		}
+
 		virtual void set_text_color_(const D2D1_COLOR_F &value){
 			text_color_ = value;
 			m_base_type::redraw_();
@@ -579,7 +584,7 @@ namespace cwin::ui{
 			);
 		}
 
-		D2D1_COLOR_F text_color_{ 1.0f, 1.0f, 1.0f, 1.0f };
+		D2D1_COLOR_F text_color_ = D2D1::ColorF(D2D1::ColorF::Black);
 		alignment_type text_alignment_ = alignment_type::top_left;
 
 		POINT text_offset_{};

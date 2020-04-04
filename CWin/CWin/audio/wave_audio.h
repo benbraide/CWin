@@ -98,6 +98,12 @@ namespace cwin::audio{
 
 		virtual void is_reversed(const std::function<void(bool)> &callback) const;
 
+		virtual void play();
+
+		virtual void rewind();
+
+		virtual void fast_forward();
+
 		virtual std::chrono::nanoseconds compute_progress() const;
 
 		virtual void compute_progress(const std::function<void(const std::chrono::nanoseconds &)> &callback) const;
@@ -109,6 +115,10 @@ namespace cwin::audio{
 		ui::simple_action<wave> pause_action{ *this, &wave::pause };
 		ui::simple_action<wave> resume_action{ *this, &wave::resume };
 		ui::simple_action<wave> toggle_pause_action{ *this, &wave::toggle_pause };
+
+		ui::simple_action<wave> play_action{ *this, &wave::play };
+		ui::simple_action<wave> rewind_action{ *this, &wave::rewind };
+		ui::simple_action<wave> fast_forward_action{ *this, &wave::fast_forward };
 
 	protected:
 		virtual void create_() override;

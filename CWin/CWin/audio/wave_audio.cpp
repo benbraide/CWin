@@ -6,26 +6,15 @@
 std::shared_ptr<cwin::audio::buffer> cwin::audio::wave_helper::get_buffer(wave &target, bool is_reversed){
 	std::shared_ptr<audio::buffer> value;
 	if (is_reversed){
-		events::audio::get_reverse_buffer e(target);
-		target.get_events().trigger(e);
-
-		if (e.prevented_default())
-			return nullptr;
-
-		value = e.get_value();
+		target.get_events().trigger_then<events::audio::get_reverse_buffer>([&](events::audio::get_reverse_buffer &e){
+			value = e.get_value();
+		});
 	}
 	else{//Forward
-		events::audio::get_buffer e(target);
-		target.get_events().trigger(e);
-
-		if (e.prevented_default())
-			return nullptr;
-
-		value = e.get_value();
+		target.get_events().trigger_then<events::audio::get_buffer>([&](events::audio::get_buffer &e){
+			value = e.get_value();
+		});
 	}
-
-	if (value == nullptr)
-		throw ui::exception::action_failed();
 
 	return value;
 }
@@ -224,6 +213,31 @@ void cwin::audio::wave::is_reversed(const std::function<void(bool)> &callback) c
 	});
 }
 
+void cwin::audio::wave::play(){
+	post_or_execute_task([=]{
+		disable_reverse_();
+		set_speed_(1.0f);
+
+		if (state_.is_set(option_type::pause))
+			resume_();
+		else//Start
+			start_();
+	});
+}
+
+void cwin::audio::wave::rewind(){
+	post_or_execute_task([=]{
+		enable_reverse_();
+	});
+}
+
+void cwin::audio::wave::fast_forward(){
+	post_or_execute_task([=]{
+		disable_reverse_();
+		set_speed_(2.0f);
+	});
+}
+
 std::chrono::nanoseconds cwin::audio::wave::compute_progress() const{
 	return execute_task([&]{
 		return compute_progress_();
@@ -387,17 +401,19 @@ void cwin::audio::wave::flush_(){
 	if (!state_.is_set(option_type::start))
 		return;
 
-	if (waveOutReset(handle_) == MMSYSERR_NOERROR){
-		initialize_pool_();
-		if ((pool_[0].details.dwFlags & WHDR_PREPARED) == 0u){//Buffer is empty
-			events_.trigger<events::audio::eof>();
-			state_.clear(option_type::start);
-		}
-		else
-			write_pool_();
-	}
-	else//Error
+	if (waveOutReset(handle_) != MMSYSERR_NOERROR)
 		throw ui::exception::action_failed();
+
+	if (state_.is_set(option_type::pause))
+		waveOutPause(handle_);
+
+	initialize_pool_();
+	if ((pool_[0].details.dwFlags & WHDR_PREPARED) == 0u){//Buffer is empty
+		events_.trigger<events::audio::eof>();
+		state_.clear(option_type::start);
+	}
+	else
+		write_pool_();
 }
 
 void cwin::audio::wave::start_(){
@@ -568,6 +584,9 @@ void cwin::audio::wave::enable_reverse_(){
 	if (handle_ == nullptr)
 		throw cwin::exception::not_supported();
 
+	if (state_.is_set(option_type::reverse))
+		return;
+
 	state_.set(option_type::reverse);
 	if (state_.is_set(option_type::start))
 		flush_();
@@ -576,6 +595,9 @@ void cwin::audio::wave::enable_reverse_(){
 void cwin::audio::wave::disable_reverse_(){
 	if (handle_ == nullptr)
 		throw cwin::exception::not_supported();
+
+	if (!state_.is_set(option_type::reverse))
+		return;
 
 	state_.clear(option_type::reverse);
 	if (state_.is_set(option_type::start))
@@ -625,8 +647,8 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 
 	write_skipped_();
 	if (0u < skip_count_ || (header->buffer = wave_helper::get_buffer(*this, state_.is_set(option_type::reverse))) == nullptr){//EOF
+		events_.trigger<events::audio::eof>();
 		if (write_count_ == 0u){
-			events_.trigger<events::audio::eof>();
 			state_.clear(option_type::start);
 			events_.trigger<events::audio::stop>();
 		}
