@@ -17,6 +17,18 @@ cwin::hook::io::io(ui::visible_surface &parent){
 
 cwin::hook::io::~io() = default;
 
+const cwin::utility::small_options &cwin::hook::io::get_options() const{
+	return *execute_task([&]{
+		return &options_;
+	});
+}
+
+void cwin::hook::io::get_options(const std::function<void(const utility::small_options &)> &callback) const{
+	post_or_execute_task([=]{
+		callback(options_);
+	});
+}
+
 cwin::hook::io::mouse_button_type cwin::hook::io::get_pressed_button() const{
 	return execute_task([&]{
 		return pressed_button_;
@@ -27,31 +39,6 @@ void cwin::hook::io::get_pressed_button(const std::function<void(mouse_button_ty
 	post_or_execute_task([=]{
 		callback(pressed_button_);
 	});
-}
-
-cwin::hook::io::mouse_button_type cwin::hook::io::get_mouse_button(UINT msg){
-	switch (msg){
-	case WM_LBUTTONDOWN:
-	case WM_LBUTTONUP:
-	case WM_LBUTTONDBLCLK:
-		return mouse_button_type::left;
-	case WM_MBUTTONDOWN:
-	case WM_MBUTTONUP:
-	case WM_MBUTTONDBLCLK:
-		return mouse_button_type::middle;
-	case WM_RBUTTONDOWN:
-	case WM_RBUTTONUP:
-	case WM_RBUTTONDBLCLK:
-		return mouse_button_type::right;
-	case WM_XBUTTONDOWN:
-	case WM_XBUTTONUP:
-	case WM_XBUTTONDBLCLK:
-		return mouse_button_type::x;
-	default:
-		break;
-	}
-
-	return mouse_button_type::nil;
 }
 
 bool cwin::hook::io::is_inside() const{

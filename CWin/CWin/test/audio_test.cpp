@@ -31,18 +31,20 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 				e.set_value(source_->get_reverse_buffer());
 		});
 
-		bind_(output, [&](cwin::events::audio::start &){
+		bind_(output, [&](cwin::events::audio::begin &){
+			previous_progress_ = progress_ = 0u;
 			progress_label_->set_text(convert_time(0u));
+
 			play_button_->hide();
 			pause_button_->show();
 		});
 
-		bind_(output, [&](cwin::events::audio::pause &){
+		bind_(output, [&](cwin::events::audio::suspend &){
 			pause_button_->hide();
 			play_button_->show();
 		});
 
-		bind_(output, [&](cwin::events::audio::stop &){
+		bind_(output, [&](cwin::events::audio::end &){
 			if (source_ != nullptr)
 				source_->seek(0.0f);
 
@@ -56,6 +58,17 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 		bind_(output, [&](cwin::events::audio::resume &){
 			play_button_->hide();
 			pause_button_->show();
+		});
+
+		bind_(output, [&](cwin::events::audio::speed_change &){
+			if (output_->get_speed() == 1.0f){
+				play_button_->hide();
+				pause_button_->show();
+			}
+			else{
+				pause_button_->hide();
+				play_button_->show();
+			}
 		});
 
 		bind_(output, [=](cwin::events::audio::after_buffer_done &){
@@ -82,10 +95,12 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 			progress_label_ = &label;
 			label.set_text(convert_time(0u));
 
-			bind_(label, [=](cwin::events::tick &){
-				if (output_->is_created() && !output_->is_stopped() && !output_->is_paused())
+			label.get_events().trigger<cwin::events::timer>(std::chrono::milliseconds(50), [=]{
+				if (previous_progress_ != progress_ && output_->is_created() && !output_->is_ended() && !output_->is_suspended()){
 					progress_label_->set_text(convert_time(progress_));
-			});
+					previous_progress_ = progress_;
+				}
+			}, label.get_talk_id());
 		});
 
 		container.insert_object([=](cwin::ui::visible_text_label &label){
@@ -115,7 +130,7 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 		insert_button_<cwin::non_window::multimedia_button::play>(&container, output_->play_action, play_button_, true);
 		insert_button_<cwin::non_window::multimedia_button::pause>(&container, [&](cwin::non_window::multimedia_button::pause &button){
 			button.hide();
-			button.get_events().bind(output_->pause_action);
+			button.get_events().bind(output_->suspend_action);
 			button.get_first_child([&](cwin::hook::relative_placement &hk){
 				hk.set_source_alignment(cwin::hook::relative_placement::alignment_type::top_left);
 				hk.set_offset(POINT{});

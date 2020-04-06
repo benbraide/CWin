@@ -126,6 +126,7 @@ namespace cwin::test{
 
 		unsigned __int64 duration_ = 0u;
 		unsigned __int64 progress_ = 0u;
+		unsigned __int64 previous_progress_ = 0u;
 	};
 }
 

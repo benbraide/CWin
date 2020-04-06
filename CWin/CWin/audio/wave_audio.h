@@ -28,8 +28,8 @@ namespace cwin::audio{
 			lr_volume,
 			speed_control,
 			pitch_control,
-			start,
-			pause,
+			begin,
+			suspend,
 			reverse,
 			eof,
 		};
@@ -38,27 +38,27 @@ namespace cwin::audio{
 
 		virtual ~wave();
 
-		virtual void start();
+		virtual void begin();
 
-		virtual void stop();
+		virtual void end();
 
-		virtual void toggle_start();
+		virtual void toggle_begin();
 
-		virtual bool is_stopped() const;
+		virtual bool is_ended() const;
 
-		virtual void is_stopped(const std::function<void(bool)> &callback) const;
+		virtual void is_ended(const std::function<void(bool)> &callback) const;
 
 		virtual void flush();
 
-		virtual void pause();
+		virtual void suspend();
 
 		virtual void resume();
 
-		virtual void toggle_pause();
+		virtual void toggle_suspend();
 
-		virtual bool is_paused() const;
+		virtual bool is_suspended() const;
 
-		virtual void is_paused(const std::function<void(bool)> &callback) const;
+		virtual void is_suspended(const std::function<void(bool)> &callback) const;
 
 		virtual void seek(const std::chrono::nanoseconds &offset);
 
@@ -100,6 +100,8 @@ namespace cwin::audio{
 
 		virtual void play();
 
+		virtual void stop();
+
 		virtual void rewind();
 
 		virtual void fast_forward();
@@ -108,15 +110,16 @@ namespace cwin::audio{
 
 		virtual void compute_progress(const std::function<void(const std::chrono::nanoseconds &)> &callback) const;
 
-		ui::simple_action<wave> start_action{ *this, &wave::start };
-		ui::simple_action<wave> stop_action{ *this, &wave::stop };
-		ui::simple_action<wave> toggle_start_action{ *this, &wave::toggle_start };
+		ui::simple_action<wave> begin_action{ *this, &wave::begin };
+		ui::simple_action<wave> end_action{ *this, &wave::end };
+		ui::simple_action<wave> toggle_begin_action{ *this, &wave::toggle_begin };
 
-		ui::simple_action<wave> pause_action{ *this, &wave::pause };
+		ui::simple_action<wave> suspend_action{ *this, &wave::suspend };
 		ui::simple_action<wave> resume_action{ *this, &wave::resume };
-		ui::simple_action<wave> toggle_pause_action{ *this, &wave::toggle_pause };
+		ui::simple_action<wave> toggle_suspend_action{ *this, &wave::toggle_suspend };
 
 		ui::simple_action<wave> play_action{ *this, &wave::play };
+		ui::simple_action<wave> stop_action{ *this, &wave::stop };
 		ui::simple_action<wave> rewind_action{ *this, &wave::rewind };
 		ui::simple_action<wave> fast_forward_action{ *this, &wave::fast_forward };
 
@@ -135,17 +138,17 @@ namespace cwin::audio{
 
 		virtual void flush_();
 
-		virtual void start_();
+		virtual void begin_();
 
-		virtual void stop_();
+		virtual void end_();
 
-		virtual void toggle_start_();
+		virtual void toggle_begin_();
 
-		virtual void pause_();
+		virtual void suspend_();
 
 		virtual void resume_();
 
-		virtual void toggle_pause_();
+		virtual void toggle_suspend_();
 
 		virtual void seek_(const std::chrono::nanoseconds &offset);
 
@@ -163,9 +166,7 @@ namespace cwin::audio{
 
 		virtual float get_pitch_() const;
 
-		virtual void enable_reverse_();
-
-		virtual void disable_reverse_();
+		virtual void set_direction_(bool reverse);
 
 		virtual std::chrono::nanoseconds compute_progress_() const;
 

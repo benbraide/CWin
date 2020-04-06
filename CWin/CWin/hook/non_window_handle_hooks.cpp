@@ -15,8 +15,9 @@ cwin::hook::non_window::handle::handle(ui::visible_surface &parent){
 		throw thread::exception::context_mismatch();
 
 	bind_(parent, [=](events::interrupt::create &){
-		destroy_();
-		value_ = create_(get_size_());
+		destroy_handle_();
+		if ((value_ = create_handle_(get_size_())) != nullptr)
+			after_create_handle_();
 	});
 
 	bind_(parent, [=](events::interrupt::destroy &){
@@ -25,8 +26,9 @@ cwin::hook::non_window::handle::handle(ui::visible_surface &parent){
 
 	bind_(parent, [=](events::interrupt::resize &){
 		if (value_ != nullptr){
-			destroy_();
-			value_ = create_(get_size_());
+			destroy_handle_();
+			if ((value_ = create_handle_(get_size_())) != nullptr)
+				after_create_handle_();
 		}
 	});
 	
@@ -44,7 +46,7 @@ cwin::hook::non_window::handle::handle(ui::visible_surface &parent){
 }
 
 cwin::hook::non_window::handle::~handle(){
-	destroy_();
+	force_destroy_();
 }
 
 ID2D1Geometry *cwin::hook::non_window::handle::get_value() const{
@@ -57,16 +59,23 @@ ID2D1Factory *cwin::hook::non_window::handle::get_draw_factoy(){
 	return app::object::get_thread().get_draw_factory();
 }
 
-void cwin::hook::non_window::handle::redraw_(){
-	if (auto visible_target = dynamic_cast<ui::visible_surface *>(parent_); visible_target != nullptr)
-		visible_target->redraw();
+void cwin::hook::non_window::handle::destroy_(){
+	destroy_handle_();
+	object::destroy_();
 }
 
-void cwin::hook::non_window::handle::destroy_(){
+void cwin::hook::non_window::handle::destroy_handle_(){
 	if (value_ != nullptr){
 		value_->Release();
 		value_ = nullptr;
 	}
+}
+
+void cwin::hook::non_window::handle::after_create_handle_(){}
+
+void cwin::hook::non_window::handle::redraw_(){
+	if (auto visible_target = dynamic_cast<ui::visible_surface *>(parent_); visible_target != nullptr)
+		visible_target->redraw();
 }
 
 POINT cwin::hook::non_window::handle::get_window_position_() const{
@@ -157,10 +166,6 @@ cwin::hook::non_window::non_client_handle::non_client_handle(ui::visible_surface
 	parent.get_first_child([&](non_client_handle &child){
 		if (&child != this)
 			parent.remove_child(child);
-	});
-
-	bind_(parent, [=](events::after_create &){
-		create_text_format_();
 	});
 
 	bind_(parent, [=](events::interrupt::has_non_client &){
@@ -275,7 +280,7 @@ cwin::hook::non_window::non_client_handle::non_client_handle(ui::visible_surface
 }
 
 cwin::hook::non_window::non_client_handle::~non_client_handle(){
-	destroy_();
+	force_destroy_();
 }
 
 void cwin::hook::non_window::non_client_handle::set_caption(const std::wstring &value){
@@ -359,6 +364,12 @@ void cwin::hook::non_window::non_client_handle::destroy_(){
 	}
 
 	handle::destroy_();
+}
+
+void cwin::hook::non_window::non_client_handle::after_create_handle_(){
+	handle::after_create_handle_();
+	if (text_layout_ == nullptr)
+		create_text_format_();
 }
 
 UINT cwin::hook::non_window::non_client_handle::hit_test_(const POINT &position) const{

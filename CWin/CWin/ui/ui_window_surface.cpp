@@ -8,6 +8,8 @@
 #include "ui_window_surface.h"
 
 cwin::ui::window_surface::window_surface(){
+	visible_ = false;
+
 	insert_object<hook::io>(nullptr);
 	insert_object<hook::color_background>(nullptr, GetSysColor(COLOR_WINDOW));
 

@@ -35,33 +35,33 @@ cwin::audio::wave::~wave(){
 	force_destroy_();
 }
 
-void cwin::audio::wave::start(){
+void cwin::audio::wave::begin(){
 	post_or_execute_task([=]{
-		start_();
+		begin_();
 	});
 }
 
-void cwin::audio::wave::stop(){
+void cwin::audio::wave::end(){
 	post_or_execute_task([=]{
-		stop_();
+		end_();
 	});
 }
 
-void cwin::audio::wave::toggle_start(){
+void cwin::audio::wave::toggle_begin(){
 	post_or_execute_task([=]{
-		toggle_start_();
+		toggle_begin_();
 	});
 }
 
-bool cwin::audio::wave::is_stopped() const{
+bool cwin::audio::wave::is_ended() const{
 	return execute_task([&]{
-		return !state_.is_set(option_type::start);
+		return !state_.is_set(option_type::begin);
 	});
 }
 
-void cwin::audio::wave::is_stopped(const std::function<void(bool)> &callback) const{
+void cwin::audio::wave::is_ended(const std::function<void(bool)> &callback) const{
 	post_or_execute_task([=]{
-		callback(!state_.is_set(option_type::start));
+		callback(!state_.is_set(option_type::begin));
 	});
 }
 
@@ -71,9 +71,9 @@ void cwin::audio::wave::flush(){
 	});
 }
 
-void cwin::audio::wave::pause(){
+void cwin::audio::wave::suspend(){
 	post_or_execute_task([=]{
-		pause_();
+		suspend_();
 	});
 }
 
@@ -83,21 +83,21 @@ void cwin::audio::wave::resume(){
 	});
 }
 
-void cwin::audio::wave::toggle_pause(){
+void cwin::audio::wave::toggle_suspend(){
 	post_or_execute_task([=]{
-		toggle_pause_();
+		toggle_suspend_();
 	});
 }
 
-bool cwin::audio::wave::is_paused() const{
+bool cwin::audio::wave::is_suspended() const{
 	return execute_task([&]{
-		return state_.is_set(option_type::pause);
+		return state_.is_set(option_type::suspend);
 	});
 }
 
-void cwin::audio::wave::is_paused(const std::function<void(bool)> &callback) const{
+void cwin::audio::wave::is_suspended(const std::function<void(bool)> &callback) const{
 	post_or_execute_task([=]{
-		callback(state_.is_set(option_type::pause));
+		callback(state_.is_set(option_type::suspend));
 	});
 }
 
@@ -191,13 +191,13 @@ void cwin::audio::wave::get_pitch(const std::function<void(float)> &callback) co
 
 void cwin::audio::wave::enable_reverse(){
 	post_or_execute_task([=]{
-		enable_reverse_();
+		set_direction_(true);
 	});
 }
 
 void cwin::audio::wave::disable_reverse(){
 	post_or_execute_task([=]{
-		disable_reverse_();
+		set_direction_(false);
 	});
 }
 
@@ -215,25 +215,33 @@ void cwin::audio::wave::is_reversed(const std::function<void(bool)> &callback) c
 
 void cwin::audio::wave::play(){
 	post_or_execute_task([=]{
-		disable_reverse_();
+		set_direction_(false);
 		set_speed_(1.0f);
 
-		if (state_.is_set(option_type::pause))
+		if (state_.is_set(option_type::suspend))
 			resume_();
 		else//Start
-			start_();
+			begin_();
+	});
+}
+
+void cwin::audio::wave::stop(){
+	post_or_execute_task([=]{
+		set_direction_(false);
+		set_speed_(1.0f);
+		end_();
 	});
 }
 
 void cwin::audio::wave::rewind(){
 	post_or_execute_task([=]{
-		enable_reverse_();
+		set_direction_(true);
 	});
 }
 
 void cwin::audio::wave::fast_forward(){
 	post_or_execute_task([=]{
-		disable_reverse_();
+		set_direction_(false);
 		set_speed_(2.0f);
 	});
 }
@@ -292,7 +300,7 @@ void cwin::audio::wave::destroy_(){
 	if (handle_ == nullptr)
 		return;
 
-	stop_();
+	end_();
 	for (auto &header : pool_){
 		if ((header.details.dwFlags & WHDR_PREPARED) == 0u)
 			continue;
@@ -398,29 +406,29 @@ void cwin::audio::wave::flush_(){
 	if (handle_ == nullptr)
 		throw cwin::exception::not_supported();
 
-	if (!state_.is_set(option_type::start))
+	if (!state_.is_set(option_type::begin))
 		return;
 
 	if (waveOutReset(handle_) != MMSYSERR_NOERROR)
 		throw ui::exception::action_failed();
 
-	if (state_.is_set(option_type::pause))
+	if (state_.is_set(option_type::suspend))
 		waveOutPause(handle_);
 
 	initialize_pool_();
 	if ((pool_[0].details.dwFlags & WHDR_PREPARED) == 0u){//Buffer is empty
 		events_.trigger<events::audio::eof>();
-		state_.clear(option_type::start);
+		state_.clear(option_type::begin);
 	}
 	else
 		write_pool_();
 }
 
-void cwin::audio::wave::start_(){
+void cwin::audio::wave::begin_(){
 	if (handle_ == nullptr)
 		throw cwin::exception::not_supported();
 
-	if (state_.is_set(option_type::start))
+	if (state_.is_set(option_type::begin))
 		return;
 
 	initialize_pool_();
@@ -433,45 +441,45 @@ void cwin::audio::wave::start_(){
 	seek_time_ = std::chrono::nanoseconds(0);
 	write_count_ = 0u;
 
-	state_.set(option_type::start);
-	events_.trigger<events::audio::start>();
+	state_.set(option_type::begin);
+	events_.trigger<events::audio::begin>();
 
 	write_pool_();
 }
 
-void cwin::audio::wave::stop_(){
+void cwin::audio::wave::end_(){
 	if (handle_ == nullptr)
 		throw cwin::exception::not_supported();
 
-	if (!state_.is_set(option_type::start))
+	if (!state_.is_set(option_type::begin))
 		return;
 
 	resume_();
 	if (waveOutReset(handle_) == MMSYSERR_NOERROR){
-		state_.clear(option_type::start);
-		events_.trigger<events::audio::stop>();
+		state_.clear(option_type::begin);
+		events_.trigger<events::audio::end>();
 	}
 	else//Error
 		throw ui::exception::action_failed();
 }
 
-void cwin::audio::wave::toggle_start_(){
-	if (state_.is_set(option_type::start))
-		stop_();
+void cwin::audio::wave::toggle_begin_(){
+	if (state_.is_set(option_type::begin))
+		end_();
 	else
-		start_();
+		begin_();
 }
 
-void cwin::audio::wave::pause_(){
+void cwin::audio::wave::suspend_(){
 	if (handle_ == nullptr)
 		throw cwin::exception::not_supported();
 
-	if (!state_.is_set(option_type::start) || state_.is_set(option_type::pause))
+	if (!state_.is_set(option_type::begin) || state_.is_set(option_type::suspend))
 		return;
 
 	if (waveOutPause(handle_) == MMSYSERR_NOERROR){
-		state_.set(option_type::pause);
-		events_.trigger<events::audio::pause>();
+		state_.set(option_type::suspend);
+		events_.trigger<events::audio::suspend>();
 	}
 	else//Error
 		throw ui::exception::action_failed();
@@ -481,32 +489,33 @@ void cwin::audio::wave::resume_(){
 	if (handle_ == nullptr)
 		throw cwin::exception::not_supported();
 
-	if (!state_.is_set(option_type::pause))
+	if (!state_.is_set(option_type::suspend))
 		return;
 
 	if (waveOutRestart(handle_) == MMSYSERR_NOERROR){
-		state_.clear(option_type::pause);
+		state_.clear(option_type::suspend);
 		events_.trigger<events::audio::resume>();
 	}
 	else//Error
 		throw ui::exception::action_failed();
 }
 
-void cwin::audio::wave::toggle_pause_(){
-	if (state_.is_set(option_type::pause))
+void cwin::audio::wave::toggle_suspend_(){
+	if (state_.is_set(option_type::suspend))
 		resume_();
 	else
-		pause_();
+		suspend_();
 }
 
 void cwin::audio::wave::seek_(const std::chrono::nanoseconds &offset){
-	if (handle_ == nullptr || !state_.is_set(option_type::start))
+	if (handle_ == nullptr || !state_.is_set(option_type::begin))
 		throw cwin::exception::not_supported();
 
 	seek_time_ = offset;
 	progress_ = 0u;
 
 	flush_();
+	events_.trigger<events::audio::seek>();
 }
 
 void cwin::audio::wave::set_volume_(float left, float right){
@@ -516,7 +525,9 @@ void cwin::audio::wave::set_volume_(float left, float right){
 	auto left_value = static_cast<WORD>(left * std::numeric_limits<WORD>::max());
 	auto right_value = (state_.is_set(option_type::lr_volume) ? static_cast<WORD>(right * std::numeric_limits<WORD>::max()) : left_value);
 
-	if (waveOutSetVolume(handle_, static_cast<DWORD>(MAKELONG(left_value, right_value))) != MMSYSERR_NOERROR)
+	if (waveOutSetVolume(handle_, static_cast<DWORD>(MAKELONG(left_value, right_value))) == MMSYSERR_NOERROR)
+		events_.trigger<events::audio::volume_change>();
+	else//Error
 		throw ui::exception::action_failed();
 }
 
@@ -546,7 +557,9 @@ void cwin::audio::wave::set_speed_(float value){
 	if (handle_ == nullptr || !state_.is_set(option_type::speed_control))
 		throw cwin::exception::not_supported();
 
-	if (waveOutSetPlaybackRate(handle_, wave_helper::pack_float(value)) != MMSYSERR_NOERROR)
+	if (waveOutSetPlaybackRate(handle_, wave_helper::pack_float(value)) == MMSYSERR_NOERROR)
+		events_.trigger<events::audio::speed_change>();
+	else//Error
 		throw ui::exception::action_failed();
 }
 
@@ -565,7 +578,9 @@ void cwin::audio::wave::set_pitch_(float value){
 	if (handle_ == nullptr || !state_.is_set(option_type::pitch_control))
 		throw cwin::exception::not_supported();
 
-	if (waveOutSetPitch(handle_, wave_helper::pack_float(value)) != MMSYSERR_NOERROR)
+	if (waveOutSetPitch(handle_, wave_helper::pack_float(value)) == MMSYSERR_NOERROR)
+		events_.trigger<events::audio::pitch_change>();
+	else//Error
 		throw ui::exception::action_failed();
 }
 
@@ -580,28 +595,22 @@ float cwin::audio::wave::get_pitch_() const{
 	return wave_helper::unpack_float(value);
 }
 
-void cwin::audio::wave::enable_reverse_(){
+void cwin::audio::wave::set_direction_(bool reverse){
 	if (handle_ == nullptr)
 		throw cwin::exception::not_supported();
 
-	if (state_.is_set(option_type::reverse))
+	if (reverse == state_.is_set(option_type::reverse))
 		return;
 
-	state_.set(option_type::reverse);
-	if (state_.is_set(option_type::start))
+	if (reverse)
+		state_.set(option_type::reverse);
+	else//Forward
+		state_.clear(option_type::reverse);
+
+	if (state_.is_set(option_type::begin))
 		flush_();
-}
 
-void cwin::audio::wave::disable_reverse_(){
-	if (handle_ == nullptr)
-		throw cwin::exception::not_supported();
-
-	if (!state_.is_set(option_type::reverse))
-		return;
-
-	state_.clear(option_type::reverse);
-	if (state_.is_set(option_type::start))
-		flush_();
+	events_.trigger<events::audio::direction_change>();
 }
 
 std::chrono::nanoseconds cwin::audio::wave::compute_progress_() const{
@@ -636,7 +645,7 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 	header->buffer = nullptr;
 	header->details = WAVEHDR{};
 
-	if (!state_.is_set(option_type::start))//Stopped
+	if (!state_.is_set(option_type::begin))//Stopped
 		return;
 
 	events_.trigger<events::audio::after_buffer_done>();
@@ -649,8 +658,8 @@ void cwin::audio::wave::after_write_(WAVEHDR &value){
 	if (0u < skip_count_ || (header->buffer = wave_helper::get_buffer(*this, state_.is_set(option_type::reverse))) == nullptr){//EOF
 		events_.trigger<events::audio::eof>();
 		if (write_count_ == 0u){
-			state_.clear(option_type::start);
-			events_.trigger<events::audio::stop>();
+			state_.clear(option_type::begin);
+			events_.trigger<events::audio::end>();
 		}
 		else if (skip_count_++ == 0u){
 			for (std::size_t index = 0u; index < pool_.size(); ++index){

@@ -35,6 +35,10 @@ namespace cwin::hook{
 
 		virtual ~io();
 
+		virtual const utility::small_options &get_options() const;
+
+		virtual void get_options(const std::function<void(const utility::small_options &)> &callback) const;
+
 		virtual mouse_button_type get_pressed_button() const;
 
 		virtual void get_pressed_button(const std::function<void(mouse_button_type)> &callback) const;
@@ -46,8 +50,6 @@ namespace cwin::hook{
 		virtual bool is_inside_client() const;
 
 		virtual void is_inside_client(const std::function<void(bool)> &callback) const;
-
-		static mouse_button_type get_mouse_button(UINT msg);
 
 	protected:
 		friend class ui::window_surface_manager;

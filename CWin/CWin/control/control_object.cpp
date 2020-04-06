@@ -6,6 +6,7 @@
 
 cwin::control::object::object(const std::wstring &class_name, DWORD common_id)
 	: class_name_(class_name){
+	visible_ = true;
 	styles_ |= (WS_VISIBLE | WS_TABSTOP);
 	thread_.init_control(class_name_.data(), common_id);
 

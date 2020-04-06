@@ -68,6 +68,27 @@ void cwin::ui::visible_surface::size_update_(const SIZE &old_value, const SIZE &
 		redraw_();
 
 	surface::size_update_(old_value, current_value);
+	get_first_child([&](hook::io &io){
+		if (io.get_options().any_is_set(hook::io::option_type::is_inside, hook::io::option_type::is_moving_non_client, hook::io::option_type::is_sizing_non_client))
+			return;
+
+		if (io.get_pressed_button() != hook::io::mouse_button_type::nil)
+			return;
+
+		get_ancestor_<window_surface>(0u, [](window_surface &ancestor){
+			if (!ancestor.is_created() || !ancestor.is_visible())
+				return;
+
+			POINT mouse_position{};
+			GetCursorPos(&mouse_position);
+
+			if (ancestor.hit_test(mouse_position) == HTCLIENT){
+				ancestor.compute_absolute_to_relative(mouse_position);
+				SendMessageW(ancestor.get_handle(), WM_MOUSEMOVE, 0, MAKELPARAM(mouse_position.x, mouse_position.y));
+			}
+		});
+	});
+
 	if (should_redraw)
 		redraw_();
 }
@@ -77,17 +98,25 @@ void cwin::ui::visible_surface::position_update_(const POINT &old_value, const P
 	if (!is_created_() || !is_visible_())
 		return;
 
-	get_ancestor_<window_surface>(0u, [](window_surface &ancestor){
-		if (!ancestor.is_created() || !ancestor.is_visible())
+	get_first_child([&](hook::io &io){
+		if (io.get_options().any_is_set(hook::io::option_type::is_inside, hook::io::option_type::is_moving_non_client, hook::io::option_type::is_sizing_non_client))
 			return;
 
-		POINT mouse_position{};
-		GetCursorPos(&mouse_position);
+		if (io.get_pressed_button() != hook::io::mouse_button_type::nil)
+			return;
 
-		if (ancestor.hit_test(mouse_position) == HTCLIENT){
-			ancestor.compute_absolute_to_relative(mouse_position);
-			SendMessageW(ancestor.get_handle(), WM_MOUSEMOVE, 0, MAKELPARAM(mouse_position.x, mouse_position.y));
-		}
+		get_ancestor_<window_surface>(0u, [](window_surface &ancestor){
+			if (!ancestor.is_created() || !ancestor.is_visible())
+				return;
+
+			POINT mouse_position{};
+			GetCursorPos(&mouse_position);
+
+			if (ancestor.hit_test(mouse_position) == HTCLIENT){
+				ancestor.compute_absolute_to_relative(mouse_position);
+				SendMessageW(ancestor.get_handle(), WM_MOUSEMOVE, 0, MAKELPARAM(mouse_position.x, mouse_position.y));
+			}
+		});
 	});
 
 	redraw_at_(old_value);

@@ -20,11 +20,15 @@ namespace cwin::hook::non_window{
 		static ID2D1Factory *get_draw_factoy();
 
 	protected:
+		virtual void destroy_() override;
+
+		virtual ID2D1Geometry *create_handle_(const SIZE &size) const = 0;
+
+		virtual void destroy_handle_();
+
+		virtual void after_create_handle_();
+
 		virtual void redraw_();
-
-		virtual void destroy_();
-
-		virtual ID2D1Geometry *create_(const SIZE &size) const = 0;
 
 		virtual UINT hit_test_(const POINT &position) const = 0;
 
@@ -89,6 +93,8 @@ namespace cwin::hook::non_window{
 	protected:
 		virtual void destroy_() override;
 
+		virtual void after_create_handle_() override;
+
 		virtual UINT hit_test_(const POINT &position) const override;
 
 		virtual SIZE get_size_() const override;
@@ -138,7 +144,7 @@ namespace cwin::hook::non_window{
 		virtual ~path_handle() = default;
 
 	protected:
-		virtual ID2D1Geometry *create_(const SIZE &size) const override{
+		virtual ID2D1Geometry *create_handle_(const SIZE &size) const override{
 			if (callback_ == nullptr)
 				return nullptr;
 
@@ -316,7 +322,7 @@ namespace cwin::hook::non_window{
 		virtual ~rectangle_handle() = default;
 
 	protected:
-		virtual ID2D1Geometry *create_(const SIZE &size) const override{
+		virtual ID2D1Geometry *create_handle_(const SIZE &size) const override{
 			ID2D1RectangleGeometry *value = nullptr;
 			handle::get_draw_factoy()->CreateRectangleGeometry(D2D1::RectF(
 				0.0f,
@@ -359,7 +365,7 @@ namespace cwin::hook::non_window{
 		}
 
 	protected:
-		virtual ID2D1Geometry *create_(const SIZE &size) const override{
+		virtual ID2D1Geometry *create_handle_(const SIZE &size) const override{
 			ID2D1RoundedRectangleGeometry *value = nullptr;
 			handle::get_draw_factoy()->CreateRoundedRectangleGeometry(D2D1::RoundedRect(D2D1::RectF(
 				0.0f,
@@ -388,7 +394,7 @@ namespace cwin::hook::non_window{
 		virtual ~ellipse_handle() = default;
 
 	protected:
-		virtual ID2D1Geometry *create_(const SIZE &size) const override{
+		virtual ID2D1Geometry *create_handle_(const SIZE &size) const override{
 			ID2D1EllipseGeometry *value = nullptr;
 			handle::get_draw_factoy()->CreateEllipseGeometry(D2D1::Ellipse(
 				D2D1::Point2F((size.cx / 2.0f), (size.cy / 2.0f)),

@@ -55,25 +55,25 @@ namespace cwin::events::audio{
 		std::shared_ptr<cwin::audio::buffer> value_;
 	};
 
-	class start : public object{
+	class begin : public object{
 	public:
 		using object::object;
 
-		virtual ~start() = default;
+		virtual ~begin() = default;
 	};
 
-	class stop : public object{
+	class end : public object{
 	public:
 		using object::object;
 
-		virtual ~stop() = default;
+		virtual ~end() = default;
 	};
 
-	class pause : public object{
+	class suspend : public object{
 	public:
 		using object::object;
 
-		virtual ~pause() = default;
+		virtual ~suspend() = default;
 	};
 
 	class resume : public object{
@@ -81,6 +81,13 @@ namespace cwin::events::audio{
 		using object::object;
 
 		virtual ~resume() = default;
+	};
+
+	class seek : public object{
+	public:
+		using object::object;
+
+		virtual ~seek() = default;
 	};
 
 	class after_buffer_done : public object{
@@ -95,5 +102,33 @@ namespace cwin::events::audio{
 		using object::object;
 
 		virtual ~eof() = default;
+	};
+
+	class volume_change : public object{
+	public:
+		using object::object;
+
+		virtual ~volume_change() = default;
+	};
+
+	class speed_change : public object{
+	public:
+		using object::object;
+
+		virtual ~speed_change() = default;
+	};
+
+	class pitch_change : public object{
+	public:
+		using object::object;
+
+		virtual ~pitch_change() = default;
+	};
+
+	class direction_change : public object{
+	public:
+		using object::object;
+
+		virtual ~direction_change() = default;
 	};
 }
