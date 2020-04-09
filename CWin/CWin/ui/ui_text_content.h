@@ -190,14 +190,14 @@ namespace cwin::ui{
 		}
 
 		virtual void after_destroy_() override{
-			if (text_format_ != nullptr){
-				text_format_->Release();
-				text_format_ = nullptr;
-			}
-
 			if (text_layout_ != nullptr){
 				text_layout_->Release();
 				text_layout_ = nullptr;
+			}
+
+			if (text_format_ != nullptr){
+				text_format_->Release();
+				text_format_ = nullptr;
 			}
 
 			base_type::after_destroy_();
@@ -244,12 +244,21 @@ namespace cwin::ui{
 		}
 
 		virtual void create_text_format_(){
+			if (text_layout_ != nullptr){
+				text_layout_->Release();
+				text_layout_ = nullptr;
+			}
+
 			if (text_format_ != nullptr){
 				text_format_->Release();
 				text_format_ = nullptr;
 			}
 
-			text_content_helper::get_write_factory()->CreateTextFormat(
+			auto factory = text_content_helper::get_write_factory();
+			if (factory == nullptr)
+				return;
+
+			factory->CreateTextFormat(
 				font_family_name_.data(),
 				nullptr,
 				font_properties_.weight,
@@ -263,12 +272,7 @@ namespace cwin::ui{
 			if (text_format_ == nullptr)
 				return;
 
-			if (text_layout_ != nullptr){
-				text_layout_->Release();
-				text_layout_ = nullptr;
-			}
-
-			text_content_helper::get_write_factory()->CreateTextLayout(
+			factory->CreateTextLayout(
 				text_.data(),
 				static_cast<UINT32>(text_.size()),
 				text_format_,

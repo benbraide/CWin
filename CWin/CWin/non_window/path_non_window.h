@@ -5,7 +5,8 @@
 namespace cwin::non_window{
 	class lines_path : public object{
 	public:
-		template <typename point_type>
+		using object::object;
+		/*template <typename point_type>
 		explicit lines_path(const std::vector<point_type> &points){
 			insert_object<hook::non_window::lines_path_handle<hook::non_window::client_handle>>(nullptr, points);
 		}
@@ -22,7 +23,7 @@ namespace cwin::non_window{
 				set_parent_(parent);
 			else//Error
 				throw thread::exception::context_mismatch();
-		}
+		}*/
 
 		virtual ~lines_path() = default;
 	};

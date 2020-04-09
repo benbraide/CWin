@@ -216,8 +216,10 @@ cwin::test::animation::animation(control::tab &parent, std::size_t index)
 			item.set_size(SIZE{ 207, 63 });
 		});
 
-		item.insert_object<hook::non_window::rectangle_handle<hook::non_window::non_client_handle>>(nullptr, L"Target Rectangle");
 		item.insert_object<cwin::hook::io>();
+		item.insert_object([](cwin::hook::non_window::non_client_handle<cwin::hook::non_window::rectangle_handle> &frame){
+			frame.set_caption(L"Target Rectangle");
+		});
 
 		item.insert_object([&](cwin::hook::animation &hk){
 			animation_ = &hk;

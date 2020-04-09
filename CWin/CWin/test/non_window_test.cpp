@@ -14,8 +14,10 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 		item.set_size(SIZE{ 270, 135 });
 		item.set_position(POINT{ 10, 10 });
 		
-		item.insert_object<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::non_client_handle>>(nullptr, L"Small Frame");
 		item.insert_object<cwin::hook::client_drag>();
+		item.insert_object([&](cwin::hook::non_window::non_client_handle<cwin::hook::non_window::rectangle_handle> &frame){
+			frame.set_caption(L"Small Frame");
+		});
 
 		item.get_first_child([](cwin::hook::color_background &bg){
 			bg.set_color(D2D1::ColorF(D2D1::ColorF::Red));
@@ -26,8 +28,10 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 		item.set_size(SIZE{ 540, 360 });
 		item.set_position(POINT{ 300, 10 });
 		
-		item.insert_object<cwin::hook::non_window::rectangle_handle<cwin::hook::non_window::big_border_non_client_handle>>(nullptr, L"Big Frame");
 		item.insert_object<cwin::hook::io>();
+		item.insert_object([&](cwin::hook::non_window::non_client_handle<cwin::hook::non_window::rectangle_handle> &frame){
+			frame.set_caption(L"Big Frame");
+		});
 
 		item.insert_object([](cwin::non_window::rectangle &inner_item){
 			inner_item.set_size(SIZE{ 153, 90 });
@@ -74,7 +78,7 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 			item.set_position(POINT{ 140, 120 });
 			item.set_text(L"Custom Shape");
 			item.insert_object<cwin::hook::client_drag>();
-			item.insert_object<cwin::hook::non_window::round_rectangle_handle<cwin::hook::non_window::client_handle>>(nullptr, SIZE{ 10, 10 });
+			item.insert_object<cwin::hook::non_window::client_handle<cwin::hook::non_window::round_rectangle_handle>>(nullptr, SIZE{ 10, 10 });
 		});
 
 		item.insert_object([](cwin::non_window::push_button &item){
@@ -82,7 +86,7 @@ cwin::test::non_window::non_window(control::tab &parent, std::size_t index)
 			item.set_text(L"Ellipse Shape");
 			item.set_scale(D2D1::SizeF(1.0f, 1.5f));
 			item.insert_object<cwin::hook::client_drag>();
-			item.insert_object<cwin::hook::non_window::ellipse_handle<cwin::hook::non_window::client_handle>>();
+			item.insert_object<cwin::hook::non_window::client_handle<cwin::hook::non_window::ellipse_handle>>();
 		});
 	});
 }

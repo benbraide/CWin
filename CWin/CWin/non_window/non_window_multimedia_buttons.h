@@ -14,7 +14,7 @@
 namespace cwin::non_window::multimedia_button{
 	class object : public push_button{
 	public:
-		using lines_path_relative_point = hook::non_window::lines_path_relative_point;
+		using lines_path_relative_point = hook::non_window::lines_path_handle::relative_point;
 
 		struct icon_info{
 			std::vector<lines_path_relative_point> points;

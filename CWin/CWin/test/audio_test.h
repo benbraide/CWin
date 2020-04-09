@@ -63,7 +63,7 @@ namespace cwin::test{
 				button_ref = &item;
 
 				item.set_size(button_size_);
-				item.insert_object<cwin::hook::non_window::ellipse_handle<cwin::hook::non_window::client_handle>>();
+				item.insert_object<cwin::hook::non_window::client_handle<cwin::hook::non_window::ellipse_handle>>();
 
 				if (!is_first)
 					poisition_button_(item);

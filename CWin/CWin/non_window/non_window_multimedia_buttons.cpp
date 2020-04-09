@@ -37,31 +37,31 @@ cwin::non_window::multimedia_button::object::object(tree &parent, std::size_t in
 cwin::non_window::multimedia_button::object::~object() = default;
 
 void cwin::non_window::multimedia_button::object::get_rectangle_points(std::vector<lines_path_relative_point> &list){
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 0.0f, 0.0f });
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 1.0f, 0.0f });
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 1.0f, 1.0f });
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 0.0f, 1.0f });
+	list.push_back(lines_path_relative_point{ 0.0f, 0.0f });
+	list.push_back(lines_path_relative_point{ 1.0f, 0.0f });
+	list.push_back(lines_path_relative_point{ 1.0f, 1.0f });
+	list.push_back(lines_path_relative_point{ 0.0f, 1.0f });
 }
 
 void cwin::non_window::multimedia_button::object::get_left_triangle_points(std::vector<lines_path_relative_point> &list){
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 0.0f, 0.5f });
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 1.0f, 0.0f });
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 1.0f, 1.0f });
+	list.push_back(lines_path_relative_point{ 0.0f, 0.5f });
+	list.push_back(lines_path_relative_point{ 1.0f, 0.0f });
+	list.push_back(lines_path_relative_point{ 1.0f, 1.0f });
 }
 
 void cwin::non_window::multimedia_button::object::get_right_triangle_points(std::vector<lines_path_relative_point> &list){
-	list.push_back(hook::non_window::lines_path_relative_point{ 1.0f, 0.5f });
-	list.push_back(hook::non_window::lines_path_relative_point{ 0.0f, 1.0f });
-	list.push_back(hook::non_window::lines_path_relative_point{ 0.0f, 0.0f });
+	list.push_back(lines_path_relative_point{ 1.0f, 0.5f });
+	list.push_back(lines_path_relative_point{ 0.0f, 1.0f });
+	list.push_back(lines_path_relative_point{ 0.0f, 0.0f });
 }
 
 void cwin::non_window::multimedia_button::object::get_volume_points(std::vector<lines_path_relative_point> &list){
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 1.0f, 0.0f });
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 1.0f, 1.0f });
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 0.4f, 0.7f });
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 0.0f, 0.7f });
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 0.0f, 0.3f });
-	list.push_back(cwin::hook::non_window::lines_path_relative_point{ 0.4f, 0.3f });
+	list.push_back(lines_path_relative_point{ 1.0f, 0.0f });
+	list.push_back(lines_path_relative_point{ 1.0f, 1.0f });
+	list.push_back(lines_path_relative_point{ 0.4f, 0.7f });
+	list.push_back(lines_path_relative_point{ 0.0f, 0.7f });
+	list.push_back(lines_path_relative_point{ 0.0f, 0.3f });
+	list.push_back(lines_path_relative_point{ 0.4f, 0.3f });
 }
 
 void cwin::non_window::multimedia_button::object::frame_background_(events::custom_draw &e, const D2D1_COLOR_F & color) const{
@@ -93,7 +93,7 @@ void cwin::non_window::multimedia_button::object::insert_pack_(void(*get_pack)(p
 			for (auto &icon_info : pack.icons){
 				container.insert_object([&](ui::create_enabled_visible_surface &icon){
 					if (!icon_info.points.empty())
-						icon.insert_object<hook::non_window::lines_path_handle<hook::non_window::client_handle>>(nullptr, icon_info.points);
+						icon.insert_object<hook::non_window::client_handle<hook::non_window::lines_path_handle>>(nullptr, icon_info.points);
 
 					icon.insert_object<cwin::hook::fill>(nullptr, icon_info.size_offset);
 					if (index == 0u)
@@ -113,7 +113,7 @@ void cwin::non_window::multimedia_button::object::insert_pack_(void(*get_pack)(p
 	else{//Single icon
 		insert_object([&](ui::create_enabled_visible_surface &icon){
 			if (!pack.icons[0].points.empty())
-				icon.insert_object<hook::non_window::lines_path_handle<hook::non_window::client_handle>>(nullptr, pack.icons[0].points);
+				icon.insert_object<hook::non_window::client_handle<hook::non_window::lines_path_handle>>(nullptr, pack.icons[0].points);
 
 			icon.insert_object<cwin::hook::placement>(nullptr, cwin::hook::placement::alignment_type::center, pack.offset);
 			insert_fill_hook_(icon);
@@ -154,7 +154,7 @@ cwin::non_window::multimedia_button::record::~record() = default;
 
 void cwin::non_window::multimedia_button::record::insert_pattern_(){
 	insert_object([&](ui::create_enabled_visible_surface &icon){
-		icon.insert_object<hook::non_window::ellipse_handle<hook::non_window::client_handle>>();
+		icon.insert_object<hook::non_window::client_handle<hook::non_window::ellipse_handle>>();
 		icon.insert_object<cwin::hook::placement>(nullptr, cwin::hook::placement::alignment_type::center);
 
 		insert_fill_hook_(icon);
