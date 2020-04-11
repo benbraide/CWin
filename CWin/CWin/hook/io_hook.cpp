@@ -218,7 +218,7 @@ void cwin::hook::io::mouse_client_enter_(){
 	}
 }
 
-void cwin::hook::io::mouse_move_(io **top){
+void cwin::hook::io::mouse_move_(io **top, const mouse_info &info){
 	auto visible_target = dynamic_cast<ui::visible_surface *>(parent_);
 	if (visible_target == nullptr)
 		return;
@@ -266,7 +266,7 @@ void cwin::hook::io::mouse_move_(io **top){
 	if (mouse_over_ != nullptr){
 		if (hit_target == HTCLIENT){//Client
 			if (mouse_over_->io_hook_ != nullptr)
-				mouse_over_->io_hook_->mouse_move_((top == nullptr) ? &self : top);
+				mouse_over_->io_hook_->mouse_move_(((top == nullptr) ? &self : top), info);
 
 			if (dynamic_cast<ui::window_surface *>(parent_) != nullptr){
 
@@ -281,16 +281,15 @@ void cwin::hook::io::mouse_move_(io **top){
 	}
 
 	if (pressed_button_ != mouse_button_type::nil && dynamic_cast<ui::window_surface *>(parent_) != nullptr){
-		auto &mouse_info = thread_.get_window_manager().get_mouse_info();
 		if (!check_drag_state_()){//Check for drag
-			if (!options_.is_set(option_type::drag_is_past_threshold) && check_drag_threshold_(position)){
+			if (!options_.is_set(option_type::drag_is_past_threshold) && check_drag_threshold_(position, info)){
 				options_.set(option_type::drag_is_past_threshold);
 				if (mouse_drag_begin_(top))
-					mouse_drag_(SIZE{ (position.x - mouse_info.pressed_position.x), (position.y - mouse_info.pressed_position.y) });
+					mouse_drag_(SIZE{ (position.x - info.pressed_position.x), (position.y - info.pressed_position.y) });
 			}
 		}
 		else//Continue drag
-			mouse_drag_(SIZE{ (position.x - mouse_info.last_position.x), (position.y - mouse_info.last_position.y) });
+			mouse_drag_(SIZE{ (position.x - info.last_position.x), (position.y - info.last_position.y) });
 	}
 
 	parent_->get_events().trigger<events::io::mouse_move>(*((top == nullptr) ? self : *top)->parent_, position);
@@ -326,6 +325,9 @@ bool cwin::hook::io::mouse_drag_begin_(io **top){
 }
 
 void cwin::hook::io::mouse_drag_(const SIZE &delta){
+	if (delta.cx == 0 && delta.cy == 0)
+		return;
+
 	if (non_client_mouse_press_ != nullptr && non_client_mouse_press_->io_hook_ != nullptr)//Dragging non-client area
 		non_client_mouse_press_->io_hook_->mouse_drag_non_client_(delta, non_client_target_);
 	else if (mouse_press_ != nullptr && mouse_press_->io_hook_ != nullptr)
@@ -563,14 +565,13 @@ void cwin::hook::io::offset_position_(const SIZE &delta) const{
 	}
 }
 
-bool cwin::hook::io::check_drag_threshold_(const POINT &mouse_position) const{
-	auto &mouse_info = thread_.get_window_manager().get_mouse_info();
+bool cwin::hook::io::check_drag_threshold_(const POINT &mouse_position, const mouse_info &info) const{
 	SIZE abs_delta{
-		std::abs(mouse_position.x - mouse_info.pressed_position.x),
-		std::abs(mouse_position.y - mouse_info.pressed_position.y)
+		std::abs(mouse_position.x - info.pressed_position.x),
+		std::abs(mouse_position.y - info.pressed_position.y)
 	};
 
-	return (mouse_info.drag_threshold.cx <= abs_delta.cx || mouse_info.drag_threshold.cy <= abs_delta.cy);
+	return (info.drag_threshold.cx <= abs_delta.cx || info.drag_threshold.cy <= abs_delta.cy);
 }
 
 cwin::hook::client_drag::client_drag(ui::visible_surface &parent)

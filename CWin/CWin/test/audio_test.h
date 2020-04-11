@@ -61,6 +61,7 @@ namespace cwin::test{
 		void insert_button_(cwin::ui::visible_surface *container, const std::function<void(button_type &)> &callback, cwin::non_window::push_button *&button_ref, bool is_first){
 			((container == nullptr) ? this : container)->insert_object([&](button_type &item){
 				button_ref = &item;
+				item.set_icon_size_offset(icon_size_offset_);
 
 				item.set_size(button_size_);
 				item.insert_object<cwin::hook::non_window::client_handle<cwin::hook::non_window::ellipse_handle>>();
@@ -75,7 +76,7 @@ namespace cwin::test{
 
 				if (callback != nullptr)
 					callback(item);
-			}, icon_size_offset_);
+			});
 		}
 
 		virtual void poisition_button_(cwin::non_window::push_button &item);
@@ -118,8 +119,7 @@ namespace cwin::test{
 		cwin::ui::visible_text_label *progress_label_ = nullptr;
 		cwin::ui::visible_text_label *duration_label_ = nullptr;
 
-		cwin::non_window::push_button *play_button_ = nullptr;
-		cwin::non_window::push_button *pause_button_ = nullptr;
+		cwin::non_window::push_button *play_pause_button_ = nullptr;
 		cwin::non_window::push_button *stop_button_ = nullptr;
 		cwin::non_window::push_button *rewind_button_ = nullptr;
 		cwin::non_window::push_button *fast_forward_button_ = nullptr;

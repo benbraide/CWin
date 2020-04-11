@@ -128,24 +128,34 @@ namespace cwin::hook::non_window{
 
 	class round_rectangle_handle : public handle{
 	public:
+		using variant_size_type = std::variant<SIZE, D2D1_SIZE_F>;
+
 		explicit round_rectangle_handle(ui::visible_surface &parent);
 
 		round_rectangle_handle(ui::visible_surface &parent, const SIZE &border_curve_size);
+
+		round_rectangle_handle(ui::visible_surface &parent, const D2D1_SIZE_F &border_curve_size);
 
 		virtual ~round_rectangle_handle();
 
 		virtual void set_border_curve_size(const SIZE &value);
 
-		virtual const SIZE &get_border_curve_size() const;
+		virtual void set_border_curve_size(const D2D1_SIZE_F &value);
 
-		virtual void get_border_curve_size(const std::function<void(const SIZE &)> &callback) const;
+		virtual const variant_size_type &get_border_curve_size() const;
+
+		virtual void get_border_curve_size(const std::function<void(const variant_size_type &)> &callback) const;
 
 	protected:
 		virtual ID2D1Geometry *create_handle_(const SIZE &size) const override;
 
 		virtual void set_border_curve_size_(const SIZE &value);
 
-		SIZE border_curve_size_{};
+		virtual void set_border_curve_size_(const D2D1_SIZE_F &value);
+
+		virtual void after_set_border_curve_size_();
+
+		variant_size_type border_curve_size_{};
 	};
 
 	class ellipse_handle : public handle{

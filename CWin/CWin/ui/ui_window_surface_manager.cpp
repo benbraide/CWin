@@ -635,12 +635,14 @@ void cwin::ui::window_surface_manager::mouse_move_(window_surface &target, UINT 
 		TrackMouseEvent(&track_info_);
 	}
 
-	if (message == WM_MOUSEMOVE && target.io_hook_ != nullptr)
-		target.io_hook_->mouse_move_(nullptr);
-
+	auto last_position = mouse_info_.last_position;
 	auto pos = GetMessagePos();
+
 	mouse_info_.last_position.x = GET_X_LPARAM(pos);
 	mouse_info_.last_position.y = GET_Y_LPARAM(pos);
+
+	if (message == WM_MOUSEMOVE && target.io_hook_ != nullptr)
+		target.io_hook_->mouse_move_(nullptr, hook::io::mouse_info{ last_position, mouse_info_.pressed_position, mouse_info_.drag_threshold });
 }
 
 void cwin::ui::window_surface_manager::mouse_down_(window_surface &target, mouse_button_type button){

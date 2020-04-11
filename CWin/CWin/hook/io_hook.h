@@ -31,6 +31,12 @@ namespace cwin::hook{
 			is_sizing_non_client,
 		};
 
+		struct mouse_info{
+			POINT last_position;
+			POINT pressed_position;
+			SIZE drag_threshold;
+		};
+
 		explicit io(ui::visible_surface &parent);
 
 		virtual ~io();
@@ -71,7 +77,7 @@ namespace cwin::hook{
 
 		virtual void mouse_client_enter_();
 
-		virtual void mouse_move_(io **top);
+		virtual void mouse_move_(io **top, const mouse_info &info);
 
 		virtual bool mouse_drag_begin_(io **top);
 
@@ -89,7 +95,7 @@ namespace cwin::hook{
 
 		virtual bool check_drag_state_() const;
 
-		virtual bool check_drag_threshold_(const POINT &mouse_position) const;
+		virtual bool check_drag_threshold_(const POINT &mouse_position, const mouse_info &info) const;
 
 		virtual void after_mouse_drag_(const SIZE &delta);
 

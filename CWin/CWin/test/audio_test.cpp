@@ -34,41 +34,27 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 		bind_(output, [&](cwin::events::audio::begin &){
 			previous_progress_ = progress_ = 0u;
 			progress_label_->set_text(convert_time(0u));
-
-			play_button_->hide();
-			pause_button_->show();
+			dynamic_cast<cwin::non_window::exclusive_multiple_icon_push_button *>(play_pause_button_)->show_index(1u);
 		});
 
 		bind_(output, [&](cwin::events::audio::suspend &){
-			pause_button_->hide();
-			play_button_->show();
+			dynamic_cast<cwin::non_window::exclusive_multiple_icon_push_button *>(play_pause_button_)->show_index(0u);
 		});
 
 		bind_(output, [&](cwin::events::audio::end &){
 			if (source_ != nullptr)
 				source_->seek(0.0f);
 
-			if (pause_button_ != nullptr)
-				pause_button_->hide();
-
-			if (play_button_ != nullptr)
-				play_button_->show();
+			if (play_pause_button_ != nullptr)
+				dynamic_cast<cwin::non_window::exclusive_multiple_icon_push_button *>(play_pause_button_)->show_index(0u);
 		});
 
 		bind_(output, [&](cwin::events::audio::resume &){
-			play_button_->hide();
-			pause_button_->show();
+			dynamic_cast<cwin::non_window::exclusive_multiple_icon_push_button *>(play_pause_button_)->show_index(1u);
 		});
 
 		bind_(output, [&](cwin::events::audio::speed_change &){
-			if (output_->get_speed() == 1.0f){
-				play_button_->hide();
-				pause_button_->show();
-			}
-			else{
-				pause_button_->hide();
-				play_button_->show();
-			}
+			dynamic_cast<cwin::non_window::exclusive_multiple_icon_push_button *>(play_pause_button_)->show_index((output_->get_speed() == 1.0f) ? 1u : 0u);
 		});
 
 		bind_(output, [=](cwin::events::audio::after_buffer_done &){
@@ -127,15 +113,14 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 			POINT{ 0, 5 }
 		);
 
-		insert_button_<cwin::non_window::multimedia_button::play>(&container, output_->play_action, play_button_, true);
-		insert_button_<cwin::non_window::multimedia_button::pause>(&container, [&](cwin::non_window::multimedia_button::pause &button){
-			button.hide();
-			button.get_events().bind(output_->suspend_action);
-			button.get_first_child([&](cwin::hook::relative_placement &hk){
-				hk.set_source_alignment(cwin::hook::relative_placement::alignment_type::top_left);
-				hk.set_offset(POINT{});
+		insert_button_<cwin::non_window::multimedia_button::play_pause>(&container, [&](cwin::non_window::multimedia_button::play_pause &button){
+			button.get_events().bind([=]{
+				if (dynamic_cast<cwin::non_window::exclusive_multiple_icon_push_button *>(play_pause_button_)->get_shown_index() == 0u)
+					output_->play();
+				else//Pause
+					output_->suspend();
 			});
-		}, pause_button_);
+		}, play_pause_button_, true);
 
 		insert_button_<cwin::non_window::multimedia_button::stop>(&container, output_->stop_action, stop_button_);
 		insert_button_<cwin::non_window::multimedia_button::rewind>(&container, output_->rewind_action, rewind_button_);

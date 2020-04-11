@@ -19,7 +19,7 @@ cwin::hook::non_window::handle::handle(ui::visible_surface &parent){
 	});
 
 	bind_(parent, [=](events::interrupt::resize &){
-		if (value_ != nullptr){
+		if (value_ != nullptr || (parent_ != nullptr && parent_->is_created())){
 			destroy_handle_();
 			create_();
 		}
@@ -231,6 +231,9 @@ cwin::hook::non_window::round_rectangle_handle::round_rectangle_handle(ui::visib
 cwin::hook::non_window::round_rectangle_handle::round_rectangle_handle(ui::visible_surface &parent, const SIZE &border_curve_size)
 	: handle(parent), border_curve_size_(border_curve_size){}
 
+cwin::hook::non_window::round_rectangle_handle::round_rectangle_handle(ui::visible_surface &parent, const D2D1_SIZE_F &border_curve_size)
+	: handle(parent), border_curve_size_(border_curve_size){}
+
 cwin::hook::non_window::round_rectangle_handle::~round_rectangle_handle() = default;
 
 void cwin::hook::non_window::round_rectangle_handle::set_border_curve_size(const SIZE &value){
@@ -239,35 +242,72 @@ void cwin::hook::non_window::round_rectangle_handle::set_border_curve_size(const
 	});
 }
 
-const SIZE &cwin::hook::non_window::round_rectangle_handle::get_border_curve_size() const{
+void cwin::hook::non_window::round_rectangle_handle::set_border_curve_size(const D2D1_SIZE_F &value){
+	post_or_execute_task([=]{
+		set_border_curve_size_(value);
+	});
+}
+
+const cwin::hook::non_window::round_rectangle_handle::variant_size_type &cwin::hook::non_window::round_rectangle_handle::get_border_curve_size() const{
 	return *execute_task([&]{
 		return &border_curve_size_;
 	});
 }
 
-void cwin::hook::non_window::round_rectangle_handle::get_border_curve_size(const std::function<void(const SIZE &)> &callback) const{
+void cwin::hook::non_window::round_rectangle_handle::get_border_curve_size(const std::function<void(const variant_size_type &)> &callback) const{
 	post_or_execute_task([=]{
 		callback(border_curve_size_);
 	});
 }
 
 ID2D1Geometry *cwin::hook::non_window::round_rectangle_handle::create_handle_(const SIZE &size) const{
+	D2D1_SIZE_F border_curve_size{};
+
+	if (std::holds_alternative<SIZE>(border_curve_size_)){
+		auto &current_value = std::get<SIZE>(border_curve_size_);
+		border_curve_size.width = static_cast<float>(current_value.cx);
+		border_curve_size.height = static_cast<float>(current_value.cy);
+	}
+	else if (std::holds_alternative<D2D1_SIZE_F>(border_curve_size_)){
+		auto &current_value = std::get<D2D1_SIZE_F>(border_curve_size_);
+		border_curve_size.width = (current_value.width * size.cx);
+		border_curve_size.height = (current_value.height * size.cx);
+	}
+
 	ID2D1RoundedRectangleGeometry *value = nullptr;
 	handle::get_draw_factoy()->CreateRoundedRectangleGeometry(D2D1::RoundedRect(D2D1::RectF(
 		0.0f,
 		0.0f,
 		static_cast<float>(size.cx),
 		static_cast<float>(size.cy)
-	), (border_curve_size_.cx / 2.0f), (border_curve_size_.cy / 2.0f)), &value);
+	), (border_curve_size.width / 2.0f), (border_curve_size.height / 2.0f)), &value);
 
 	return value;
 }
 
 void cwin::hook::non_window::round_rectangle_handle::set_border_curve_size_(const SIZE &value){
-	if (value.cx == border_curve_size_.cx && value.cy == border_curve_size_.cy)
-		return;
+	if (std::holds_alternative<SIZE>(border_curve_size_)){
+		auto &current_value = std::get<SIZE>(border_curve_size_);
+		if (value.cx == current_value.cx && value.cy == current_value.cy)
+			return;
+	}
 
 	border_curve_size_ = value;
+	after_set_border_curve_size_();
+}
+
+void cwin::hook::non_window::round_rectangle_handle::set_border_curve_size_(const D2D1_SIZE_F &value){
+	if (std::holds_alternative<D2D1_SIZE_F>(border_curve_size_)){
+		auto &current_value = std::get<D2D1_SIZE_F>(border_curve_size_);
+		if (value.width == current_value.width && value.height == current_value.height)
+			return;
+	}
+
+	border_curve_size_ = value;
+	after_set_border_curve_size_();
+}
+
+void cwin::hook::non_window::round_rectangle_handle::after_set_border_curve_size_(){
 	if (value_ == nullptr)
 		return;
 

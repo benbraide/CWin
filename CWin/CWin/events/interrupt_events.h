@@ -251,4 +251,11 @@ namespace cwin::events::interrupt{
 	protected:
 		std::wstring value_;
 	};
+
+	class is_smooth_edge : public object{
+	public:
+		using object::object;
+
+		virtual ~is_smooth_edge() = default;
+	};
 }

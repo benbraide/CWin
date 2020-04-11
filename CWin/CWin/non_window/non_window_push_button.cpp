@@ -2,6 +2,7 @@
 #include "../thread/thread_object.h"
 
 #include "../events/io_events.h"
+#include "../events/general_events.h"
 #include "../events/interrupt_events.h"
 
 #include "non_window_push_button.h"
@@ -166,8 +167,16 @@ void cwin::non_window::push_button::frame_background_(events::custom_draw &e, co
 	auto &render_target = e.get_render_target();
 	auto &color_brush = e.get_color_brush();
 
-	if (auto bound = events_.trigger_then_report_result_as<events::interrupt::get_geometry, ID2D1Geometry *>(); bound != nullptr){//Frame bound
-		color_brush.SetColor(color);
-		render_target.DrawGeometry(bound, &color_brush);
+	color_brush.SetColor(color);
+	if (auto bound = events_.trigger_then_report_result_as<events::interrupt::get_geometry, ID2D1Geometry *>(); bound == nullptr){//Frame bound
+		auto &size = get_size_();
+		render_target.DrawRectangle(D2D1::RectF(
+			0.0f,
+			0.0f,
+			static_cast<float>(size.cx),
+			static_cast<float>(size.cy)
+		), &color_brush);
 	}
+	else//Use bound
+		render_target.DrawGeometry(bound, &color_brush);
 }
