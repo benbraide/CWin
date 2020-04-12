@@ -34,6 +34,7 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 		bind_(output, [&](cwin::events::audio::begin &){
 			previous_progress_ = progress_ = 0u;
 			progress_label_->set_text(convert_time(0u));
+			progress_track_->set_track_position(0);
 			dynamic_cast<cwin::non_window::exclusive_multiple_icon_push_button *>(play_pause_button_)->show_index(1u);
 		});
 
@@ -54,7 +55,8 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 		});
 
 		bind_(output, [&](cwin::events::audio::speed_change &){
-			dynamic_cast<cwin::non_window::exclusive_multiple_icon_push_button *>(play_pause_button_)->show_index((output_->get_speed() == 1.0f) ? 1u : 0u);
+			if (!output_->is_ended())
+				dynamic_cast<cwin::non_window::exclusive_multiple_icon_push_button *>(play_pause_button_)->show_index((output_->get_speed() == 1.0f) ? 1u : 0u);
 		});
 
 		bind_(output, [=](cwin::events::audio::after_buffer_done &){
@@ -85,8 +87,30 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 				if (previous_progress_ != progress_ && output_->is_created() && !output_->is_ended() && !output_->is_suspended()){
 					progress_label_->set_text(convert_time(progress_));
 					previous_progress_ = progress_;
+					progress_track_->set_track_position(static_cast<float>(progress_) / duration_);
 				}
 			}, label.get_talk_id());
+		});
+
+		container.insert_object([=](cwin::control::trackbar &track){
+			progress_track_ = &track;
+
+			track.set_size(SIZE{ 250, 20 });
+			track.add_styles(TBS_NOTICKS);
+			track.set_track_extent(0);
+
+			track.insert_object<cwin::hook::relative_placement>(
+				nullptr,
+				cwin::hook::relative_placement::sibling_type::previous,
+				cwin::hook::relative_placement::alignment_type::top_left,
+				cwin::hook::relative_placement::alignment_type::top_right,
+				POINT{ 5, 0 }
+			);
+
+			track.get_events().bind([=]{
+				source_->seek(progress_track_->get_track_position());
+				output_->seek(std::chrono::nanoseconds(static_cast<__int64>(duration_ * progress_track_->get_track_position() * 1000000000)));
+			});
 		});
 
 		container.insert_object([=](cwin::ui::visible_text_label &label){
@@ -129,35 +153,6 @@ cwin::test::audio::audio(control::tab &parent, std::size_t index)
 
 	insert_source_<cwin::audio::pcm_source>(pcm_source_);
 	insert_source_<cwin::audio::asf_source>(asf_source_, L"C:\\Users\\benpl\\Documents\\KDWoju.mp3");
-
-	/*insert_object([=](cwin::ui::create_enabled_visible_surface &container){
-		container.insert_object<cwin::hook::contain>();
-		container.insert_object<cwin::hook::placement>(nullptr, cwin::hook::placement::alignment_type::center);
-	});
-
-	insert_object([=](cwin::ui::visible_text_label &label){
-		progress_label_ = &label;
-		label.insert_object<cwin::hook::placement>(nullptr, cwin::hook::placement::alignment_type::center);
-	});
-
-	insert_object([=](cwin::ui::visible_text_label &label){
-		path_label_ = &label;
-		label.insert_object<cwin::hook::placement>(nullptr, cwin::hook::placement::alignment_type::center);
-	});*/
-
-	/*insert_button_<cwin::non_window::multimedia_button::play>(nullptr, true);
-	insert_button_<cwin::non_window::multimedia_button::pause>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::record>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::stop>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::previous>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::rewind>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::fast_forward>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::next>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::volume_low>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::volume_high>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::volume_down>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::volume_up>(nullptr);
-	insert_button_<cwin::non_window::multimedia_button::mute>(nullptr);*/
 }
 
 cwin::test::audio::~audio() = default;

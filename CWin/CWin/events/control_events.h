@@ -173,4 +173,11 @@ namespace cwin::events::control{
 	protected:
 		REQRESIZE &info_;
 	};
+
+	class track : public object{
+	public:
+		using object::object;
+
+		virtual ~track() = default;
+	};
 }

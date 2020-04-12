@@ -438,7 +438,6 @@ void cwin::audio::wave::begin_(){
 	}
 
 	progress_ = 0u;
-	seek_time_ = std::chrono::nanoseconds(0);
 	write_count_ = 0u;
 
 	state_.set(option_type::begin);
@@ -456,6 +455,7 @@ void cwin::audio::wave::end_(){
 
 	resume_();
 	if (waveOutReset(handle_) == MMSYSERR_NOERROR){
+		seek_time_ = std::chrono::nanoseconds(0);
 		state_.clear(option_type::begin);
 		events_.trigger<events::audio::end>();
 	}
@@ -508,13 +508,15 @@ void cwin::audio::wave::toggle_suspend_(){
 }
 
 void cwin::audio::wave::seek_(const std::chrono::nanoseconds &offset){
-	if (handle_ == nullptr || !state_.is_set(option_type::begin))
+	if (handle_ == nullptr)
 		throw cwin::exception::not_supported();
 
 	seek_time_ = offset;
 	progress_ = 0u;
 
-	flush_();
+	if (state_.is_set(option_type::begin))
+		flush_();
+
 	events_.trigger<events::audio::seek>();
 }
 

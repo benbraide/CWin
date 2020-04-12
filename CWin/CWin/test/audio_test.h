@@ -19,6 +19,8 @@
 #include "../hook/multiple_label_hook.h"
 
 #include "../control/tab_control.h"
+#include "../control/trackbar_control.h"
+
 #include "../non_window/path_non_window.h"
 #include "../non_window/rectangle_non_window.h"
 
@@ -123,6 +125,8 @@ namespace cwin::test{
 		cwin::non_window::push_button *stop_button_ = nullptr;
 		cwin::non_window::push_button *rewind_button_ = nullptr;
 		cwin::non_window::push_button *fast_forward_button_ = nullptr;
+
+		cwin::control::trackbar *progress_track_ = nullptr;
 
 		unsigned __int64 duration_ = 0u;
 		unsigned __int64 progress_ = 0u;
